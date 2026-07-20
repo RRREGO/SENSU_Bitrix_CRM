@@ -1,0 +1,3005 @@
+{
+  "summary": {
+    "totalRequired": 85,
+    "implementedExact": 78,
+    "implementedAlias": 1,
+    "registeredNotImplemented": 6,
+    "missing": 0,
+    "extraInCode": 48,
+    "duplicatesInExcel": 0
+  },
+  "requirements": [
+    {
+      "category": "Лиды",
+      "description": "Получить стадии лидов и ID стадии по названию",
+      "rawAction": "lead_stage_list",
+      "parsedNames": [
+        "lead_stage_list"
+      ],
+      "sourceRow": "Что уже есть#2",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_stage_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Получить список воронок сделок или найти воронку по названию",
+      "rawAction": "deal_category_list",
+      "parsedNames": [
+        "deal_category_list"
+      ],
+      "sourceRow": "Что уже есть#3",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_category_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Получить список стадий сделок в конкретной воронке",
+      "rawAction": "deal_stage_list",
+      "parsedNames": [
+        "deal_stage_list"
+      ],
+      "sourceRow": "Что уже есть#4",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_stage_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую сделку в выбранной воронке",
+      "rawAction": "create_deal",
+      "parsedNames": [
+        "create_deal"
+      ],
+      "sourceRow": "Что уже есть#5",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_deal",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую воронку со стандартными стадиями",
+      "rawAction": "create_default_funnel",
+      "parsedNames": [
+        "create_default_funnel"
+      ],
+      "sourceRow": "Что уже есть#6",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_default_funnel",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую воронку с кастомными рабочими стадиями",
+      "rawAction": "create_funnel_with_custom_stages",
+      "parsedNames": [
+        "create_funnel_with_custom_stages"
+      ],
+      "sourceRow": "Что уже есть#7",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_funnel_with_custom_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Добавить новую стадию в CRM-воронку",
+      "rawAction": "create_new_funnel_stage",
+      "parsedNames": [
+        "create_new_funnel_stage"
+      ],
+      "sourceRow": "Что уже есть#8",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_new_funnel_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Переименовать воронку",
+      "rawAction": "rename_funnel_title",
+      "parsedNames": [
+        "rename_funnel_title"
+      ],
+      "sourceRow": "Что уже есть#9",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "rename_funnel_title",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Переименовать одну или несколько стадий",
+      "rawAction": "rename_funnel_stages",
+      "parsedNames": [
+        "rename_funnel_stages"
+      ],
+      "sourceRow": "Что уже есть#10",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "rename_funnel_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Обновить рабочие стадии воронки, названия, цвета и порядок",
+      "rawAction": "update_funnel_stages",
+      "parsedNames": [
+        "update_funnel_stages"
+      ],
+      "sourceRow": "Что уже есть#11",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_funnel_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Удалить воронку",
+      "rawAction": "delete_funnel",
+      "parsedNames": [
+        "delete_funnel"
+      ],
+      "sourceRow": "Что уже есть#12",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_funnel",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Удалить стадию воронки",
+      "rawAction": "delete_funnel_stage",
+      "parsedNames": [
+        "delete_funnel_stage"
+      ],
+      "sourceRow": "Что уже есть#13",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_funnel_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Перенести сделки из одной воронки в другую",
+      "rawAction": "move_deals_between_funnels",
+      "parsedNames": [
+        "move_deals_between_funnels"
+      ],
+      "sourceRow": "Что уже есть#14",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "move_deals_between_funnels",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Перенести сделки между стадиями внутри одной воронки",
+      "rawAction": "move_deals_between_stages",
+      "parsedNames": [
+        "move_deals_between_stages"
+      ],
+      "sourceRow": "Что уже есть#15",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "move_deals_between_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать пользовательское поле для сделки",
+      "rawAction": "create_crm_custom_field",
+      "parsedNames": [
+        "create_crm_custom_field"
+      ],
+      "sourceRow": "Что уже есть#16",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_crm_custom_field",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Создать задачу",
+      "rawAction": "create_task",
+      "parsedNames": [
+        "create_task"
+      ],
+      "sourceRow": "Что уже есть#17",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Найти задачи по названию, описанию, срокам, статусу и участникам",
+      "rawAction": "search_tasks",
+      "parsedNames": [
+        "search_tasks"
+      ],
+      "sourceRow": "Что уже есть#18",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_tasks",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Получить полную карточку задачи по ID",
+      "rawAction": "get_task_by_id",
+      "parsedNames": [
+        "get_task_by_id"
+      ],
+      "sourceRow": "Что уже есть#19",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "get_task_by_id",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Изменить задачу: название, описание, срок, ответственного, статус, проект",
+      "rawAction": "update_task",
+      "parsedNames": [
+        "update_task"
+      ],
+      "sourceRow": "Что уже есть#20",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Удалить задачу",
+      "rawAction": "delete_task",
+      "parsedNames": [
+        "delete_task"
+      ],
+      "sourceRow": "Что уже есть#21",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Снять дедлайн с задачи",
+      "rawAction": "clear_task_deadline",
+      "parsedNames": [
+        "clear_task_deadline"
+      ],
+      "sourceRow": "Что уже есть#22",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "clear_task_deadline",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Отвязать задачу от проекта или группы",
+      "rawAction": "detach_task_from_group",
+      "parsedNames": [
+        "detach_task_from_group"
+      ],
+      "sourceRow": "Что уже есть#23",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "detach_task_from_group",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Добавить официальный результат работы в задачу",
+      "rawAction": "add_task_result",
+      "parsedNames": [
+        "add_task_result"
+      ],
+      "sourceRow": "Что уже есть#24",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_task_result",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Написать комментарий в чат задачи",
+      "rawAction": "send_chat_message",
+      "parsedNames": [
+        "send_chat_message"
+      ],
+      "sourceRow": "Что уже есть#25",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "send_chat_message",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Найти пользователя и получить его ID",
+      "rawAction": "search_users",
+      "parsedNames": [
+        "search_users"
+      ],
+      "sourceRow": "Что уже есть#26",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_users",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить соисполнителей в задачу",
+      "rawAction": "add_accomplices",
+      "parsedNames": [
+        "add_accomplices"
+      ],
+      "sourceRow": "Что уже есть#27",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_accomplices",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Удалить соисполнителей из задачи",
+      "rawAction": "delete_accomplices",
+      "parsedNames": [
+        "delete_accomplices"
+      ],
+      "sourceRow": "Что уже есть#28",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_accomplices",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить наблюдателей в задачу",
+      "rawAction": "add_auditors",
+      "parsedNames": [
+        "add_auditors"
+      ],
+      "sourceRow": "Что уже есть#29",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_auditors",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить текущего пользователя наблюдателем",
+      "rawAction": "add_current_user_as_auditor",
+      "parsedNames": [
+        "add_current_user_as_auditor"
+      ],
+      "sourceRow": "Что уже есть#30",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_current_user_as_auditor",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Удалить наблюдателей из задачи",
+      "rawAction": "delete_auditors",
+      "parsedNames": [
+        "delete_auditors"
+      ],
+      "sourceRow": "Что уже есть#31",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_auditors",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Создать чек-лист в задаче",
+      "rawAction": "create_check_list",
+      "parsedNames": [
+        "create_check_list"
+      ],
+      "sourceRow": "Что уже есть#32",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Добавить пункт чек-листа",
+      "rawAction": "create_check_list_item",
+      "parsedNames": [
+        "create_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#33",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Изменить название или порядок чек-листа",
+      "rawAction": "update_check_list",
+      "parsedNames": [
+        "update_check_list"
+      ],
+      "sourceRow": "Что уже есть#34",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Изменить название или порядок пункта чек-листа",
+      "rawAction": "update_check_list_item",
+      "parsedNames": [
+        "update_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#35",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Удалить чек-лист",
+      "rawAction": "delete_check_list",
+      "parsedNames": [
+        "delete_check_list"
+      ],
+      "sourceRow": "Что уже есть#36",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Удалить пункт чек-листа",
+      "rawAction": "delete_check_list_item",
+      "parsedNames": [
+        "delete_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#37",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Поставить напоминание по задаче",
+      "rawAction": "add_task_reminder",
+      "parsedNames": [
+        "add_task_reminder"
+      ],
+      "sourceRow": "Что уже есть#38",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_task_reminder",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежедневную регулярность задачи",
+      "rawAction": "set_daily_task_recurrence",
+      "parsedNames": [
+        "set_daily_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#39",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_daily_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить еженедельную регулярность задачи",
+      "rawAction": "set_weekly_task_recurrence",
+      "parsedNames": [
+        "set_weekly_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#40",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_weekly_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежемесячную регулярность по числу месяца",
+      "rawAction": "set_monthly_by_month_days_task_recurrence",
+      "parsedNames": [
+        "set_monthly_by_month_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#41",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_monthly_by_month_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежемесячную регулярность по дню недели",
+      "rawAction": "set_monthly_by_week_days_task_recurrence",
+      "parsedNames": [
+        "set_monthly_by_week_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#42",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_monthly_by_week_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежегодную регулярность по дате",
+      "rawAction": "set_yearly_by_month_days_task_recurrence",
+      "parsedNames": [
+        "set_yearly_by_month_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#43",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_yearly_by_month_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежегодную регулярность по дню недели",
+      "rawAction": "set_yearly_by_week_days_task_recurrence",
+      "parsedNames": [
+        "set_yearly_by_week_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#44",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_yearly_by_week_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Лиды",
+      "description": "Получать список лидов с фильтрами по стадии, ответственному, дате, источнику",
+      "rawAction": "crm.lead.list / lead_list",
+      "parsedNames": [
+        "crm.lead.list",
+        "lead_list"
+      ],
+      "sourceRow": "Что нужно добавить#2",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Открывать карточку конкретного лида по ID",
+      "rawAction": "crm.lead.get / lead_get",
+      "parsedNames": [
+        "crm.lead.get",
+        "lead_get"
+      ],
+      "sourceRow": "Что нужно добавить#3",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Быстро считать лиды всего и по фильтрам",
+      "rawAction": "lead_count",
+      "parsedNames": [
+        "lead_count"
+      ],
+      "sourceRow": "Что нужно добавить#4",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_count",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Редактировать поля лида, стадию, ответственного, контакты",
+      "rawAction": "crm.lead.update / lead_update",
+      "parsedNames": [
+        "crm.lead.update",
+        "lead_update"
+      ],
+      "sourceRow": "Что нужно добавить#5",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Создавать новый лид",
+      "rawAction": "crm.lead.add / lead_create",
+      "parsedNames": [
+        "crm.lead.add",
+        "lead_create"
+      ],
+      "sourceRow": "Что нужно добавить#6",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Удалять лид",
+      "rawAction": "crm.lead.delete / lead_delete",
+      "parsedNames": [
+        "crm.lead.delete",
+        "lead_delete"
+      ],
+      "sourceRow": "Что нужно добавить#7",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Получать список доступных полей лида, включая пользовательские",
+      "rawAction": "crm.lead.fields / lead_fields",
+      "parsedNames": [
+        "crm.lead.fields",
+        "lead_fields"
+      ],
+      "sourceRow": "Что нужно добавить#8",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_fields",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Смотреть товары/услуги в лиде",
+      "rawAction": "lead_product_rows_get",
+      "parsedNames": [
+        "lead_product_rows_get"
+      ],
+      "sourceRow": "Что нужно добавить#9",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_product_rows_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Обновлять товары/услуги в лиде",
+      "rawAction": "lead_product_rows_set",
+      "parsedNames": [
+        "lead_product_rows_set"
+      ],
+      "sourceRow": "Что нужно добавить#10",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_product_rows_set",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Получать список сделок с фильтрами по воронке, стадии, ответственному, дате",
+      "rawAction": "crm.deal.list / deal_list",
+      "parsedNames": [
+        "crm.deal.list",
+        "deal_list"
+      ],
+      "sourceRow": "Что нужно добавить#11",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Открывать карточку конкретной сделки",
+      "rawAction": "crm.deal.get / deal_get",
+      "parsedNames": [
+        "crm.deal.get",
+        "deal_get"
+      ],
+      "sourceRow": "Что нужно добавить#12",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Считать сделки по воронкам, стадиям и ответственным",
+      "rawAction": "deal_count",
+      "parsedNames": [
+        "deal_count"
+      ],
+      "sourceRow": "Что нужно добавить#13",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_count",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Редактировать поля сделки, сумму, стадию, ответственного",
+      "rawAction": "crm.deal.update / deal_update",
+      "parsedNames": [
+        "crm.deal.update",
+        "deal_update"
+      ],
+      "sourceRow": "Что нужно добавить#14",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Удалять сделку",
+      "rawAction": "crm.deal.delete / deal_delete",
+      "parsedNames": [
+        "crm.deal.delete",
+        "deal_delete"
+      ],
+      "sourceRow": "Что нужно добавить#15",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Получать список стандартных и пользовательских полей сделки",
+      "rawAction": "crm.deal.fields / deal_fields",
+      "parsedNames": [
+        "crm.deal.fields",
+        "deal_fields"
+      ],
+      "sourceRow": "Что нужно добавить#16",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_fields",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Смотреть товары/услуги в сделке",
+      "rawAction": "deal_product_rows_get",
+      "parsedNames": [
+        "deal_product_rows_get"
+      ],
+      "sourceRow": "Что нужно добавить#17",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_product_rows_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Обновлять товары/услуги в сделке",
+      "rawAction": "deal_product_rows_set",
+      "parsedNames": [
+        "deal_product_rows_set"
+      ],
+      "sourceRow": "Что нужно добавить#18",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_product_rows_set",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Искать контакты по имени, телефону, email",
+      "rawAction": "crm.contact.list / contact_list",
+      "parsedNames": [
+        "crm.contact.list",
+        "contact_list"
+      ],
+      "sourceRow": "Что нужно добавить#19",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Открывать карточку контакта",
+      "rawAction": "crm.contact.get / contact_get",
+      "parsedNames": [
+        "crm.contact.get",
+        "contact_get"
+      ],
+      "sourceRow": "Что нужно добавить#20",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Создавать контакт",
+      "rawAction": "crm.contact.add / contact_create",
+      "parsedNames": [
+        "crm.contact.add",
+        "contact_create"
+      ],
+      "sourceRow": "Что нужно добавить#21",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Редактировать контакт",
+      "rawAction": "crm.contact.update / contact_update",
+      "parsedNames": [
+        "crm.contact.update",
+        "contact_update"
+      ],
+      "sourceRow": "Что нужно добавить#22",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Искать компании",
+      "rawAction": "crm.company.list / company_list",
+      "parsedNames": [
+        "crm.company.list",
+        "company_list"
+      ],
+      "sourceRow": "Что нужно добавить#23",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Открывать карточку компании",
+      "rawAction": "crm.company.get / company_get",
+      "parsedNames": [
+        "crm.company.get",
+        "company_get"
+      ],
+      "sourceRow": "Что нужно добавить#24",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Создавать компанию",
+      "rawAction": "crm.company.add / company_create",
+      "parsedNames": [
+        "crm.company.add",
+        "company_create"
+      ],
+      "sourceRow": "Что нужно добавить#25",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Редактировать компанию",
+      "rawAction": "crm.company.update / company_update",
+      "parsedNames": [
+        "crm.company.update",
+        "company_update"
+      ],
+      "sourceRow": "Что нужно добавить#26",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Добавлять комментарий в лид, сделку, контакт или компанию",
+      "rawAction": "crm.timeline.comment.add / timeline_comment_add",
+      "parsedNames": [
+        "crm.timeline.comment.add",
+        "timeline_comment_add"
+      ],
+      "sourceRow": "Что нужно добавить#27",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_comment_add",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать комментарии по объекту CRM",
+      "rawAction": "timeline_comment_list",
+      "parsedNames": [
+        "timeline_comment_list"
+      ],
+      "sourceRow": "Что нужно добавить#28",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_comment_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать историю активности по объекту CRM",
+      "rawAction": "timeline_list",
+      "parsedNames": [
+        "timeline_list"
+      ],
+      "sourceRow": "Что нужно добавить#29",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать звонки, письма, встречи и дела",
+      "rawAction": "crm.activity.list / activity_list",
+      "parsedNames": [
+        "crm.activity.list",
+        "activity_list"
+      ],
+      "sourceRow": "Что нужно добавить#30",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Создавать дело, звонок, встречу или письмо",
+      "rawAction": "crm.activity.add / activity_add",
+      "parsedNames": [
+        "crm.activity.add",
+        "activity_add"
+      ],
+      "sourceRow": "Что нужно добавить#31",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_add",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Обновлять дело",
+      "rawAction": "crm.activity.update / activity_update",
+      "parsedNames": [
+        "crm.activity.update",
+        "activity_update"
+      ],
+      "sourceRow": "Что нужно добавить#32",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Удалять дело",
+      "rawAction": "crm.activity.delete / activity_delete",
+      "parsedNames": [
+        "crm.activity.delete",
+        "activity_delete"
+      ],
+      "sourceRow": "Что нужно добавить#33",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Закрывать дело как выполненное",
+      "rawAction": "activity_complete",
+      "parsedNames": [
+        "activity_complete"
+      ],
+      "sourceRow": "Что нужно добавить#34",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_complete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Находить пользователей Bitrix24 для назначения ответственных",
+      "rawAction": "user.search / crm_user_list",
+      "parsedNames": [
+        "user.search",
+        "crm_user_list"
+      ],
+      "sourceRow": "Что нужно добавить#35",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_users",
+      "matchType": "alias",
+      "status": "implemented_alias",
+      "statusRu": "Реализовано через alias"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Получать данные пользователя по ID",
+      "rawAction": "user_get",
+      "parsedNames": [
+        "user_get"
+      ],
+      "sourceRow": "Что нужно добавить#36",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "user_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Смотреть структуру отделов",
+      "rawAction": "department_list",
+      "parsedNames": [
+        "department_list"
+      ],
+      "sourceRow": "Что нужно добавить#37",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "department_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть таблицу лидов по стадиям",
+      "rawAction": "lead_count_by_stage",
+      "parsedNames": [
+        "lead_count_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#38",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_count_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть таблицу сделок по стадиям",
+      "rawAction": "deal_count_by_stage",
+      "parsedNames": [
+        "deal_count_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#39",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_count_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Посчитать сумму сделок по стадиям",
+      "rawAction": "deal_sum_by_stage",
+      "parsedNames": [
+        "deal_sum_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#40",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_sum_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Посчитать конверсию лидов по стадиям и периодам",
+      "rawAction": "lead_conversion_report",
+      "parsedNames": [
+        "lead_conversion_report"
+      ],
+      "sourceRow": "Что нужно добавить#41",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_conversion_report",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть сводку по воронке: количество, сумма, просрочки, последние изменения",
+      "rawAction": "crm_funnel_summary",
+      "parsedNames": [
+        "crm_funnel_summary"
+      ],
+      "sourceRow": "Что нужно добавить#42",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "crm_funnel_summary",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Найти лиды/сделки без следующего шага или с просроченными делами",
+      "rawAction": "overdue_activity_report",
+      "parsedNames": [
+        "overdue_activity_report"
+      ],
+      "sourceRow": "Что нужно добавить#43",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "overdue_activity_report",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    }
+  ],
+  "missing": [],
+  "registeredNotImplemented": [
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежедневную регулярность задачи",
+      "rawAction": "set_daily_task_recurrence",
+      "parsedNames": [
+        "set_daily_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#39",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_daily_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить еженедельную регулярность задачи",
+      "rawAction": "set_weekly_task_recurrence",
+      "parsedNames": [
+        "set_weekly_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#40",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_weekly_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежемесячную регулярность по числу месяца",
+      "rawAction": "set_monthly_by_month_days_task_recurrence",
+      "parsedNames": [
+        "set_monthly_by_month_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#41",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_monthly_by_month_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежемесячную регулярность по дню недели",
+      "rawAction": "set_monthly_by_week_days_task_recurrence",
+      "parsedNames": [
+        "set_monthly_by_week_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#42",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_monthly_by_week_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежегодную регулярность по дате",
+      "rawAction": "set_yearly_by_month_days_task_recurrence",
+      "parsedNames": [
+        "set_yearly_by_month_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#43",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_yearly_by_month_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Настроить ежегодную регулярность по дню недели",
+      "rawAction": "set_yearly_by_week_days_task_recurrence",
+      "parsedNames": [
+        "set_yearly_by_week_days_task_recurrence"
+      ],
+      "sourceRow": "Что уже есть#44",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "set_yearly_by_week_days_task_recurrence",
+      "matchType": "exact",
+      "status": "registered_not_implemented",
+      "statusRu": "Зарегистрировано, но пока не реализовано"
+    }
+  ],
+  "implemented": [
+    {
+      "category": "Лиды",
+      "description": "Получить стадии лидов и ID стадии по названию",
+      "rawAction": "lead_stage_list",
+      "parsedNames": [
+        "lead_stage_list"
+      ],
+      "sourceRow": "Что уже есть#2",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_stage_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Получить список воронок сделок или найти воронку по названию",
+      "rawAction": "deal_category_list",
+      "parsedNames": [
+        "deal_category_list"
+      ],
+      "sourceRow": "Что уже есть#3",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_category_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Получить список стадий сделок в конкретной воронке",
+      "rawAction": "deal_stage_list",
+      "parsedNames": [
+        "deal_stage_list"
+      ],
+      "sourceRow": "Что уже есть#4",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_stage_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую сделку в выбранной воронке",
+      "rawAction": "create_deal",
+      "parsedNames": [
+        "create_deal"
+      ],
+      "sourceRow": "Что уже есть#5",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_deal",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую воронку со стандартными стадиями",
+      "rawAction": "create_default_funnel",
+      "parsedNames": [
+        "create_default_funnel"
+      ],
+      "sourceRow": "Что уже есть#6",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_default_funnel",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать новую воронку с кастомными рабочими стадиями",
+      "rawAction": "create_funnel_with_custom_stages",
+      "parsedNames": [
+        "create_funnel_with_custom_stages"
+      ],
+      "sourceRow": "Что уже есть#7",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_funnel_with_custom_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Добавить новую стадию в CRM-воронку",
+      "rawAction": "create_new_funnel_stage",
+      "parsedNames": [
+        "create_new_funnel_stage"
+      ],
+      "sourceRow": "Что уже есть#8",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_new_funnel_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Переименовать воронку",
+      "rawAction": "rename_funnel_title",
+      "parsedNames": [
+        "rename_funnel_title"
+      ],
+      "sourceRow": "Что уже есть#9",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "rename_funnel_title",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Переименовать одну или несколько стадий",
+      "rawAction": "rename_funnel_stages",
+      "parsedNames": [
+        "rename_funnel_stages"
+      ],
+      "sourceRow": "Что уже есть#10",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "rename_funnel_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Обновить рабочие стадии воронки, названия, цвета и порядок",
+      "rawAction": "update_funnel_stages",
+      "parsedNames": [
+        "update_funnel_stages"
+      ],
+      "sourceRow": "Что уже есть#11",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_funnel_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Удалить воронку",
+      "rawAction": "delete_funnel",
+      "parsedNames": [
+        "delete_funnel"
+      ],
+      "sourceRow": "Что уже есть#12",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_funnel",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Удалить стадию воронки",
+      "rawAction": "delete_funnel_stage",
+      "parsedNames": [
+        "delete_funnel_stage"
+      ],
+      "sourceRow": "Что уже есть#13",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_funnel_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Перенести сделки из одной воронки в другую",
+      "rawAction": "move_deals_between_funnels",
+      "parsedNames": [
+        "move_deals_between_funnels"
+      ],
+      "sourceRow": "Что уже есть#14",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "move_deals_between_funnels",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Перенести сделки между стадиями внутри одной воронки",
+      "rawAction": "move_deals_between_stages",
+      "parsedNames": [
+        "move_deals_between_stages"
+      ],
+      "sourceRow": "Что уже есть#15",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "move_deals_between_stages",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки и воронки",
+      "description": "Создать пользовательское поле для сделки",
+      "rawAction": "create_crm_custom_field",
+      "parsedNames": [
+        "create_crm_custom_field"
+      ],
+      "sourceRow": "Что уже есть#16",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_crm_custom_field",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Создать задачу",
+      "rawAction": "create_task",
+      "parsedNames": [
+        "create_task"
+      ],
+      "sourceRow": "Что уже есть#17",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Найти задачи по названию, описанию, срокам, статусу и участникам",
+      "rawAction": "search_tasks",
+      "parsedNames": [
+        "search_tasks"
+      ],
+      "sourceRow": "Что уже есть#18",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_tasks",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Получить полную карточку задачи по ID",
+      "rawAction": "get_task_by_id",
+      "parsedNames": [
+        "get_task_by_id"
+      ],
+      "sourceRow": "Что уже есть#19",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "get_task_by_id",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Изменить задачу: название, описание, срок, ответственного, статус, проект",
+      "rawAction": "update_task",
+      "parsedNames": [
+        "update_task"
+      ],
+      "sourceRow": "Что уже есть#20",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Удалить задачу",
+      "rawAction": "delete_task",
+      "parsedNames": [
+        "delete_task"
+      ],
+      "sourceRow": "Что уже есть#21",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_task",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Снять дедлайн с задачи",
+      "rawAction": "clear_task_deadline",
+      "parsedNames": [
+        "clear_task_deadline"
+      ],
+      "sourceRow": "Что уже есть#22",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "clear_task_deadline",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Отвязать задачу от проекта или группы",
+      "rawAction": "detach_task_from_group",
+      "parsedNames": [
+        "detach_task_from_group"
+      ],
+      "sourceRow": "Что уже есть#23",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "detach_task_from_group",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Добавить официальный результат работы в задачу",
+      "rawAction": "add_task_result",
+      "parsedNames": [
+        "add_task_result"
+      ],
+      "sourceRow": "Что уже есть#24",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_task_result",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Задачи",
+      "description": "Написать комментарий в чат задачи",
+      "rawAction": "send_chat_message",
+      "parsedNames": [
+        "send_chat_message"
+      ],
+      "sourceRow": "Что уже есть#25",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "send_chat_message",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Найти пользователя и получить его ID",
+      "rawAction": "search_users",
+      "parsedNames": [
+        "search_users"
+      ],
+      "sourceRow": "Что уже есть#26",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_users",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить соисполнителей в задачу",
+      "rawAction": "add_accomplices",
+      "parsedNames": [
+        "add_accomplices"
+      ],
+      "sourceRow": "Что уже есть#27",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_accomplices",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Удалить соисполнителей из задачи",
+      "rawAction": "delete_accomplices",
+      "parsedNames": [
+        "delete_accomplices"
+      ],
+      "sourceRow": "Что уже есть#28",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_accomplices",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить наблюдателей в задачу",
+      "rawAction": "add_auditors",
+      "parsedNames": [
+        "add_auditors"
+      ],
+      "sourceRow": "Что уже есть#29",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_auditors",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Добавить текущего пользователя наблюдателем",
+      "rawAction": "add_current_user_as_auditor",
+      "parsedNames": [
+        "add_current_user_as_auditor"
+      ],
+      "sourceRow": "Что уже есть#30",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_current_user_as_auditor",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Участники задач",
+      "description": "Удалить наблюдателей из задачи",
+      "rawAction": "delete_auditors",
+      "parsedNames": [
+        "delete_auditors"
+      ],
+      "sourceRow": "Что уже есть#31",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_auditors",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Создать чек-лист в задаче",
+      "rawAction": "create_check_list",
+      "parsedNames": [
+        "create_check_list"
+      ],
+      "sourceRow": "Что уже есть#32",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Добавить пункт чек-листа",
+      "rawAction": "create_check_list_item",
+      "parsedNames": [
+        "create_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#33",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "create_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Изменить название или порядок чек-листа",
+      "rawAction": "update_check_list",
+      "parsedNames": [
+        "update_check_list"
+      ],
+      "sourceRow": "Что уже есть#34",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Изменить название или порядок пункта чек-листа",
+      "rawAction": "update_check_list_item",
+      "parsedNames": [
+        "update_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#35",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "update_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Удалить чек-лист",
+      "rawAction": "delete_check_list",
+      "parsedNames": [
+        "delete_check_list"
+      ],
+      "sourceRow": "Что уже есть#36",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_check_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Чек-листы",
+      "description": "Удалить пункт чек-листа",
+      "rawAction": "delete_check_list_item",
+      "parsedNames": [
+        "delete_check_list_item"
+      ],
+      "sourceRow": "Что уже есть#37",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "delete_check_list_item",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Напоминания и регулярность",
+      "description": "Поставить напоминание по задаче",
+      "rawAction": "add_task_reminder",
+      "parsedNames": [
+        "add_task_reminder"
+      ],
+      "sourceRow": "Что уже есть#38",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "add_task_reminder",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Получать список лидов с фильтрами по стадии, ответственному, дате, источнику",
+      "rawAction": "crm.lead.list / lead_list",
+      "parsedNames": [
+        "crm.lead.list",
+        "lead_list"
+      ],
+      "sourceRow": "Что нужно добавить#2",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Открывать карточку конкретного лида по ID",
+      "rawAction": "crm.lead.get / lead_get",
+      "parsedNames": [
+        "crm.lead.get",
+        "lead_get"
+      ],
+      "sourceRow": "Что нужно добавить#3",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Быстро считать лиды всего и по фильтрам",
+      "rawAction": "lead_count",
+      "parsedNames": [
+        "lead_count"
+      ],
+      "sourceRow": "Что нужно добавить#4",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_count",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Редактировать поля лида, стадию, ответственного, контакты",
+      "rawAction": "crm.lead.update / lead_update",
+      "parsedNames": [
+        "crm.lead.update",
+        "lead_update"
+      ],
+      "sourceRow": "Что нужно добавить#5",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Создавать новый лид",
+      "rawAction": "crm.lead.add / lead_create",
+      "parsedNames": [
+        "crm.lead.add",
+        "lead_create"
+      ],
+      "sourceRow": "Что нужно добавить#6",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Удалять лид",
+      "rawAction": "crm.lead.delete / lead_delete",
+      "parsedNames": [
+        "crm.lead.delete",
+        "lead_delete"
+      ],
+      "sourceRow": "Что нужно добавить#7",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Получать список доступных полей лида, включая пользовательские",
+      "rawAction": "crm.lead.fields / lead_fields",
+      "parsedNames": [
+        "crm.lead.fields",
+        "lead_fields"
+      ],
+      "sourceRow": "Что нужно добавить#8",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_fields",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Смотреть товары/услуги в лиде",
+      "rawAction": "lead_product_rows_get",
+      "parsedNames": [
+        "lead_product_rows_get"
+      ],
+      "sourceRow": "Что нужно добавить#9",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_product_rows_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Лиды",
+      "description": "Обновлять товары/услуги в лиде",
+      "rawAction": "lead_product_rows_set",
+      "parsedNames": [
+        "lead_product_rows_set"
+      ],
+      "sourceRow": "Что нужно добавить#10",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_product_rows_set",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Получать список сделок с фильтрами по воронке, стадии, ответственному, дате",
+      "rawAction": "crm.deal.list / deal_list",
+      "parsedNames": [
+        "crm.deal.list",
+        "deal_list"
+      ],
+      "sourceRow": "Что нужно добавить#11",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Открывать карточку конкретной сделки",
+      "rawAction": "crm.deal.get / deal_get",
+      "parsedNames": [
+        "crm.deal.get",
+        "deal_get"
+      ],
+      "sourceRow": "Что нужно добавить#12",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Считать сделки по воронкам, стадиям и ответственным",
+      "rawAction": "deal_count",
+      "parsedNames": [
+        "deal_count"
+      ],
+      "sourceRow": "Что нужно добавить#13",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_count",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Редактировать поля сделки, сумму, стадию, ответственного",
+      "rawAction": "crm.deal.update / deal_update",
+      "parsedNames": [
+        "crm.deal.update",
+        "deal_update"
+      ],
+      "sourceRow": "Что нужно добавить#14",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Удалять сделку",
+      "rawAction": "crm.deal.delete / deal_delete",
+      "parsedNames": [
+        "crm.deal.delete",
+        "deal_delete"
+      ],
+      "sourceRow": "Что нужно добавить#15",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Получать список стандартных и пользовательских полей сделки",
+      "rawAction": "crm.deal.fields / deal_fields",
+      "parsedNames": [
+        "crm.deal.fields",
+        "deal_fields"
+      ],
+      "sourceRow": "Что нужно добавить#16",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_fields",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Смотреть товары/услуги в сделке",
+      "rawAction": "deal_product_rows_get",
+      "parsedNames": [
+        "deal_product_rows_get"
+      ],
+      "sourceRow": "Что нужно добавить#17",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_product_rows_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Сделки",
+      "description": "Обновлять товары/услуги в сделке",
+      "rawAction": "deal_product_rows_set",
+      "parsedNames": [
+        "deal_product_rows_set"
+      ],
+      "sourceRow": "Что нужно добавить#18",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_product_rows_set",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Искать контакты по имени, телефону, email",
+      "rawAction": "crm.contact.list / contact_list",
+      "parsedNames": [
+        "crm.contact.list",
+        "contact_list"
+      ],
+      "sourceRow": "Что нужно добавить#19",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Открывать карточку контакта",
+      "rawAction": "crm.contact.get / contact_get",
+      "parsedNames": [
+        "crm.contact.get",
+        "contact_get"
+      ],
+      "sourceRow": "Что нужно добавить#20",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Создавать контакт",
+      "rawAction": "crm.contact.add / contact_create",
+      "parsedNames": [
+        "crm.contact.add",
+        "contact_create"
+      ],
+      "sourceRow": "Что нужно добавить#21",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Редактировать контакт",
+      "rawAction": "crm.contact.update / contact_update",
+      "parsedNames": [
+        "crm.contact.update",
+        "contact_update"
+      ],
+      "sourceRow": "Что нужно добавить#22",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "contact_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Искать компании",
+      "rawAction": "crm.company.list / company_list",
+      "parsedNames": [
+        "crm.company.list",
+        "company_list"
+      ],
+      "sourceRow": "Что нужно добавить#23",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Открывать карточку компании",
+      "rawAction": "crm.company.get / company_get",
+      "parsedNames": [
+        "crm.company.get",
+        "company_get"
+      ],
+      "sourceRow": "Что нужно добавить#24",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Создавать компанию",
+      "rawAction": "crm.company.add / company_create",
+      "parsedNames": [
+        "crm.company.add",
+        "company_create"
+      ],
+      "sourceRow": "Что нужно добавить#25",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_create",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Контакты и компании",
+      "description": "Редактировать компанию",
+      "rawAction": "crm.company.update / company_update",
+      "parsedNames": [
+        "crm.company.update",
+        "company_update"
+      ],
+      "sourceRow": "Что нужно добавить#26",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "company_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Добавлять комментарий в лид, сделку, контакт или компанию",
+      "rawAction": "crm.timeline.comment.add / timeline_comment_add",
+      "parsedNames": [
+        "crm.timeline.comment.add",
+        "timeline_comment_add"
+      ],
+      "sourceRow": "Что нужно добавить#27",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_comment_add",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать комментарии по объекту CRM",
+      "rawAction": "timeline_comment_list",
+      "parsedNames": [
+        "timeline_comment_list"
+      ],
+      "sourceRow": "Что нужно добавить#28",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_comment_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать историю активности по объекту CRM",
+      "rawAction": "timeline_list",
+      "parsedNames": [
+        "timeline_list"
+      ],
+      "sourceRow": "Что нужно добавить#29",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "timeline_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Получать звонки, письма, встречи и дела",
+      "rawAction": "crm.activity.list / activity_list",
+      "parsedNames": [
+        "crm.activity.list",
+        "activity_list"
+      ],
+      "sourceRow": "Что нужно добавить#30",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Создавать дело, звонок, встречу или письмо",
+      "rawAction": "crm.activity.add / activity_add",
+      "parsedNames": [
+        "crm.activity.add",
+        "activity_add"
+      ],
+      "sourceRow": "Что нужно добавить#31",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_add",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Обновлять дело",
+      "rawAction": "crm.activity.update / activity_update",
+      "parsedNames": [
+        "crm.activity.update",
+        "activity_update"
+      ],
+      "sourceRow": "Что нужно добавить#32",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_update",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Удалять дело",
+      "rawAction": "crm.activity.delete / activity_delete",
+      "parsedNames": [
+        "crm.activity.delete",
+        "activity_delete"
+      ],
+      "sourceRow": "Что нужно добавить#33",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_delete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Комментарии, история и дела",
+      "description": "Закрывать дело как выполненное",
+      "rawAction": "activity_complete",
+      "parsedNames": [
+        "activity_complete"
+      ],
+      "sourceRow": "Что нужно добавить#34",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "activity_complete",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Находить пользователей Bitrix24 для назначения ответственных",
+      "rawAction": "user.search / crm_user_list",
+      "parsedNames": [
+        "user.search",
+        "crm_user_list"
+      ],
+      "sourceRow": "Что нужно добавить#35",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "search_users",
+      "matchType": "alias",
+      "status": "implemented_alias",
+      "statusRu": "Реализовано через alias"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Получать данные пользователя по ID",
+      "rawAction": "user_get",
+      "parsedNames": [
+        "user_get"
+      ],
+      "sourceRow": "Что нужно добавить#36",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "user_get",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Пользователи",
+      "description": "Смотреть структуру отделов",
+      "rawAction": "department_list",
+      "parsedNames": [
+        "department_list"
+      ],
+      "sourceRow": "Что нужно добавить#37",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "department_list",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть таблицу лидов по стадиям",
+      "rawAction": "lead_count_by_stage",
+      "parsedNames": [
+        "lead_count_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#38",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_count_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть таблицу сделок по стадиям",
+      "rawAction": "deal_count_by_stage",
+      "parsedNames": [
+        "deal_count_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#39",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_count_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Посчитать сумму сделок по стадиям",
+      "rawAction": "deal_sum_by_stage",
+      "parsedNames": [
+        "deal_sum_by_stage"
+      ],
+      "sourceRow": "Что нужно добавить#40",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "deal_sum_by_stage",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Посчитать конверсию лидов по стадиям и периодам",
+      "rawAction": "lead_conversion_report",
+      "parsedNames": [
+        "lead_conversion_report"
+      ],
+      "sourceRow": "Что нужно добавить#41",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "lead_conversion_report",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Вернуть сводку по воронке: количество, сумма, просрочки, последние изменения",
+      "rawAction": "crm_funnel_summary",
+      "parsedNames": [
+        "crm_funnel_summary"
+      ],
+      "sourceRow": "Что нужно добавить#42",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "crm_funnel_summary",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    },
+    {
+      "category": "Аналитика",
+      "description": "Найти лиды/сделки без следующего шага или с просроченными делами",
+      "rawAction": "overdue_activity_report",
+      "parsedNames": [
+        "overdue_activity_report"
+      ],
+      "sourceRow": "Что нужно добавить#43",
+      "duplicateNames": [],
+      "isDuplicate": false,
+      "matchedAction": "overdue_activity_report",
+      "matchType": "exact",
+      "status": "implemented_exact",
+      "statusRu": "Реализовано точным совпадением"
+    }
+  ],
+  "extraInCode": [
+    {
+      "action": "lead_bulk_update",
+      "description": "Массовое обновление лидов",
+      "aliases": [],
+      "implemented": false,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "crm_duplicate_search",
+      "description": "Поиск дубликатов CRM",
+      "aliases": [],
+      "implemented": false,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "deal_bulk_update",
+      "description": "Массовое обновление сделок",
+      "aliases": [],
+      "implemented": false,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "checklist_reorder",
+      "description": "Изменить порядок чек-листа",
+      "aliases": [],
+      "implemented": false,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "overdue_tasks_report",
+      "description": "Просроченные задачи",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "deals_without_next_step",
+      "description": "Сделки без следующего шага",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "leads_without_responsible",
+      "description": "Лиды без ответственного",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "leads_without_assigned",
+      "description": "Лиды без ответственного",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "deals_without_activity",
+      "description": "Сделки без активности",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "new_deals_period",
+      "description": "Новые сделки за период",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "closed_deals_period",
+      "description": "Закрытые сделки за период",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "manager_workload",
+      "description": "Нагрузка и качество ведения CRM по менеджерам",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "sales_forecast",
+      "description": "Прогноз продаж",
+      "aliases": [],
+      "implemented": false,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contact_field_audit",
+      "description": "Аудит полей контакта (стандартные и UF)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contact_count",
+      "description": "Количество контактов",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contact_count_by_status",
+      "description": "Контакты по статусам",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contacts_without_status",
+      "description": "Контакты без статуса",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contacts_without_company",
+      "description": "Контакты без компании",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contacts_missing_birthday",
+      "description": "Контакты без даты рождения",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contacts_cycle_without_next_activity",
+      "description": "Контакты в «Цикле» без следующего CRM-дела",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contacts_birthday_activity_report",
+      "description": "Контроль поздравлений с днём рождения",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "contact_quality_report",
+      "description": "Сводный отчёт качества контактов",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "leads_without_next_activity",
+      "description": "Лиды без следующего CRM-дела",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "stale_leads_report",
+      "description": "Лиды без изменений более N дней",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "stale_deals_report",
+      "description": "Сделки без изменений более N дней",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "overdue_activities_by_manager",
+      "description": "Просроченные CRM-дела по менеджерам",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "crm_discipline_report",
+      "description": "Сводный отчёт дисциплины ведения CRM",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "crm_context_get",
+      "description": "Нормализованный CRM-контекст клиента",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "crm_context_summary",
+      "description": "Управленческая сводка по клиенту",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "meeting_protocol_generate",
+      "description": "Сформировать протокол встречи по транскрипту",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "client_message_draft",
+      "description": "Черновик сообщения клиенту (без отправки)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "client_message_send",
+      "description": "Отправка одиночного сообщения клиенту (Safety, irreversible)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "recommend_next_client_action",
+      "description": "Рекомендации следующего шага по клиенту",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_channels_list",
+      "description": "Список каналов Wazzup/Hub (без секретов)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_thread_get",
+      "description": "Диалог Communications Hub",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_contact_context",
+      "description": "Контекст переписки контакта для LLM",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_message_draft",
+      "description": "Черновик Hub-сообщения (без отправки)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_message_send_prepare",
+      "description": "Prepare отправки через Hub/Safety (не шлёт само)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_campaign_preview",
+      "description": "Preview кампании без отправки",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_campaign_start_prepare",
+      "description": "Prepare запуска кампании (фраза ПОДТВЕРЖДАЮ РАССЫЛКУ N)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_campaign_pause_prepare",
+      "description": "Prepare паузы кампании",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_campaign_cancel_prepare",
+      "description": "Prepare отмены кампании",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_sequence_list",
+      "description": "Список цепочек касаний",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_sequence_activate_prepare",
+      "description": "Prepare активации цепочки",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_sequence_enroll_prepare",
+      "description": "Prepare подключения контакта к цепочке",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_enrollment_stop_prepare",
+      "description": "Prepare остановки enrollment",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_delivery_report",
+      "description": "Отчёт доставки (без выдуманных read)",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    },
+    {
+      "action": "communication_unanswered_report",
+      "description": "Неотвеченные диалоги",
+      "aliases": [],
+      "implemented": true,
+      "status": "extra_in_code",
+      "statusRu": "Есть в коде, но нет в Excel"
+    }
+  ],
+  "duplicateActions": []
+}

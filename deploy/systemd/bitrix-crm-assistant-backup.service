@@ -1,0 +1,21 @@
+[Unit]
+Description=Bitrix24 CRM Assistant — daily SQLite backup
+Documentation=file:///opt/bitrix-crm-assistant/current/docs/backup-and-restore.md
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=crmassistant
+Group=crmassistant
+EnvironmentFile=-/etc/bitrix-crm-assistant/env
+WorkingDirectory=/opt/bitrix-crm-assistant/current
+# BACKUP_RETENTION_DAILY / BACKUP_RETENTION_WEEKLY — см. env и scripts/backup-retention.js
+ExecStart=/usr/bin/node scripts/backup-database.js
+ExecStartPost=/usr/bin/node scripts/check-database-backup.js
+ExecStartPost=/usr/bin/node scripts/backup-retention.js
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bitrix-crm-assistant-backup
+
+[Install]
+WantedBy=multi-user.target

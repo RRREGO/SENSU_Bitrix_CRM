@@ -1,0 +1,19 @@
+# Logrotate for APP_LOG_DIR (when LOG_TO_FILE=true).
+# В production предпочтителен journald (systemd); этот файл — опционально.
+#
+# Install: sudo cp deploy/logrotate/bitrix-crm-assistant /etc/logrotate.d/
+# После ротации приложение переоткрывает файл по SIGHUP (logger.reopenLogFile).
+
+/var/log/bitrix-crm-assistant/app.jsonl {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 crmassistant crmassistant
+    sharedscripts
+    postrotate
+        systemctl kill -s HUP bitrix-crm-assistant.service 2>/dev/null || true
+    endscript
+}

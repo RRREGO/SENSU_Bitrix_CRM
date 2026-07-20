@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Отчёт по воронке</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+ <style>
+ * { box-sizing: border-box; }
+ body {
+ margin: 0;
+ padding: 32px 40px;
+ font-family: "Rubik", "Segoe UI", sans-serif;
+ font-size: 14px;
+ line-height: 1.55;
+ color: #444444;
+ background: #ffffff;
+ }
+ .doc-header {
+ border-bottom: 2px solid #6a59b8;
+ padding-bottom: 16px;
+ margin-bottom: 24px;
+ }
+ .doc-title {
+ margin: 0 0 8px;
+ font-size: 22px;
+ font-weight: 600;
+ color: #6a59b8;
+ letter-spacing: 0.01em;
+ }
+ .doc-meta {
+ margin: 0;
+ font-size: 12px;
+ color: #6e6e6e;
+ }
+ .doc-meta p { margin: 2px 0; }
+ .doc-section { margin-bottom: 24px; }
+ .doc-section h2 {
+ margin: 0 0 12px;
+ font-size: 16px;
+ font-weight: 600;
+ color: #6a59b8;
+ border-bottom: 1px solid #e0dce8;
+ padding-bottom: 6px;
+ }
+ .doc-section h3 {
+ margin: 16px 0 8px;
+ font-size: 14px;
+ font-weight: 600;
+ color: #444444;
+ }
+ .doc-section p { margin: 0 0 10px; }
+ table.doc-table {
+ width: 100%;
+ border-collapse: collapse;
+ margin: 12px 0;
+ font-size: 13px;
+ border-radius: 6px;
+ overflow: hidden;
+ }
+ table.doc-table th,
+ table.doc-table td {
+ border: 1px solid #e0dce8;
+ padding: 8px 10px;
+ text-align: left;
+ vertical-align: top;
+ }
+ table.doc-table th {
+ background: #f0f0f0;
+ font-weight: 600;
+ color: #6a59b8;
+ }
+ table.doc-table tr:nth-child(even) td { background: #fafafa; }
+ .doc-summary {
+ display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+ gap: 12px;
+ margin: 12px 0;
+ }
+ .doc-summary-item {
+ border: 1px solid #e0dce8;
+ padding: 12px;
+ background: #f0f0f0;
+ border-radius: 8px;
+ }
+ .doc-summary-item .label {
+ font-size: 11px;
+ text-transform: uppercase;
+ letter-spacing: 0.04em;
+ color: #8775dd;
+ margin-bottom: 4px;
+ }
+ .doc-summary-item .value {
+ font-size: 18px;
+ font-weight: 600;
+ color: #444444;
+ }
+ .doc-footer {
+ margin-top: 32px;
+ padding-top: 12px;
+ border-top: 1px solid #e0dce8;
+ font-size: 11px;
+ color: #6e6e6e;
+ }
+ ul.doc-list { margin: 8px 0; padding-left: 20px; }
+ ul.doc-list li { margin-bottom: 4px; }
+ @media print {
+ body { padding: 20px; }
+ }
+</style>
+</head>
+<body>
+ <header class="doc-header">
+ <h1 class="doc-title">Отчёт по воронке</h1>
+ <div class="doc-meta">
+ <p>Дата формирования: 10.07.2026, 14:10</p>
+ <p>Период отчёта: 03.07.2026 — 10.07.2026</p>
+ <p>Источник данных: Bitrix24</p>
+ </div>
+ </header>
+ <main><section class="doc-section"><h2>Сводные показатели</h2><div class="doc-summary">
+ <div class="doc-summary-item">
+ <div class="label">Воронка</div>
+ <div class="value">ID 0</div>
+ </div>
+ <div class="doc-summary-item">
+ <div class="label">Всего сделок</div>
+ <div class="value">17</div>
+ </div>
+ <div class="doc-summary-item">
+ <div class="label">Сумма сделок</div>
+ <div class="value">141 959 000 руб.</div>
+ </div>
+ <div class="doc-summary-item">
+ <div class="label">Просроченных дел</div>
+ <div class="value">13</div>
+ </div></div></section><section class="doc-section"><h2>Сделки по стадиям</h2><table class="doc-table"><thead><tr><th>Стадия</th><th>Количество</th></tr></thead><tbody><tr><td>NDA</td><td>4</td></tr><tr><td>ЭО, подготовка КП</td><td>3</td></tr><tr><td>Подача КП</td><td>2</td></tr><tr><td>Тендер</td><td>3</td></tr><tr><td>Устное подтверждение</td><td>2</td></tr><tr><td>Контракт на обследование</td><td>0</td></tr><tr><td>Контракт на проект</td><td>2</td></tr><tr><td>Сделка провалена</td><td>0</td></tr><tr><td>Отложен</td><td>1</td></tr></tbody></table></section><section class="doc-section"><h2>Просроченные дела (первые 20)</h2><table class="doc-table"><thead><tr><th>Тема</th><th>Срок</th><th>Владелец</th></tr></thead><tbody><tr><td>Поздравить с ДР</td><td>26.09.2025T10:00:00+03:00</td><td>13562</td></tr><tr><td>Действуем по получению сертификата.</td><td>26.09.2025T11:00:00+03:00</td><td>362</td></tr><tr><td>Статус согласования NDA</td><td>29.09.2025T11:00:00+03:00</td><td>300</td></tr><tr><td>Напоминание</td><td>02.10.2025T12:00:00+03:00</td><td>146</td></tr><tr><td>Вернуться к Роману с напоминанием о нас</td><td>03.10.2025T11:00:00+03:00</td><td>158</td></tr><tr><td>Контроль на активность</td><td>07.10.2025T11:00:00+03:00</td><td>214</td></tr><tr><td>Напоминание</td><td>03.11.2025T11:00:00+03:00</td><td>13058</td></tr><tr><td>Связаться с клиентом</td><td>05.11.2025T00:02:13+03:00</td><td>11000</td></tr><tr><td>Связаться с клиентом</td><td>08.11.2025T00:01:18+03:00</td><td>11292</td></tr><tr><td>напомнить о себе</td><td>17.12.2025T12:00:00+03:00</td><td>15486</td></tr><tr><td>Связаться с клиентом</td><td>20.12.2025T08:00:01+03:00</td><td>12720</td></tr><tr><td>Поздравить с ДР</td><td>10.07.2026T11:00:00+03:00</td><td>8146</td></tr><tr><td>Поздравить с ДР</td><td>10.07.2026T11:00:00+03:00</td><td>7882</td></tr></tbody></table></section></main>
+ <footer class="doc-footer">
+ Документ сформирован автоматически. Источник: Bitrix24.
+ </footer>
+</body>
+</html>

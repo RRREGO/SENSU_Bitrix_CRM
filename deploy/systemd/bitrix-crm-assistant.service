@@ -1,0 +1,42 @@
+[Unit]
+Description=Bitrix24 CRM Assistant (Node.js)
+Documentation=https://github.com/example/bitrix-claude-local-bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crmassistant
+Group=crmassistant
+EnvironmentFile=-/etc/bitrix-crm-assistant/env
+WorkingDirectory=/opt/bitrix-crm-assistant/current
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=5
+TimeoutStopSec=35
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/var/lib/bitrix-crm-assistant /var/log/bitrix-crm-assistant /var/backups/bitrix-crm-assistant
+
+# Logging: journald preferred (StandardOutput/Error=journal)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bitrix-crm-assistant
+
+[Install]
+WantedBy=multi-user.target

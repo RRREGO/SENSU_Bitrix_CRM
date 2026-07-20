@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Bitrix24 CRM Assistant database backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+RandomizedDelaySec=900
+Unit=bitrix-crm-assistant-backup.service
+
+[Install]
+WantedBy=timers.target

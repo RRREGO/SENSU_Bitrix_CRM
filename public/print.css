@@ -1,0 +1,57 @@
+/* Печать документов: формат A4, только содержимое отчёта */
+
+@page {
+  size: A4;
+  margin: 18mm 15mm;
+}
+
+body {
+  background: #ffffff !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.doc-page {
+  max-width: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.doc-header {
+  border-bottom-color: #5c4f8a !important;
+}
+
+table.doc-table {
+  page-break-inside: auto;
+}
+
+table.doc-table thead {
+  display: table-header-group;
+}
+
+table.doc-table tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+.doc-section {
+  page-break-inside: avoid;
+}
+
+.doc-section h2 {
+  page-break-after: avoid;
+}
+
+.doc-footer {
+  margin-top: 24px;
+}
+
+.no-print,
+.toolbar-actions,
+.preview-toolbar .btn,
+.report-result-actions .btn {
+  display: none !important;
+}

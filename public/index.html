@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitrix24 CRM Assistant</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="loginGate" class="login-gate">
+    <form id="loginForm" class="login-card">
+      <h2>Вход в CRM Assistant</h2>
+      <label>
+        <span>Логин</span>
+        <input type="text" id="loginUsername" name="username" autocomplete="username" required>
+      </label>
+      <label>
+        <span>Пароль</span>
+        <input type="password" id="loginPassword" name="password" autocomplete="current-password" required>
+      </label>
+      <p id="loginError" class="login-error hidden"></p>
+      <button type="submit" class="btn btn-primary">Войти</button>
+      <p class="panel-desc">В режиме local_only вход необязателен на localhost.</p>
+    </form>
+  </div>
+  <div id="changePasswordGate" class="login-gate hidden">
+    <form id="changePasswordForm" class="login-card">
+      <h2>Смена пароля</h2>
+      <label><span>Текущий пароль</span><input type="password" id="currentPassword" required></label>
+      <label><span>Новый пароль</span><input type="password" id="newPassword" required></label>
+      <p id="changePasswordError" class="login-error hidden"></p>
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </form>
+  </div>
+  <div class="app" id="appRoot">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-brand">
+          <h1>Bitrix24 CRM Assistant</h1>
+          <p class="subtitle">Рабочее пространство для CRM, отчётов и документов</p>
+        </div>
+        <div class="user-bar">
+          <span id="userBarName"></span>
+          <span id="userBarRole" class="panel-desc"></span>
+          <button type="button" class="btn btn-secondary" id="logoutBtn">Выход</button>
+        </div>
+      </div>
+      <nav class="app-nav" aria-label="Разделы приложения">
+        <div class="nav-categories" role="tablist" aria-label="Категории">
+          <button type="button" class="nav-category active" data-nav-category="work" role="tab" aria-selected="true">Работа</button>
+          <button type="button" class="nav-category" data-nav-category="analytics" role="tab" aria-selected="false">Аналитика</button>
+          <button type="button" class="nav-category" data-nav-category="comms" role="tab" aria-selected="false">Коммуникации</button>
+          <button type="button" class="nav-category" data-nav-category="admin" role="tab" aria-selected="false">Администрирование</button>
+        </div>
+        <div class="nav-routes">
+          <div class="nav-route-group active" data-nav-category="work" role="tablist" aria-label="Работа">
+            <button type="button" class="tab active" data-tab="chat" role="tab" aria-selected="true">Чат</button>
+            <button type="button" class="tab" data-tab="meetings" role="tab" aria-selected="false">Протоколы</button>
+          </div>
+          <div class="nav-route-group" data-nav-category="analytics" role="tablist" aria-label="Аналитика" hidden>
+            <button type="button" class="tab" data-tab="reports" role="tab" aria-selected="false">Отчёты</button>
+            <button type="button" class="tab" data-tab="documents" role="tab" aria-selected="false">Документы</button>
+            <button type="button" class="tab" data-tab="schedules" role="tab" aria-selected="false">Расписания</button>
+          </div>
+          <div class="nav-route-group" data-nav-category="comms" role="tablist" aria-label="Коммуникации" hidden>
+            <button type="button" class="tab" data-tab="notifications" role="tab" aria-selected="false">
+              Уведомления <span id="notifBadge" class="tab-badge hidden">0</span>
+            </button>
+            <button type="button" class="tab" data-tab="communications" role="tab" aria-selected="false">Хаб</button>
+            <button type="button" class="tab" data-tab="outbound" role="tab" aria-selected="false">Исходящие</button>
+          </div>
+          <div class="nav-route-group" data-nav-category="admin" role="tablist" aria-label="Администрирование" hidden>
+            <button type="button" class="tab" data-tab="history" role="tab" aria-selected="false">История</button>
+            <button type="button" class="tab" data-tab="users" role="tab" aria-selected="false" id="usersTab" hidden>Пользователи</button>
+            <button type="button" class="tab" data-tab="settings" role="tab" aria-selected="false">Настройки</button>
+            <button type="button" class="tab" data-tab="system" role="tab" aria-selected="false" id="systemTab" hidden>Система</button>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="main">
+      <section id="panel-chat" class="panel active" role="tabpanel">
+        <div class="chat-layout">
+          <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
+          <aside class="chat-sidebar" id="chatSidebar" aria-label="Диалоги и проекты">
+            <div class="sidebar-top-actions">
+              <button type="button" id="newChatBtn" class="btn btn-primary sidebar-new">Новый чат</button>
+              <button type="button" id="sidebarCollapseBtn" class="sidebar-icon-btn sidebar-collapse-btn" aria-label="Свернуть панель" title="Свернуть">‹</button>
+            </div>
+            <label class="sidebar-search">
+              <span class="visually-hidden">Поиск</span>
+              <input type="search" id="chatSearchInput" placeholder="Поиск…" autocomplete="off">
+            </label>
+            <div id="searchResults" class="sidebar-section hidden"></div>
+            <div class="sidebar-section" id="sidebarProjectsSection">
+              <div class="sidebar-section-header">
+                <div class="sidebar-section-title" id="sidebarProjectsTitle">Проекты</div>
+                <div class="sidebar-section-actions">
+                  <button
+                    type="button"
+                    id="projectsMenuBtn"
+                    class="sidebar-icon-btn"
+                    aria-label="Меню раздела проектов"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    title="Меню"
+                  >⋯</button>
+                  <div id="projectsSectionMenu" class="sidebar-dropdown hidden" role="menu">
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" data-projects-menu="archive">
+                      Архивные проекты
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" id="backToProjectsBtn" class="sidebar-back-btn hidden">Назад к проектам</button>
+              <ul id="sidebarProjects" class="sidebar-list"></ul>
+            </div>
+            <div class="sidebar-section" id="sidebarChatsSection">
+              <div class="sidebar-section-header">
+                <div class="sidebar-section-title" id="sidebarChatsTitle">Чаты</div>
+              </div>
+              <div id="chatsFilterBar" class="chats-filter-bar"></div>
+              <ul id="sidebarChats" class="sidebar-list"></ul>
+            </div>
+          </aside>
+          <button type="button" id="sidebarExpandBtn" class="sidebar-expand-rail" aria-label="Развернуть панель" title="Развернуть">›</button>
+          <div class="chat">
+            <div class="chat-toolbar-mobile">
+              <button type="button" id="mobileSidebarToggle" class="btn btn-secondary btn-sm">Меню</button>
+            </div>
+            <div id="projectOverview" class="project-overview-pane hidden" aria-live="polite"></div>
+            <div id="chatConversation" class="chat-conversation">
+              <div class="chat-meta" id="chatMeta">
+                <div id="chatBreadcrumbs" class="chat-breadcrumbs"></div>
+                <div class="chat-meta-row">
+                  <div class="chat-meta-title" id="chatTitle">Новый чат</div>
+                  <div class="chat-meta-menu-wrap">
+                    <button type="button" id="chatMetaMenuBtn" class="sidebar-item-menu-btn hidden" aria-label="Действия с чатом" aria-haspopup="true" aria-expanded="false">⋯</button>
+                    <div id="chatMetaMenu" class="sidebar-dropdown sidebar-entity-menu hidden" role="menu"></div>
+                  </div>
+                </div>
+                <div class="chat-meta-line" id="chatMetaLine"></div>
+                <div class="chat-meta-actions">
+                  <a id="crmCardLink" class="btn btn-secondary hidden" href="#" target="_blank" rel="noopener">Открыть карточку</a>
+                  <button type="button" id="refreshCrmContextBtn" class="btn btn-secondary hidden">Обновить контекст</button>
+                </div>
+                <div id="crmContextCards" class="crm-context-cards hidden"></div>
+              </div>
+              <div id="messages" class="messages" aria-live="polite"></div>
+              <div id="confirmation" class="confirmation hidden">
+                <p id="confirmationText" class="confirmation-text"></p>
+                <p id="confirmationIrreversible" class="confirmation-text hidden">Откат невозможен после отправки.</p>
+                <label id="confirmationPhraseWrap" class="filter-field hidden">
+                  <span>Подтверждающая фраза</span>
+                  <input type="text" id="confirmationPhraseInput" autocomplete="off" placeholder="Введите фразу целиком">
+                </label>
+                <div class="confirmation-actions">
+                  <button id="confirmBtn" type="button" class="btn btn-primary">Подтвердить</button>
+                  <button id="cancelBtn" type="button" class="btn btn-secondary">Отмена</button>
+                </div>
+              </div>
+              <form id="chatForm" class="composer">
+                <textarea id="messageInput" class="message-input" rows="3" placeholder="Например: Покажи сделки в работе" autocomplete="off"></textarea>
+                <button id="sendBtn" type="submit" class="btn btn-primary send-btn">Отправить</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-meetings" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Протоколы встреч</h2>
+            <p class="panel-desc">Транскрипт → протокол → предпросмотр → сохранение в CRM через Safety Layer.</p>
+          </div>
+        </div>
+        <div class="meetings-layout page-fill">
+          <div class="meetings-form">
+            <h3 class="section-title">Исходные данные</h3>
+            <label class="setting-row"><span>Название</span>
+              <input type="text" id="meetingTitle" placeholder="Первичная встреча">
+            </label>
+            <label class="setting-row"><span>Тип CRM</span>
+              <select id="meetingEntityType">
+                <option value="deal">Сделка</option>
+                <option value="lead">Лид</option>
+                <option value="contact">Контакт</option>
+                <option value="company">Компания</option>
+              </select>
+            </label>
+            <label class="setting-row"><span>ID сущности</span>
+              <input type="text" id="meetingEntityId" placeholder="123">
+            </label>
+            <label class="setting-row"><span>Транскрипт (.txt / .md или текст)</span>
+              <textarea id="meetingTranscriptText" rows="10" placeholder="Вставьте текст встречи…"></textarea>
+            </label>
+            <div class="file-field">
+              <input type="file" id="meetingTranscriptFile" class="file-field-input visually-hidden" accept=".md,.txt,text/plain,text/markdown">
+              <label for="meetingTranscriptFile" class="btn btn-secondary file-field-btn">Выберите файл</label>
+              <span class="file-field-name is-empty" data-empty="Файл не выбран" aria-live="polite">Файл не выбран</span>
+            </div>
+            <div class="confirmation-actions">
+              <button type="button" class="btn btn-primary" id="saveTranscriptBtn">Сохранить транскрипт</button>
+              <button type="button" class="btn btn-primary" id="generateProtocolBtn">Сформировать протокол</button>
+            </div>
+            <p id="meetingStatus" class="panel-desc"></p>
+          </div>
+          <div class="meetings-preview">
+            <h3>Предпросмотр протокола</h3>
+            <pre id="protocolPreview" class="protocol-preview"></pre>
+            <div class="confirmation-actions">
+              <button type="button" class="btn btn-secondary" id="copyProtocolBtn">Копировать</button>
+              <button type="button" class="btn btn-primary" id="saveProtocolToCrmBtn">Сохранить в CRM</button>
+            </div>
+            <div class="meeting-send-block" id="meetingSendBlock">
+              <h3 class="section-title">Отправить клиенту (Hub)</h3>
+              <p class="panel-desc">Сохранение в CRM и отправка — разные операции. Отправка только через Safety prepare.</p>
+              <label class="setting-row"><span>Канал</span>
+                <select id="meetingSendChannel">
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="waba">WABA</option>
+                  <option value="telegram">Telegram</option>
+                  <option value="max">MAX</option>
+                </select>
+              </label>
+              <label class="setting-row"><span>ID контакта</span>
+                <input type="text" id="meetingSendContactId" placeholder="Если сущность — контакт, можно оставить пустым">
+              </label>
+              <div class="confirmation-actions">
+                <button type="button" class="btn btn-secondary" id="draftClientMessageBtn">Черновик / проверка политики</button>
+                <button type="button" class="btn btn-primary" id="prepareHubSendBtn">Подготовить отправку</button>
+              </div>
+              <p id="meetingSendPolicy" class="panel-desc"></p>
+            </div>
+            <div id="protocolConfirmBox" class="confirmation hidden">
+              <p id="protocolConfirmText" class="confirmation-text"></p>
+              <div class="confirmation-actions">
+                <button type="button" class="btn btn-primary" id="protocolConfirmBtn">Подтвердить</button>
+                <button type="button" class="btn btn-secondary" id="protocolCancelBtn">Отмена</button>
+              </div>
+            </div>
+            <div id="hubSendConfirmBox" class="confirmation hidden">
+              <p id="hubSendConfirmText" class="confirmation-text"></p>
+              <label class="setting-row hidden" id="hubSendPhraseRow">
+                <span>Фраза подтверждения</span>
+                <input type="text" id="hubSendConfirmPhrase" autocomplete="off">
+              </label>
+              <div class="confirmation-actions">
+                <button type="button" class="btn btn-primary" id="hubSendConfirmBtn">Отправить (commit)</button>
+                <button type="button" class="btn btn-secondary" id="hubSendCancelBtn">Отмена</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Legacy projects panel kept hidden: settings open inside chat workspace -->
+      <section id="panel-projects" class="panel" role="tabpanel" hidden aria-hidden="true">
+        <button type="button" id="newProjectBtn" class="btn btn-primary visually-hidden" tabindex="-1">Создать проект</button>
+        <ul id="projectsList" class="visually-hidden" hidden></ul>
+        <div id="projectDetail" class="visually-hidden" hidden></div>
+      </section>
+
+      <section id="panel-reports" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Быстрые отчёты</h2>
+            <p class="panel-desc">Данные из Bitrix24. Выберите период и сформируйте отчёт.</p>
+          </div>
+        </div>
+        <div class="reports-workspace page-fill">
+          <div class="reports-main">
+            <div class="report-filters">
+              <div class="report-filters-row">
+                <label class="filter-field">
+                  <span>Воронка</span>
+                  <select id="funnelSelect"></select>
+                </label>
+                <div id="funnelError" class="filter-error hidden">
+                  <span id="funnelErrorText">Не удалось загрузить список воронок</span>
+                </div>
+              </div>
+              <div class="report-filters-row period-row">
+                <label class="filter-field">
+                  <span>Дата с</span>
+                  <input type="text" id="reportDateFrom" placeholder="ДД.ММ.ГГГГ" inputmode="numeric">
+                  <input type="hidden" id="reportDateFromIso">
+                </label>
+                <label class="filter-field">
+                  <span>Дата по</span>
+                  <input type="text" id="reportDateTo" placeholder="ДД.ММ.ГГГГ" inputmode="numeric">
+                  <input type="hidden" id="reportDateToIso">
+                </label>
+              </div>
+              <div class="period-presets" id="periodPresets"></div>
+              <details class="advanced-block" id="advancedBlock">
+                <summary id="advancedToggle">Дополнительно</summary>
+                <label class="filter-field">
+                  <span>ID воронки (резерв)</span>
+                  <input type="number" id="funnelManualId" min="0" placeholder="0">
+                </label>
+              </details>
+            </div>
+            <div id="quickReportsGrid" class="cards-grid"></div>
+          </div>
+          <div class="report-result-panel">
+            <h3>Результат отчёта</h3>
+            <div id="reportResultEmpty" class="report-result-state">
+              <div class="empty-state empty-state--xl empty-state--flush">
+                <p class="empty-state-title">Результат появится здесь</p>
+                <p class="empty-state-text">Сформируйте отчёт из списка слева.</p>
+              </div>
+            </div>
+            <div id="reportResultLoading" class="report-result-state hidden">
+              <p>Формируется отчёт...</p>
+            </div>
+            <div id="reportResultError" class="report-result-state report-result-error hidden">
+              <p id="reportResultErrorText"></p>
+            </div>
+            <div id="reportResultSuccess" class="report-result-state hidden">
+              <h4 id="reportResultTitle" class="report-result-title"></h4>
+              <div id="reportResultBody" class="report-result-body"></div>
+              <div class="report-result-actions">
+                <button type="button" class="btn btn-primary" id="reportOpenDocBtn">Открыть как документ</button>
+                <button type="button" class="btn btn-secondary" id="reportExportHtmlBtn">Скачать HTML</button>
+                <button type="button" class="btn btn-secondary" id="reportPrintPdfBtn">Сохранить в PDF</button>
+                <button type="button" class="btn btn-secondary" id="reportExportMdBtn">Сохранить в Markdown</button>
+                <button type="button" class="btn btn-secondary" id="reportCopyBtn">Скопировать текст</button>
+                <button type="button" class="btn btn-secondary" id="reportBitrixBtn" disabled title="Доступно для отчётов по конкретной сделке или лиду">Добавить в Bitrix24</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-notifications" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Уведомления</h2>
+            <p class="panel-desc">Плановые отчёты, алерты и ошибки расписаний. Доставка только внутри приложения.</p>
+          </div>
+        </div>
+        <div class="master-detail page-fill">
+          <div class="master-pane">
+            <div class="pane-toolbar">
+              <button type="button" class="btn btn-secondary" id="refreshNotificationsBtn">Обновить</button>
+              <button type="button" class="btn btn-secondary" id="readAllNotificationsBtn">Прочитать все</button>
+              <label class="filter-field">
+                <span>Фильтр</span>
+                <select id="notifFilter">
+                  <option value="">Все</option>
+                  <option value="unread">Непрочитанные</option>
+                  <option value="critical">Критические</option>
+                  <option value="warning">Предупреждения</option>
+                </select>
+              </label>
+            </div>
+            <div id="notificationsList" class="notifications-list"></div>
+          </div>
+          <div id="notificationDetail" class="detail-pane notification-detail hidden">
+            <h3 id="notificationDetailTitle"></h3>
+            <pre id="notificationDetailBody" class="protocol-preview"></pre>
+            <button type="button" class="btn btn-secondary" id="closeNotificationDetailBtn">Закрыть</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-schedules" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Плановые сводки</h2>
+            <p class="panel-desc">Расписания read-only отчётов. Изменения в Bitrix24 не выполняются.</p>
+          </div>
+        </div>
+        <div class="schedules-layout page-fill">
+          <div class="schedules-list-panel">
+            <div class="sidebar-section-title">Расписания</div>
+            <ul id="schedulesList" class="sidebar-list"></ul>
+          </div>
+          <div class="schedules-detail" id="scheduleDetail">
+            <div class="empty-state">
+              <p class="empty-state-title">Выберите расписание</p>
+              <p class="empty-state-text">Откройте элемент слева, чтобы увидеть параметры и запуски.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-communications" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Communications Hub</h2>
+            <p class="panel-desc">Диалоги, кампании, цепочки и шаблоны через Wazzup / каналы. Отправка только через Safety Layer.</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-secondary" id="commsRefreshBtn">Обновить</button>
+          </div>
+        </div>
+        <div class="comms-hub-layout page-fill">
+          <nav class="comms-subnav" id="commsSubnav" aria-label="Разделы хаба" role="tablist">
+            <button type="button" class="comms-subnav-item active" data-comms-view="overview" role="tab" aria-selected="true">Обзор</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="threads" role="tab" aria-selected="false">Диалоги</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="campaigns" role="tab" aria-selected="false">Кампании</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="sequences" role="tab" aria-selected="false">Цепочки</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="templates" role="tab" aria-selected="false">Шаблоны</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="delivery" role="tab" aria-selected="false">Доставка</button>
+            <button type="button" class="comms-subnav-item" data-comms-view="settings" role="tab" aria-selected="false">Настройки</button>
+          </nav>
+          <div class="comms-hub-content" id="commsHubContent" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="panel-outbound" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Исходящие сообщения</h2>
+            <p class="panel-desc">Одиночные сообщения через Safety Layer. Полные адреса не показываются. Полный хаб — вкладка «Хаб».</p>
+          </div>
+          <div class="panel-actions">
+            <button type="button" class="btn btn-secondary" id="refreshOutboundBtn">Обновить</button>
+            <button type="button" class="btn btn-secondary" id="detectChannelsBtn">Обнаружить каналы</button>
+          </div>
+        </div>
+        <div class="master-detail page-fill">
+          <div class="master-pane">
+            <div id="channelsSummary" class="panel-desc"></div>
+            <div id="outboundList" class="notifications-list"></div>
+          </div>
+          <div id="messageDraftPanel" class="detail-pane notification-detail">
+            <h3>Черновик сообщения</h3>
+            <pre id="messageDraftPreview" class="protocol-preview"></pre>
+            <div class="confirmation-actions">
+              <button type="button" class="btn btn-secondary" id="copyDraftBtn">Копировать</button>
+              <button type="button" class="btn btn-primary" id="prepareSendDraftBtn">Подготовить отправку</button>
+              <button type="button" class="btn btn-secondary" id="cancelDraftBtn">Отменить черновик</button>
+            </div>
+            <p id="outboundStatus" class="panel-desc"></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-documents" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Document Studio</h2>
+            <p class="panel-desc">Предпросмотр деловых документов с экспортом и печатью.</p>
+          </div>
+        </div>
+        <div class="document-studio page-fill">
+          <div class="document-form">
+            <h3 class="section-title">Параметры</h3>
+            <label>
+              Шаблон
+              <select id="documentType">
+                <option value="funnel_report">Отчёт по воронке</option>
+                <option value="deal_summary">Сводка по сделке</option>
+                <option value="commercial_proposal">Коммерческое предложение</option>
+                <option value="meeting_protocol">Протокол встречи</option>
+                <option value="task_report">Отчёт по задачам</option>
+              </select>
+            </label>
+            <label>
+              ID сделки / сущности
+              <input type="text" id="documentEntityId" placeholder="Для сводки, КП, протокола">
+            </label>
+            <label>
+              Воронка
+              <input type="number" id="documentCategoryId" value="0" min="0">
+            </label>
+            <label>
+              Дата с
+              <input type="text" id="documentDateFrom" placeholder="ДД.ММ.ГГГГ">
+            </label>
+            <label>
+              Дата по
+              <input type="text" id="documentDateTo" placeholder="ДД.ММ.ГГГГ">
+            </label>
+            <button type="button" class="btn btn-primary" id="generateDocumentBtn">Сформировать документ</button>
+          </div>
+          <div class="document-preview-area">
+            <div class="preview-toolbar no-print">
+              <h3 id="documentPreviewTitle">Предпросмотр</h3>
+              <div class="toolbar-actions">
+                <button type="button" class="btn btn-secondary" id="docExportHtmlBtn" disabled>Скачать HTML</button>
+                <button type="button" class="btn btn-secondary" id="docPrintPdfBtn" disabled>Сохранить в PDF</button>
+                <button type="button" class="btn btn-secondary" id="docCopyBtn" disabled>Скопировать текст</button>
+                <button type="button" class="btn btn-secondary" id="docBackToReportBtn" disabled>Вернуться к отчёту</button>
+              </div>
+            </div>
+            <div class="document-preview-frame-wrap">
+              <iframe id="documentPreviewFrame" class="preview-frame" title="Предпросмотр документа"></iframe>
+            </div>
+            <p id="documentStatus" class="status-text"></p>
+          </div>
+        </div>
+        <div class="saved-documents">
+          <h3>Сохранённые документы</h3>
+          <div id="savedDocumentsList" class="saved-list"></div>
+        </div>
+      </section>
+
+      <section id="panel-history" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>История действий</h2>
+            <p class="panel-desc">Журнал вызовов Bitrix24 и сформированных отчётов.</p>
+          </div>
+        </div>
+        <div class="history-block">
+          <h3 class="history-subtitle">Операции CRM (safety layer)</h3>
+          <div class="history-toolbar">
+            <button type="button" class="btn btn-secondary" id="refreshHistoryBtn">Обновить операции</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Действие</th>
+                  <th>Сущность</th>
+                  <th>Статус</th>
+                  <th>Источник</th>
+                  <th>Затронуто</th>
+                  <th>Откат</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody"></tbody>
+            </table>
+          </div>
+          <div id="operationDetails" class="operation-details" hidden></div>
+        </div>
+        <div class="history-block">
+          <h3 class="history-subtitle">Сформированные отчёты</h3>
+          <div class="history-toolbar">
+            <button type="button" class="btn btn-secondary" id="refreshReportHistoryBtn">Обновить отчёты</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Тип отчёта</th>
+                  <th>Период</th>
+                  <th>Воронка</th>
+                  <th>Статус</th>
+                  <th>Документ</th>
+                </tr>
+              </thead>
+              <tbody id="reportHistoryBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-users" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Пользователи</h2>
+            <p class="panel-desc">Управление учётными записями (users.manage).</p>
+          </div>
+        </div>
+        <div class="users-layout page-fill">
+          <div class="users-list-panel">
+            <h3 class="section-title">Список пользователей</h3>
+            <div id="usersList" class="notifications-list"></div>
+          </div>
+          <div class="users-create-panel">
+            <form id="createUserForm" class="document-form document-form--bare">
+              <h3 class="section-title">Создать пользователя</h3>
+              <p class="section-hint">Новая учётная запись появится в списке слева.</p>
+              <label>Логин <input id="newUserUsername" required></label>
+              <label>Имя <input id="newUserDisplayName"></label>
+              <label>Пароль <input id="newUserPassword" type="password" required></label>
+              <label>Роль
+                <select id="newUserRole">
+                  <option value="manager">manager</option>
+                  <option value="director">director</option>
+                  <option value="analyst">analyst</option>
+                  <option value="viewer">viewer</option>
+                  <option value="administrator">administrator</option>
+                </select>
+              </label>
+              <label>Bitrix user ID <input id="newUserBitrixId"></label>
+              <label>Data scope
+                <select id="newUserScope">
+                  <option value="own">own</option>
+                  <option value="all">all</option>
+                </select>
+              </label>
+              <button type="submit" class="btn btn-primary">Создать</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-system" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Система</h2>
+            <p class="panel-desc">Статус, метрики и журнал ошибок (без секретов).</p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="refreshSystemBtn">Обновить</button>
+        </div>
+        <div class="system-layout page-fill">
+          <div class="system-card">
+            <h3>Статус</h3>
+            <div id="systemStatus" class="system-grid"></div>
+          </div>
+          <div class="system-card">
+            <h3>Метрики</h3>
+            <div id="systemMetrics" class="system-grid"></div>
+          </div>
+          <div class="system-card system-errors-full">
+            <h3>Журнал ошибок</h3>
+            <div id="systemErrors" class="notifications-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-settings" class="panel" role="tabpanel" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Настройки</h2>
+            <p class="panel-desc">Базовый профиль применяется ко всем чатам. Секреты и API keys здесь не хранятся.</p>
+          </div>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-card">
+            <h3>Базовый профиль</h3>
+            <p class="section-hint">Контекст ассистента для всех диалогов без отдельного проекта.</p>
+            <label class="setting-row">
+              <span>Название</span>
+              <input type="text" id="profileName" placeholder="Базовый профиль">
+            </label>
+            <label class="setting-row">
+              <span>Описание пользователя / роль</span>
+              <textarea id="profileUserContext" rows="3" placeholder="Директор по развитию системного интегратора…"></textarea>
+            </label>
+            <label class="setting-row">
+              <span>Компания и задачи</span>
+              <textarea id="profileCompanyContext" rows="3"></textarea>
+            </label>
+            <label class="setting-row">
+              <span>Методология CRM</span>
+              <textarea id="profileCrmMethodology" rows="3"></textarea>
+            </label>
+            <label class="setting-row">
+              <span>Правила ответов / глобальная инструкция</span>
+              <textarea id="profileResponseRules" rows="3"></textarea>
+            </label>
+            <label class="setting-row">
+              <span>Краткое описание профиля</span>
+              <textarea id="profileDescription" rows="2"></textarea>
+            </label>
+            <button type="button" class="btn btn-primary" id="saveProfileBtn">Сохранить профиль</button>
+            <p id="profileSaveStatus" class="panel-desc"></p>
+          </div>
+          <div class="settings-card">
+            <h3>Сессия и документы</h3>
+            <p class="section-hint">Локальные предпочтения интерфейса и текущего диалога.</p>
+            <label class="setting-row">
+              <span>ID сессии / chatId</span>
+              <input type="text" id="settingsSessionId" readonly>
+            </label>
+            <label class="setting-row">
+              <span>Стиль документов</span>
+              <select id="settingsDocStyle">
+                <option value="strict">Строгий</option>
+                <option value="brief">Краткий</option>
+                <option value="detailed">Подробный</option>
+              </select>
+            </label>
+            <label class="setting-row">
+              <span>Формат документов</span>
+              <select id="settingsDocFormat">
+                <option value="html">HTML</option>
+                <option value="print">Печать / PDF</option>
+              </select>
+            </label>
+            <label class="setting-row">
+              <span>Язык</span>
+              <select id="settingsLanguage">
+                <option value="ru">Русский</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-secondary" id="resetSessionBtn">Новый диалог</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

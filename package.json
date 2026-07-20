@@ -1,0 +1,48 @@
+{
+  "name": "bitrix-claude-local-bridge",
+  "version": "1.0.0",
+  "description": "Local bridge between Bitrix24 REST API and Claude API",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "audit:actions": "node scripts/audit-actions.js",
+    "test:analytics": "node scripts/test-analytics.js",
+    "test:contacts": "node scripts/test-contact-analytics.js",
+    "test:managers": "node scripts/test-manager-analytics.js",
+    "test:safety": "node scripts/test-action-safety.js",
+    "test:safety:hardening": "node scripts/test-safety-hardening.js",
+    "test:workspace": "node scripts/test-workspace-persistence.js",
+    "test:production": "node scripts/test-production-hardening.js",
+    "test:client-context": "node scripts/test-client-context.js",
+    "test:schedules": "node scripts/test-scheduled-reports.js",
+    "test:communications": "node scripts/test-communications.js",
+    "test:communications:certification": "node scripts/test-communications-certification.js",
+    "certify:communications": "node scripts/certify-communications-live.js",
+    "test:access": "node scripts/test-access-control.js",
+    "test:go-live": "node scripts/test-go-live-security.js",
+    "check:go-live": "node scripts/check-go-live-readiness.js",
+    "db:backup": "node scripts/backup-database.js",
+    "db:check-backup": "node scripts/check-database-backup.js",
+    "db:backup-retention": "node scripts/backup-retention.js",
+    "db:restore-drill": "node scripts/test-database-restore.js",
+    "test:pilot": "node scripts/test-pilot-operations.js",
+    "smoke:production": "node scripts/run-production-smoke-tests.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "puppeteer": "^24.2.0",
+    "typograf": "^7.4.1",
+    "undici": "^7.16.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

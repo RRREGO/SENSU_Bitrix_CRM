@@ -1,0 +1,86 @@
+category,required_action,matched_action,status,status_ru,match_type,description,source_row
+Лиды,lead_stage_list,lead_stage_list,implemented_exact,Реализовано точным совпадением,exact,Получить стадии лидов и ID стадии по названию,Что уже есть#2
+Сделки и воронки,deal_category_list,deal_category_list,implemented_exact,Реализовано точным совпадением,exact,Получить список воронок сделок или найти воронку по названию,Что уже есть#3
+Сделки и воронки,deal_stage_list,deal_stage_list,implemented_exact,Реализовано точным совпадением,exact,Получить список стадий сделок в конкретной воронке,Что уже есть#4
+Сделки и воронки,create_deal,create_deal,implemented_exact,Реализовано точным совпадением,exact,Создать новую сделку в выбранной воронке,Что уже есть#5
+Сделки и воронки,create_default_funnel,create_default_funnel,implemented_exact,Реализовано точным совпадением,exact,Создать новую воронку со стандартными стадиями,Что уже есть#6
+Сделки и воронки,create_funnel_with_custom_stages,create_funnel_with_custom_stages,implemented_exact,Реализовано точным совпадением,exact,Создать новую воронку с кастомными рабочими стадиями,Что уже есть#7
+Сделки и воронки,create_new_funnel_stage,create_new_funnel_stage,implemented_exact,Реализовано точным совпадением,exact,Добавить новую стадию в CRM-воронку,Что уже есть#8
+Сделки и воронки,rename_funnel_title,rename_funnel_title,implemented_exact,Реализовано точным совпадением,exact,Переименовать воронку,Что уже есть#9
+Сделки и воронки,rename_funnel_stages,rename_funnel_stages,implemented_exact,Реализовано точным совпадением,exact,Переименовать одну или несколько стадий,Что уже есть#10
+Сделки и воронки,update_funnel_stages,update_funnel_stages,implemented_exact,Реализовано точным совпадением,exact,"Обновить рабочие стадии воронки, названия, цвета и порядок",Что уже есть#11
+Сделки и воронки,delete_funnel,delete_funnel,implemented_exact,Реализовано точным совпадением,exact,Удалить воронку,Что уже есть#12
+Сделки и воронки,delete_funnel_stage,delete_funnel_stage,implemented_exact,Реализовано точным совпадением,exact,Удалить стадию воронки,Что уже есть#13
+Сделки и воронки,move_deals_between_funnels,move_deals_between_funnels,implemented_exact,Реализовано точным совпадением,exact,Перенести сделки из одной воронки в другую,Что уже есть#14
+Сделки и воронки,move_deals_between_stages,move_deals_between_stages,implemented_exact,Реализовано точным совпадением,exact,Перенести сделки между стадиями внутри одной воронки,Что уже есть#15
+Сделки и воронки,create_crm_custom_field,create_crm_custom_field,implemented_exact,Реализовано точным совпадением,exact,Создать пользовательское поле для сделки,Что уже есть#16
+Задачи,create_task,create_task,implemented_exact,Реализовано точным совпадением,exact,Создать задачу,Что уже есть#17
+Задачи,search_tasks,search_tasks,implemented_exact,Реализовано точным совпадением,exact,"Найти задачи по названию, описанию, срокам, статусу и участникам",Что уже есть#18
+Задачи,get_task_by_id,get_task_by_id,implemented_exact,Реализовано точным совпадением,exact,Получить полную карточку задачи по ID,Что уже есть#19
+Задачи,update_task,update_task,implemented_exact,Реализовано точным совпадением,exact,"Изменить задачу: название, описание, срок, ответственного, статус, проект",Что уже есть#20
+Задачи,delete_task,delete_task,implemented_exact,Реализовано точным совпадением,exact,Удалить задачу,Что уже есть#21
+Задачи,clear_task_deadline,clear_task_deadline,implemented_exact,Реализовано точным совпадением,exact,Снять дедлайн с задачи,Что уже есть#22
+Задачи,detach_task_from_group,detach_task_from_group,implemented_exact,Реализовано точным совпадением,exact,Отвязать задачу от проекта или группы,Что уже есть#23
+Задачи,add_task_result,add_task_result,implemented_exact,Реализовано точным совпадением,exact,Добавить официальный результат работы в задачу,Что уже есть#24
+Задачи,send_chat_message,send_chat_message,implemented_exact,Реализовано точным совпадением,exact,Написать комментарий в чат задачи,Что уже есть#25
+Участники задач,search_users,search_users,implemented_exact,Реализовано точным совпадением,exact,Найти пользователя и получить его ID,Что уже есть#26
+Участники задач,add_accomplices,add_accomplices,implemented_exact,Реализовано точным совпадением,exact,Добавить соисполнителей в задачу,Что уже есть#27
+Участники задач,delete_accomplices,delete_accomplices,implemented_exact,Реализовано точным совпадением,exact,Удалить соисполнителей из задачи,Что уже есть#28
+Участники задач,add_auditors,add_auditors,implemented_exact,Реализовано точным совпадением,exact,Добавить наблюдателей в задачу,Что уже есть#29
+Участники задач,add_current_user_as_auditor,add_current_user_as_auditor,implemented_exact,Реализовано точным совпадением,exact,Добавить текущего пользователя наблюдателем,Что уже есть#30
+Участники задач,delete_auditors,delete_auditors,implemented_exact,Реализовано точным совпадением,exact,Удалить наблюдателей из задачи,Что уже есть#31
+Чек-листы,create_check_list,create_check_list,implemented_exact,Реализовано точным совпадением,exact,Создать чек-лист в задаче,Что уже есть#32
+Чек-листы,create_check_list_item,create_check_list_item,implemented_exact,Реализовано точным совпадением,exact,Добавить пункт чек-листа,Что уже есть#33
+Чек-листы,update_check_list,update_check_list,implemented_exact,Реализовано точным совпадением,exact,Изменить название или порядок чек-листа,Что уже есть#34
+Чек-листы,update_check_list_item,update_check_list_item,implemented_exact,Реализовано точным совпадением,exact,Изменить название или порядок пункта чек-листа,Что уже есть#35
+Чек-листы,delete_check_list,delete_check_list,implemented_exact,Реализовано точным совпадением,exact,Удалить чек-лист,Что уже есть#36
+Чек-листы,delete_check_list_item,delete_check_list_item,implemented_exact,Реализовано точным совпадением,exact,Удалить пункт чек-листа,Что уже есть#37
+Напоминания и регулярность,add_task_reminder,add_task_reminder,implemented_exact,Реализовано точным совпадением,exact,Поставить напоминание по задаче,Что уже есть#38
+Напоминания и регулярность,set_daily_task_recurrence,set_daily_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить ежедневную регулярность задачи,Что уже есть#39
+Напоминания и регулярность,set_weekly_task_recurrence,set_weekly_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить еженедельную регулярность задачи,Что уже есть#40
+Напоминания и регулярность,set_monthly_by_month_days_task_recurrence,set_monthly_by_month_days_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить ежемесячную регулярность по числу месяца,Что уже есть#41
+Напоминания и регулярность,set_monthly_by_week_days_task_recurrence,set_monthly_by_week_days_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить ежемесячную регулярность по дню недели,Что уже есть#42
+Напоминания и регулярность,set_yearly_by_month_days_task_recurrence,set_yearly_by_month_days_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить ежегодную регулярность по дате,Что уже есть#43
+Напоминания и регулярность,set_yearly_by_week_days_task_recurrence,set_yearly_by_week_days_task_recurrence,registered_not_implemented,"Зарегистрировано, но пока не реализовано",exact,Настроить ежегодную регулярность по дню недели,Что уже есть#44
+Лиды,crm.lead.list / lead_list,lead_list,implemented_exact,Реализовано точным совпадением,exact,"Получать список лидов с фильтрами по стадии, ответственному, дате, источнику",Что нужно добавить#2
+Лиды,crm.lead.get / lead_get,lead_get,implemented_exact,Реализовано точным совпадением,exact,Открывать карточку конкретного лида по ID,Что нужно добавить#3
+Лиды,lead_count,lead_count,implemented_exact,Реализовано точным совпадением,exact,Быстро считать лиды всего и по фильтрам,Что нужно добавить#4
+Лиды,crm.lead.update / lead_update,lead_update,implemented_exact,Реализовано точным совпадением,exact,"Редактировать поля лида, стадию, ответственного, контакты",Что нужно добавить#5
+Лиды,crm.lead.add / lead_create,lead_create,implemented_exact,Реализовано точным совпадением,exact,Создавать новый лид,Что нужно добавить#6
+Лиды,crm.lead.delete / lead_delete,lead_delete,implemented_exact,Реализовано точным совпадением,exact,Удалять лид,Что нужно добавить#7
+Лиды,crm.lead.fields / lead_fields,lead_fields,implemented_exact,Реализовано точным совпадением,exact,"Получать список доступных полей лида, включая пользовательские",Что нужно добавить#8
+Лиды,lead_product_rows_get,lead_product_rows_get,implemented_exact,Реализовано точным совпадением,exact,Смотреть товары/услуги в лиде,Что нужно добавить#9
+Лиды,lead_product_rows_set,lead_product_rows_set,implemented_exact,Реализовано точным совпадением,exact,Обновлять товары/услуги в лиде,Что нужно добавить#10
+Сделки,crm.deal.list / deal_list,deal_list,implemented_exact,Реализовано точным совпадением,exact,"Получать список сделок с фильтрами по воронке, стадии, ответственному, дате",Что нужно добавить#11
+Сделки,crm.deal.get / deal_get,deal_get,implemented_exact,Реализовано точным совпадением,exact,Открывать карточку конкретной сделки,Что нужно добавить#12
+Сделки,deal_count,deal_count,implemented_exact,Реализовано точным совпадением,exact,"Считать сделки по воронкам, стадиям и ответственным",Что нужно добавить#13
+Сделки,crm.deal.update / deal_update,deal_update,implemented_exact,Реализовано точным совпадением,exact,"Редактировать поля сделки, сумму, стадию, ответственного",Что нужно добавить#14
+Сделки,crm.deal.delete / deal_delete,deal_delete,implemented_exact,Реализовано точным совпадением,exact,Удалять сделку,Что нужно добавить#15
+Сделки,crm.deal.fields / deal_fields,deal_fields,implemented_exact,Реализовано точным совпадением,exact,Получать список стандартных и пользовательских полей сделки,Что нужно добавить#16
+Сделки,deal_product_rows_get,deal_product_rows_get,implemented_exact,Реализовано точным совпадением,exact,Смотреть товары/услуги в сделке,Что нужно добавить#17
+Сделки,deal_product_rows_set,deal_product_rows_set,implemented_exact,Реализовано точным совпадением,exact,Обновлять товары/услуги в сделке,Что нужно добавить#18
+Контакты и компании,crm.contact.list / contact_list,contact_list,implemented_exact,Реализовано точным совпадением,exact,"Искать контакты по имени, телефону, email",Что нужно добавить#19
+Контакты и компании,crm.contact.get / contact_get,contact_get,implemented_exact,Реализовано точным совпадением,exact,Открывать карточку контакта,Что нужно добавить#20
+Контакты и компании,crm.contact.add / contact_create,contact_create,implemented_exact,Реализовано точным совпадением,exact,Создавать контакт,Что нужно добавить#21
+Контакты и компании,crm.contact.update / contact_update,contact_update,implemented_exact,Реализовано точным совпадением,exact,Редактировать контакт,Что нужно добавить#22
+Контакты и компании,crm.company.list / company_list,company_list,implemented_exact,Реализовано точным совпадением,exact,Искать компании,Что нужно добавить#23
+Контакты и компании,crm.company.get / company_get,company_get,implemented_exact,Реализовано точным совпадением,exact,Открывать карточку компании,Что нужно добавить#24
+Контакты и компании,crm.company.add / company_create,company_create,implemented_exact,Реализовано точным совпадением,exact,Создавать компанию,Что нужно добавить#25
+Контакты и компании,crm.company.update / company_update,company_update,implemented_exact,Реализовано точным совпадением,exact,Редактировать компанию,Что нужно добавить#26
+"Комментарии, история и дела",crm.timeline.comment.add / timeline_comment_add,timeline_comment_add,implemented_exact,Реализовано точным совпадением,exact,"Добавлять комментарий в лид, сделку, контакт или компанию",Что нужно добавить#27
+"Комментарии, история и дела",timeline_comment_list,timeline_comment_list,implemented_exact,Реализовано точным совпадением,exact,Получать комментарии по объекту CRM,Что нужно добавить#28
+"Комментарии, история и дела",timeline_list,timeline_list,implemented_exact,Реализовано точным совпадением,exact,Получать историю активности по объекту CRM,Что нужно добавить#29
+"Комментарии, история и дела",crm.activity.list / activity_list,activity_list,implemented_exact,Реализовано точным совпадением,exact,"Получать звонки, письма, встречи и дела",Что нужно добавить#30
+"Комментарии, история и дела",crm.activity.add / activity_add,activity_add,implemented_exact,Реализовано точным совпадением,exact,"Создавать дело, звонок, встречу или письмо",Что нужно добавить#31
+"Комментарии, история и дела",crm.activity.update / activity_update,activity_update,implemented_exact,Реализовано точным совпадением,exact,Обновлять дело,Что нужно добавить#32
+"Комментарии, история и дела",crm.activity.delete / activity_delete,activity_delete,implemented_exact,Реализовано точным совпадением,exact,Удалять дело,Что нужно добавить#33
+"Комментарии, история и дела",activity_complete,activity_complete,implemented_exact,Реализовано точным совпадением,exact,Закрывать дело как выполненное,Что нужно добавить#34
+Пользователи,user.search / crm_user_list,search_users,implemented_alias,Реализовано через alias,alias,Находить пользователей Bitrix24 для назначения ответственных,Что нужно добавить#35
+Пользователи,user_get,user_get,implemented_exact,Реализовано точным совпадением,exact,Получать данные пользователя по ID,Что нужно добавить#36
+Пользователи,department_list,department_list,implemented_exact,Реализовано точным совпадением,exact,Смотреть структуру отделов,Что нужно добавить#37
+Аналитика,lead_count_by_stage,lead_count_by_stage,implemented_exact,Реализовано точным совпадением,exact,Вернуть таблицу лидов по стадиям,Что нужно добавить#38
+Аналитика,deal_count_by_stage,deal_count_by_stage,implemented_exact,Реализовано точным совпадением,exact,Вернуть таблицу сделок по стадиям,Что нужно добавить#39
+Аналитика,deal_sum_by_stage,deal_sum_by_stage,implemented_exact,Реализовано точным совпадением,exact,Посчитать сумму сделок по стадиям,Что нужно добавить#40
+Аналитика,lead_conversion_report,lead_conversion_report,implemented_exact,Реализовано точным совпадением,exact,Посчитать конверсию лидов по стадиям и периодам,Что нужно добавить#41
+Аналитика,crm_funnel_summary,crm_funnel_summary,implemented_exact,Реализовано точным совпадением,exact,"Вернуть сводку по воронке: количество, сумма, просрочки, последние изменения",Что нужно добавить#42
+Аналитика,overdue_activity_report,overdue_activity_report,implemented_exact,Реализовано точным совпадением,exact,Найти лиды/сделки без следующего шага или с просроченными делами,Что нужно добавить#43
