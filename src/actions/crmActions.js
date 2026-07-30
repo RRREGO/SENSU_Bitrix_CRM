@@ -1,4 +1,6 @@
 import { callBitrixMethod } from "../bitrixClient.js";
+import { buildDealCreateFields } from "../deals/dealCreateFields.js";
+import { logBeforeBitrixDealAdd } from "../deals/dealCreateLog.js";
 import {
   ENTITY_TYPE,
   PAGINATION,
@@ -9,6 +11,8 @@ import {
   crmItemUpdate,
   findByName,
   getDealStageEntityId,
+  hasPresentValue,
+  isNil,
   requireDestructiveConfirm,
   notImplementedAction,
   applyListLimit,
@@ -55,20 +59,27 @@ export async function deal_stage_list(params = {}) {
 
 /** Создать новую сделку. */
 export async function create_deal(params = {}) {
-  const fields = {
-    ...(params.fields || {}),
-  };
+  const categoryId = !isNil(params.categoryId)
+    ? Number(params.categoryId)
+    : !isNil(params.fields?.CATEGORY_ID)
+      ? Number(params.fields.CATEGORY_ID)
+      : undefined;
+  const stageId = hasPresentValue(params.stageId)
+    ? params.stageId
+    : hasPresentValue(params.fields?.STAGE_ID)
+      ? params.fields.STAGE_ID
+      : undefined;
+  const assignedById = !isNil(params.assignedById)
+    ? Number(params.assignedById)
+    : !isNil(params.fields?.ASSIGNED_BY_ID)
+      ? Number(params.fields.ASSIGNED_BY_ID)
+      : undefined;
 
-  if (params.title) fields.TITLE = params.title;
-  if (params.categoryId !== undefined) fields.CATEGORY_ID = params.categoryId;
-  if (params.stageId) fields.STAGE_ID = params.stageId;
-  if (params.opportunity !== undefined) fields.OPPORTUNITY = params.opportunity;
-  if (params.currencyId) fields.CURRENCY_ID = params.currencyId;
-  if (params.assignedById) fields.ASSIGNED_BY_ID = params.assignedById;
-  if (params.contactId) fields.CONTACT_ID = params.contactId;
-  if (params.companyId) fields.COMPANY_ID = params.companyId;
+  const fields = buildDealCreateFields(params, { categoryId, stageId, assignedById });
 
   if (!fields.TITLE) throw new Error("title or fields.TITLE is required");
+
+  logBeforeBitrixDealAdd(params.actionId || params.__actionId || "create_deal", fields);
 
   try {
     return await callBitrixMethod("crm.item.add", {

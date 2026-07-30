@@ -107,6 +107,17 @@ export const ROUTE_POLICIES = [
 
   { method: "GET", path: "/crm/context/:entityType/:entityId", access: "session", permission: "crm.context.read", csrf: false },
   { method: "POST", path: "/crm/context/summary", access: "session", permission: "crm.context.read", csrf: true },
+
+  { method: "GET", path: "/api/crm-schema/portals", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/snapshots", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/entities", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/pipelines", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/stages", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/diff", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "GET", path: "/api/crm-schema/stage-explanation", access: "session", permission: "crm.schema.read", csrf: false },
+  { method: "POST", path: "/api/crm-schema/snapshots/capture", access: "session", permission: "crm.schema.capture", csrf: true, rateLimit: "api" },
+  { method: "POST", path: "/api/crm-schema/seeds/import", access: "session", permission: "crm.schema.capture", csrf: true, rateLimit: "api" },
+
   { method: "POST", path: "/meeting-transcripts", access: "session", permission: "crm.context.read", csrf: true },
   { method: "GET", path: "/meeting-transcripts/:id", access: "session", permission: "crm.context.read", csrf: false },
   { method: "GET", path: "/meeting-transcripts", access: "session", permission: "crm.context.read", csrf: false },

@@ -339,7 +339,27 @@ function inferSanitizePurpose(result) {
 }
 
 function formatToolError(error) {
-  return JSON.stringify({ ok: false, error: error.message });
+  return JSON.stringify({
+    ok: false,
+    error: error.message,
+    ...(error.code ? { code: error.code } : {}),
+  });
+}
+
+/** Safety layer возвращает ошибку объектом, а не исключением. */
+function safetyFailure(result) {
+  if (!result || typeof result !== "object") return null;
+  if (result.success === false) return result.error || { message: "Действие не выполнено." };
+  if (result.status && ["failed", "cancelled", "expired"].includes(result.status)) {
+    return result.error || { message: `Операция завершилась со статусом ${result.status}.` };
+  }
+  return null;
+}
+
+function describeOperationFailure(error) {
+  const message = error?.message || "Действие не выполнено.";
+  const code = error?.code ? ` (код ${error.code})` : "";
+  return `Действие не выполнено${code}: ${message} Изменения в Bitrix24 не внесены.`;
 }
 
 async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null } = {}) {
@@ -472,10 +492,18 @@ async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null }
         }
 
         if (!prepared?.success || prepared.status !== "confirmation_required") {
+          const userMessage =
+            prepared?.error?.code === "PREPARE_FAILED" && prepared?.error?.details?.code
+              ? prepared.error.message
+              : null;
           toolResults.push({
             type: "tool_result",
             tool_use_id: toolUse.id,
-            content: formatToolResult(prepared),
+            content: formatToolResult(
+              userMessage
+                ? { success: false, error: { ...prepared.error, message: userMessage } }
+                : prepared
+            ),
             is_error: prepared?.success === false,
           });
           continue;
@@ -780,8 +808,17 @@ export async function handleChatConfirmation({
       confirmationPhrase,
       user,
     });
+    const failure = safetyFailure(result);
+    if (failure) {
+      const error = new Error(failure.message || "Действие не выполнено.");
+      error.code = failure.code;
+      error.details = failure.details;
+      throw error;
+    }
     toolCallsLog.push({ action, params, result });
   } catch (error) {
+    // Результат подтверждения не отдаём на пересказ модели: о неудаче
+    // сообщаем ровно то, что вернул safety layer.
     if (pending) {
       appendPendingToolTurn(session, pending, {
         type: "tool_result",
@@ -789,26 +826,21 @@ export async function handleChatConfirmation({
         content: formatToolError(error),
         is_error: true,
       });
-      const context = await buildConversationContext({
-        chatId: chat.id,
-        projectId: chat.projectId,
-        userMessage: "Подтверждаю действие.",
-      });
-      return runClaudeTurn(session, {
-        toolCallsLog,
-        systemPrompt: context.systemPrompt,
-      });
     }
-    const reply =
-      "Не удалось выполнить действие после восстановления сервера. Проверьте историю операций.";
+
     return finalizeTurn({
-      reply,
+      reply: describeOperationFailure(error),
       toolCalls: toolCallsLog,
       pendingConfirmation: null,
       sessionId: session.sessionId,
       chatId: chat.id,
       persist: true,
       messageType: "error",
+      metadata: {
+        confirmationId,
+        operationId: operation?.id || null,
+        errorCode: error.code || null,
+      },
     });
   }
 

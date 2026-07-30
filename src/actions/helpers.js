@@ -14,7 +14,47 @@ export const PAGINATION = {
   MAX_PAGES: 200,
   DEFAULT_LIST_LIMIT: 50,
   SAMPLE_LIMIT: 100,
+  /** Максимум элементов при полной выборке read-only списков таймлайна/истории стадий. */
+  READ_LIST_MAX_ITEMS: 500,
+  /** Максимум страниц для read-only списков таймлайна/истории стадий. */
+  READ_LIST_MAX_PAGES: 20,
 };
+
+/** Положительное целое число (> 0). */
+export function normalizePositiveInt(value, fieldName = "value") {
+  const n = Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+    throw new Error(`${fieldName} должен быть положительным целым числом`);
+  }
+  return n;
+}
+
+/** Неотрицательное целое число (>= 0). */
+export function normalizeNonNegativeInt(value, fieldName = "value") {
+  const n = Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0) {
+    throw new Error(`${fieldName} должен быть неотрицательным целым числом`);
+  }
+  return n;
+}
+
+/** entityType (строка) → entityTypeId Bitrix CRM. */
+export function resolveEntityTypeId(entityType) {
+  const key = String(entityType || "").toLowerCase();
+  const map = {
+    lead: ENTITY_TYPE.LEAD,
+    deal: ENTITY_TYPE.DEAL,
+    contact: ENTITY_TYPE.CONTACT,
+    company: ENTITY_TYPE.COMPANY,
+  };
+  const id = map[key];
+  if (!id) {
+    throw new Error(
+      `Неизвестный entityType: ${entityType}. Используйте lead, deal, contact или company.`
+    );
+  }
+  return id;
+}
 
 /** Актуальный лимит страниц аналитики из env. */
 export function getAnalyticsMaxPages() {
@@ -268,6 +308,30 @@ export async function fetchAllPages({
   };
 }
 
+/**
+ * Полная выборка с ограничением по страницам и общему числу элементов.
+ */
+export async function fetchAllPagesCapped({
+  fetchPage,
+  maxPages = PAGINATION.READ_LIST_MAX_PAGES,
+  maxItems = PAGINATION.READ_LIST_MAX_ITEMS,
+  actionName = "list",
+} = {}) {
+  const result = await fetchAllPages({ fetchPage, maxPages, actionName });
+  if (result.items.length > maxItems) {
+    result.items = result.items.slice(0, maxItems);
+    result.truncated = true;
+    result.hasMore = true;
+    result.returned = result.items.length;
+    const warning = {
+      code: "READ_LIST_ITEM_LIMIT_REACHED",
+      message: `Достигнут безопасный лимит элементов (${maxItems}).`,
+    };
+    result.warnings = [...(result.warnings || []), warning];
+  }
+  return result;
+}
+
 /** Маппинг legacy-полей фильтра → crm.item.list (camelCase). */
 const ITEM_FILTER_FIELD_MAP = {
   ID: "id",
@@ -437,10 +501,30 @@ export async function crmItemFields(entityTypeId, legacyMethod) {
   }
 }
 
-/** ENTITY_ID для стадий сделок по categoryId. */
+export function isNil(value) {
+  return value === null || value === undefined;
+}
+
+/** Значение задано (0 и непустые строки — валидны). */
+export function hasPresentValue(value) {
+  if (isNil(value)) return false;
+  if (typeof value === "string" && value.trim() === "") return false;
+  return true;
+}
+
+/** ENTITY_ID для стадий сделок по categoryId. CATEGORY_ID=0 — общая воронка. */
 export function getDealStageEntityId(categoryId = 0) {
+  if (isNil(categoryId)) {
+    categoryId = 0;
+  }
   const id = Number(categoryId);
-  return id > 0 ? `DEAL_STAGE_${id}` : "DEAL_STAGE";
+  if (!Number.isFinite(id) || id < 0) {
+    throw new Error(`Invalid categoryId: ${categoryId}`);
+  }
+  if (id === 0) {
+    return "DEAL_STAGE";
+  }
+  return `DEAL_STAGE_${id}`;
 }
 
 /** Маппинг entityType → Bitrix timeline type. */

@@ -505,6 +505,100 @@ await runCase("27. Plan hash стабилен", async () => {
   ok("27. Plan hash стабилен");
 });
 
+await runCase("28. Служебные params не ломают plan hash", async () => {
+  const withInternals = computePlanHash({
+    action: "deal_update",
+    params: {
+      id: 1,
+      fields: { STAGE_ID: "A" },
+      __execPlan: { kind: "entity_update" },
+      __initiatedBy: { userId: "u-1" },
+    },
+    entityIds: ["1"],
+    before: { fields: { STAGE_ID: "B" } },
+    after: { fields: { STAGE_ID: "A" } },
+    affectedCount: 1,
+  });
+  const clean = computePlanHash({
+    action: "deal_update",
+    params: { id: 1, fields: { STAGE_ID: "A" } },
+    entityIds: ["1"],
+    before: { fields: { STAGE_ID: "B" } },
+    after: { fields: { STAGE_ID: "A" } },
+    affectedCount: 1,
+  });
+  assert(withInternals === clean, "__-ключи исключены из хеша");
+  ok("28. Служебные params не ломают plan hash");
+});
+
+await runCase("29. Commit авторизованного пользователя выполняется", async () => {
+  store.deal[123].STAGE_ID = "NEW";
+  const user = {
+    userId: "u-1",
+    displayName: "Тестировщик",
+    role: "administrator",
+    dataScope: "all",
+    permissions: new Set([
+      "operations.prepare",
+      "operations.confirm.own",
+      "operations.confirm.any",
+      "crm.write",
+    ]),
+  };
+  const prepared = await prepareAction(
+    "deal_update",
+    { id: 123, fields: { STAGE_ID: "AUTHED" } },
+    { source: "test", sessionId: "test-session", user, deps: { buildPlan: mockBuildPlan } }
+  );
+  assert(prepared.status === "confirmation_required", "prepare ok");
+  const result = await commitAction(prepared.confirmationId, {
+    source: "test",
+    user,
+    deps: { reloadAndCompare: mockReloadAndCompare, runHandler: mockRunHandler() },
+  });
+  assert(result.success === true, `commit: ${result.error?.code || ""}`);
+  assert(store.deal[123].STAGE_ID === "AUTHED", "изменение применено");
+  store.deal[123].STAGE_ID = "NEW";
+  ok("29. Commit авторизованного пользователя выполняется");
+});
+
+await runCase("30. Task-actions принимают и id, и taskId", async () => {
+  const taskActions = await import("../src/actions/taskActions.js");
+  for (const [action, fn] of [
+    ["update_task", taskActions.update_task],
+    ["delete_task", taskActions.delete_task],
+    ["get_task_by_id", taskActions.get_task_by_id],
+  ]) {
+    for (const idParams of [{ id: 1 }, { taskId: 1 }]) {
+      let message = "";
+      try {
+        await fn({ ...idParams, confirm: true, fields: { TITLE: "T" } });
+      } catch (error) {
+        message = error.message;
+      }
+      assert(
+        message !== "id is required",
+        `${action} с ${Object.keys(idParams)[0]} требует id`
+      );
+    }
+  }
+  ok("30. Task-actions принимают и id, и taskId");
+});
+
+await runCase("31. Фильтр задач: != заменяется на !", async () => {
+  const { normalizeTaskFilter } = await import("../src/actions/taskActions.js");
+  const { filter, warnings } = normalizeTaskFilter({
+    RESPONSIBLE_ID: 5,
+    "!=STATUS": [4, 5],
+    ">=DEADLINE": "2026-01-01",
+  });
+  assert(filter["!STATUS"] !== undefined, "!= → !");
+  assert(filter["!=STATUS"] === undefined, "!= удалён");
+  assert(filter[">=DEADLINE"] === "2026-01-01", "остальные операторы сохранены");
+  assert(warnings.length === 1, "есть предупреждение");
+  ok("31. Фильтр задач: != заменяется на !");
+});
+
 // cleanup
 closeDatabase();
 try {

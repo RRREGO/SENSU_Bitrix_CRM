@@ -5,12 +5,20 @@
 import { callReadMethod } from "../bitrixClient.js";
 import { redactObject } from "../safety/redact.js";
 
+/** UPPER_SNAKE → camelCase: задачи и crm.item.* отдают поля в camelCase. */
+function toCamelCase(key) {
+  return String(key)
+    .toLowerCase()
+    .replace(/_([a-z0-9])/g, (_, char) => char.toUpperCase());
+}
+
 function getField(obj, ...keys) {
   if (!obj || typeof obj !== "object") return undefined;
   for (const key of keys) {
-    if (obj[key] !== undefined && obj[key] !== null && obj[key] !== "") return obj[key];
-    const upper = String(key).toUpperCase();
-    if (obj[upper] !== undefined && obj[upper] !== null && obj[upper] !== "") return obj[upper];
+    for (const variant of [key, String(key).toUpperCase(), toCamelCase(key)]) {
+      const value = obj[variant];
+      if (value !== undefined && value !== null && value !== "") return value;
+    }
   }
   return undefined;
 }
@@ -68,16 +76,42 @@ function expectedFieldsFromPlan(execPlan, afterSnapshot) {
  */
 export async function verifyWriteResult({ execPlan, result, afterExpected = null }) {
   try {
-    const kind = execPlan?.kind;
-    let entityType = execPlan?.entityType || null;
-    let entityId = execPlan?.entityId || result?.id || result?.ID || result?.result || null;
-
-    if (kind === "entity_create" || kind === "create") {
-      entityId = result?.id || result?.ID || result?.result || entityId;
-    }
+    const entityType = execPlan?.entityType || null;
+    const entityId =
+      execPlan?.entityId ||
+      result?.createdId ||
+      result?.id ||
+      result?.ID ||
+      result?.task?.id ||
+      result?.item?.id ||
+      result?.result ||
+      null;
 
     if (!entityType || !entityId) {
       return { verified: false, verificationRequired: true };
+    }
+
+    if (execPlan?.expectDeleted) {
+      // Ошибка чтения после удаления = сущности больше нет.
+      let existing = null;
+      try {
+        existing = await fetchEntity(entityType, entityId);
+      } catch {
+        existing = null;
+      }
+      if (existing?.id || existing?.ID) {
+        return {
+          verified: false,
+          verificationRequired: true,
+          verificationMethod: "read_back",
+          mismatch: ["deleted"],
+        };
+      }
+      return {
+        verified: true,
+        verificationMethod: "read_back",
+        observed: { id: String(entityId), deleted: true },
+      };
     }
 
     const current = await fetchEntity(entityType, entityId);

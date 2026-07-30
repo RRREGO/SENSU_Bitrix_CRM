@@ -1,0 +1,177 @@
+{
+  "schema_version": "stage-mapping-draft-v1",
+  "verification_status": "draft",
+  "source_note": "Черновик соответствия SENSU ↔ TWIGA. НЕ утверждён бизнесом. confidence отражает эвристику по названиям.",
+  "mappings": [
+    {
+      "canonical_stage": "lead.target",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_TARGET",
+      "target_portal": "twiga",
+      "target_stage_id": "NEW",
+      "mapping_type": "exact",
+      "confidence": 0.9,
+      "comment": "Оба: Target"
+    },
+    {
+      "canonical_stage": "lead.meeting_ready",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_READY",
+      "target_portal": "twiga",
+      "target_stage_id": "IN_PROCESS",
+      "mapping_type": "approximate",
+      "confidence": 0.55,
+      "comment": "SENSU «Готовность ко встрече» ≈ TWIGA «Лид до встречи»"
+    },
+    {
+      "canonical_stage": "lead.first_meeting",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_MEETING",
+      "target_portal": "twiga",
+      "target_stage_id": "PROCESSED",
+      "mapping_type": "approximate",
+      "confidence": 0.5,
+      "comment": "SENSU «Первичная встреча» ≈ TWIGA «Лид после встречи» — требует подтверждения"
+    },
+    {
+      "canonical_stage": "lead.in_progress",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_WORK",
+      "target_portal": "twiga",
+      "target_stage_id": "PROCESSED",
+      "mapping_type": "many_to_one",
+      "confidence": 0.4,
+      "comment": "SENSU «В работе» может схлопываться в after_meeting TWIGA"
+    },
+    {
+      "canonical_stage": "lead.pause",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_PAUSE",
+      "target_portal": "twiga",
+      "target_stage_id": null,
+      "mapping_type": "unmapped",
+      "confidence": 0.2,
+      "comment": "Пауза SENSU без прямого аналога TWIGA"
+    },
+    {
+      "canonical_stage": "lead.cold",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_COLD",
+      "target_portal": "twiga",
+      "target_stage_id": null,
+      "mapping_type": "unmapped",
+      "confidence": 0.2,
+      "comment": "Холод SENSU без прямого аналога TWIGA"
+    },
+    {
+      "canonical_stage": "lead.success",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_L_SUCCESS",
+      "target_portal": "twiga",
+      "target_stage_id": "CONVERTED",
+      "mapping_type": "exact",
+      "confidence": 0.85,
+      "comment": "Успешный лид"
+    },
+    {
+      "canonical_stage": "lead.junk",
+      "source_portal": "twiga",
+      "source_stage_id": "JUNK",
+      "target_portal": "sensu",
+      "target_stage_id": null,
+      "mapping_type": "unmapped",
+      "confidence": 0.3,
+      "comment": "Некачественный лид TWIGA — нет явного SENSU аналога в списке"
+    },
+    {
+      "canonical_stage": "deal.nda",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_NDA",
+      "target_portal": "twiga",
+      "target_stage_id": "NEW",
+      "mapping_type": "approximate",
+      "confidence": 0.45,
+      "comment": "NDA SENSU ≈ начало / «Получена задача» TWIGA"
+    },
+    {
+      "canonical_stage": "deal.eo_proposal_prep",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_EO",
+      "target_portal": "twiga",
+      "target_stage_id": "PREPARATION",
+      "mapping_type": "approximate",
+      "confidence": 0.7,
+      "comment": "ЭО/подготовка КП ≈ Готовим предложение"
+    },
+    {
+      "canonical_stage": "deal.proposal_submitted",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_KP",
+      "target_portal": "twiga",
+      "target_stage_id": "PREPAYMENT_INVOICE",
+      "mapping_type": "approximate",
+      "confidence": 0.75,
+      "comment": "Подача КП ≈ Предложение сдано"
+    },
+    {
+      "canonical_stage": "deal.tender",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_TENDER",
+      "target_portal": "twiga",
+      "target_stage_id": null,
+      "mapping_type": "unmapped",
+      "confidence": 0.25,
+      "comment": "Тендер SENSU без прямого TWIGA аналога"
+    },
+    {
+      "canonical_stage": "deal.verbal_confirm",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_VERBAL",
+      "target_portal": "twiga",
+      "target_stage_id": "EXECUTING",
+      "mapping_type": "exact",
+      "confidence": 0.85,
+      "comment": "Устное подтверждение"
+    },
+    {
+      "canonical_stage": "deal.contract_survey",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_SURVEY",
+      "target_portal": "twiga",
+      "target_stage_id": "WON",
+      "mapping_type": "one_to_many",
+      "confidence": 0.4,
+      "comment": "Контракт на обследование — часть «Законтрактовано» TWIGA (эвристика)"
+    },
+    {
+      "canonical_stage": "deal.contract_project",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_PROJECT",
+      "target_portal": "twiga",
+      "target_stage_id": "WON",
+      "mapping_type": "many_to_one",
+      "confidence": 0.55,
+      "comment": "Контракт на проект ≈ Законтрактовано"
+    },
+    {
+      "canonical_stage": "deal.deferred",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_DEFERRED",
+      "target_portal": "twiga",
+      "target_stage_id": null,
+      "mapping_type": "unmapped",
+      "confidence": 0.2,
+      "comment": "Отложен SENSU без прямого TWIGA аналога"
+    },
+    {
+      "canonical_stage": "deal.failed",
+      "source_portal": "sensu",
+      "source_stage_id": "SENSU_D_LOSE",
+      "target_portal": "twiga",
+      "target_stage_id": "LOSE",
+      "mapping_type": "exact",
+      "confidence": 0.9,
+      "comment": "Сделка провалена"
+    }
+  ]
+}

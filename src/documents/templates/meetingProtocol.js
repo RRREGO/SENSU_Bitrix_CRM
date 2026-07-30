@@ -35,7 +35,7 @@ export async function build(params = {}) {
 
   try {
     comments = await timeline_comment_list({ entityType, entityId });
-    if (!Array.isArray(comments)) comments = [];
+    if (!Array.isArray(comments)) comments = comments?.items || [];
   } catch {
     comments = [];
   }

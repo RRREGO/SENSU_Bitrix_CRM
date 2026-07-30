@@ -5,9 +5,129 @@ import {
   PAGINATION,
   applyListLimit,
   fetchAllPages,
+  fetchAllPagesCapped,
   normalizeListResult,
   getAnalyticsMaxPages,
+  normalizePositiveInt,
+  normalizeNonNegativeInt,
+  resolveEntityTypeId,
 } from "./helpers.js";
+
+/** Нормализация параметров crm.timeline.comment.list. */
+export function normalizeTimelineCommentParams(params = {}) {
+  const { entityType, entityId, filter = {}, order = {}, select = [], start = 0 } = params;
+
+  let entityTypeValue;
+  let entityIdValue;
+
+  if (entityType != null || entityId != null) {
+    if (entityType == null) throw new Error("entityType обязателен");
+    if (entityId == null) throw new Error("entityId обязателен");
+    const mapped = mapTimelineEntityType(entityType);
+    entityTypeValue = mapped.entityType;
+    entityIdValue = normalizePositiveInt(entityId, "ENTITY_ID");
+  } else {
+    if (!filter.ENTITY_TYPE) throw new Error("filter.ENTITY_TYPE обязателен");
+    if (filter.ENTITY_ID == null) throw new Error("filter.ENTITY_ID обязателен");
+    const mapped = mapTimelineEntityType(filter.ENTITY_TYPE);
+    entityTypeValue = mapped.entityType;
+    entityIdValue = normalizePositiveInt(filter.ENTITY_ID, "ENTITY_ID");
+  }
+
+  return {
+    filter: {
+      ...filter,
+      ENTITY_TYPE: entityTypeValue,
+      ENTITY_ID: entityIdValue,
+    },
+    order,
+    select: Array.isArray(select) ? select : [],
+    start: normalizeNonNegativeInt(start, "start"),
+  };
+}
+
+/** Нормализация параметров crm.stagehistory.list. */
+export function normalizeStageHistoryParams(params = {}) {
+  const {
+    entityTypeId: rawEntityTypeId,
+    entityType,
+    entityId,
+    filter = {},
+    order = {},
+    select = [],
+    start = 0,
+  } = params;
+
+  let entityTypeId = rawEntityTypeId;
+  if (entityTypeId == null && entityType != null) {
+    entityTypeId = resolveEntityTypeId(entityType);
+  }
+  if (entityTypeId == null) {
+    throw new Error("entityTypeId обязателен (или укажите entityType)");
+  }
+  entityTypeId = normalizePositiveInt(entityTypeId, "entityTypeId");
+
+  const ownerId = filter.OWNER_ID ?? entityId;
+  if (ownerId == null) {
+    throw new Error("filter.OWNER_ID обязателен (или укажите entityId)");
+  }
+
+  return {
+    entityTypeId,
+    filter: {
+      ...filter,
+      OWNER_ID: normalizePositiveInt(ownerId, "OWNER_ID"),
+    },
+    order,
+    select: Array.isArray(select) ? select : [],
+    start: normalizeNonNegativeInt(start, "start"),
+  };
+}
+
+async function fetchTimelineCommentPage(normalized) {
+  const requestParams = {
+    filter: normalized.filter,
+    order: normalized.order,
+    start: normalized.start,
+  };
+  if (normalized.select.length) requestParams.select = normalized.select;
+
+  try {
+    const { result, next, total } = await callBitrixMethodFull(
+      "crm.timeline.comment.list",
+      requestParams
+    );
+    return normalizeListResult(result, { next, total });
+  } catch (primaryError) {
+    const mapped = mapTimelineEntityType(normalized.filter.ENTITY_TYPE);
+    const { result, next, total } = await callBitrixMethodFull("crm.timeline.comment.list", {
+      filter: {
+        OWNER_ID: normalized.filter.ENTITY_ID,
+        OWNER_TYPE: mapped.ownerType,
+      },
+      order: normalized.order,
+      start: normalized.start,
+      ...(normalized.select.length ? { select: normalized.select } : {}),
+    });
+    return normalizeListResult(result, { next, total });
+  }
+}
+
+async function fetchStageHistoryPage(normalized) {
+  const requestParams = {
+    entityTypeId: normalized.entityTypeId,
+    filter: normalized.filter,
+    order: normalized.order,
+    start: normalized.start,
+  };
+  if (normalized.select.length) requestParams.select = normalized.select;
+
+  const { result, next, total } = await callBitrixMethodFull(
+    "crm.stagehistory.list",
+    requestParams
+  );
+  return normalizeListResult(result, { next, total });
+}
 
 /** Добавить комментарий в таймлайн CRM-сущности. */
 export async function timeline_comment_add(params = {}) {
@@ -50,29 +170,54 @@ export async function timeline_comment_add(params = {}) {
   }
 }
 
-/** Список комментариев таймлайна. */
+/** Список комментариев таймлайна CRM-элемента (crm.timeline.comment.list). */
 export async function timeline_comment_list(params = {}) {
-  const { entityType, entityId } = params;
-  if (!entityType) throw new Error("entityType is required");
-  if (!entityId) throw new Error("entityId is required");
+  const normalized = normalizeTimelineCommentParams(params);
+  const limit = params.limit ?? PAGINATION.DEFAULT_LIST_LIMIT;
+  const { limit: _limit, allPages, ...rest } = params;
 
-  const mapped = mapTimelineEntityType(entityType);
-
-  try {
-    return await callBitrixMethod("crm.timeline.comment.list", {
-      filter: {
-        ENTITY_ID: Number(entityId),
-        ENTITY_TYPE: mapped.entityType,
-      },
-    });
-  } catch (error) {
-    return callBitrixMethod("crm.timeline.comment.list", {
-      filter: {
-        OWNER_ID: Number(entityId),
-        OWNER_TYPE: mapped.ownerType,
-      },
-    });
+  if (allPages === true) {
+    return timelineCommentListAll(rest);
   }
+
+  const page = await fetchTimelineCommentPage(normalized);
+  return applyListLimit(page, limit);
+}
+
+/** Полная выборка комментариев таймлайна с безопасными лимитами. */
+export async function timelineCommentListAll(params = {}, options = {}) {
+  const normalized = normalizeTimelineCommentParams(params);
+  return fetchAllPagesCapped({
+    actionName: options.actionName || "timeline_comment_list_all",
+    maxPages: options.maxPages ?? PAGINATION.READ_LIST_MAX_PAGES,
+    maxItems: options.maxItems ?? PAGINATION.READ_LIST_MAX_ITEMS,
+    fetchPage: (start) => fetchTimelineCommentPage({ ...normalized, start }),
+  });
+}
+
+/** История перемещения CRM-элемента по стадиям (crm.stagehistory.list). */
+export async function stagehistory_list(params = {}) {
+  const normalized = normalizeStageHistoryParams(params);
+  const limit = params.limit ?? PAGINATION.DEFAULT_LIST_LIMIT;
+  const { limit: _limit, allPages, ...rest } = params;
+
+  if (allPages === true) {
+    return stagehistoryListAll(rest);
+  }
+
+  const page = await fetchStageHistoryPage(normalized);
+  return applyListLimit(page, limit);
+}
+
+/** Полная выборка истории стадий с безопасными лимитами. */
+export async function stagehistoryListAll(params = {}, options = {}) {
+  const normalized = normalizeStageHistoryParams(params);
+  return fetchAllPagesCapped({
+    actionName: options.actionName || "stagehistory_list_all",
+    maxPages: options.maxPages ?? PAGINATION.READ_LIST_MAX_PAGES,
+    maxItems: options.maxItems ?? PAGINATION.READ_LIST_MAX_ITEMS,
+    fetchPage: (start) => fetchStageHistoryPage({ ...normalized, start }),
+  });
 }
 
 /** История активности: комментарии + дела. */
@@ -88,8 +233,10 @@ export async function timeline_list(params = {}) {
   let activities = [];
 
   try {
-    comments = await timeline_comment_list({ entityType, entityId });
-    if (!Array.isArray(comments)) comments = comments?.comments || [];
+    const commentResult = await timeline_comment_list({ entityType, entityId });
+    comments = Array.isArray(commentResult)
+      ? commentResult
+      : commentResult?.items || commentResult?.comments || [];
   } catch (error) {
     console.warn("timeline_list comments failed:", error.message);
   }

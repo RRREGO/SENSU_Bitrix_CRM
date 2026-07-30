@@ -93,7 +93,10 @@ async function loadStageName(entityType, stageId, categoryId) {
   if (!stageId) return null;
   try {
     if (entityType === "deal") {
-      const entityId = categoryId ? `DEAL_STAGE_${categoryId}` : "DEAL_STAGE";
+      const entityId =
+        categoryId === null || categoryId === undefined
+          ? "DEAL_STAGE"
+          : `DEAL_STAGE_${categoryId}`;
       const list = await callReadMethod("crm.status.list", { filter: { ENTITY_ID: entityId } });
       const arr = Array.isArray(list) ? list : [];
       const hit = arr.find((s) => String(s.STATUS_ID || s.statusId) === String(stageId));
@@ -181,7 +184,7 @@ async function loadTasks(entityType, entityId, limit) {
 async function loadComments(entityType, entityId, limit) {
   try {
     let comments = await timeline_comment_list({ entityType, entityId });
-    if (!Array.isArray(comments)) comments = comments?.result || comments?.comments || [];
+    if (!Array.isArray(comments)) comments = comments?.items || comments?.result || comments?.comments || [];
     return { items: comments.slice(0, limit), truncated: comments.length > limit, warning: null };
   } catch (error) {
     return {

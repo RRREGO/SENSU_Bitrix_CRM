@@ -11,7 +11,7 @@ import {
   isReadPolicy,
   isBlockedPolicy,
 } from "./policies.js";
-import { computePlanHash } from "./planHash.js";
+import { computePlanHash, planEntityIds, stripInternalParams } from "./planHash.js";
 import { redactObject } from "./redact.js";
 import {
   confirmationExpiresAt,
@@ -226,7 +226,8 @@ export async function prepareAction(actionName, params = {}, context = {}) {
   }
 
   // Write scope check before plan
-  if (user && params?.id && policy.dataScope === "crm_entity") {
+  const scopedEntityId = params?.id ?? params?.taskId ?? params?.entityId;
+  if (user && scopedEntityId != null && policy.dataScope === "crm_entity") {
     try {
       const { authorizeEntityWrite, DIRECT_GET_ACTIONS } = await import("../auth/dataScopeService.js");
       const entityType =
@@ -246,7 +247,7 @@ export async function prepareAction(actionName, params = {}, context = {}) {
         await authorizeEntityWrite({
           user,
           entityType,
-          entityId: params.id || params.taskId || params.entityId,
+          entityId: scopedEntityId,
         });
       }
     } catch (error) {
@@ -308,10 +309,10 @@ export async function prepareAction(actionName, params = {}, context = {}) {
   const planHash = computePlanHash({
     action: actionName,
     params: safeParams,
-    entityIds: plan.entityIds,
+    entityIds: planEntityIds({ before: plan.before, items: plan.items }),
     before: plan.before,
     after: plan.after,
-    affectedCount: plan.affectedCount,
+    affectedCount: previewAffectedCount(plan.preview),
   });
 
   const preview = {
@@ -593,11 +594,11 @@ export async function commitAction(confirmationId, context = {}) {
   // Проверка plan hash
   const recomputed = computePlanHash({
     action: operation.action,
-    params: stripExecPlan(operation.params),
+    params: operation.params,
     entityIds: collectEntityIds(operation),
     before: operation.before,
     after: operation.after,
-    affectedCount: operation.preview?.affectedCount || 0,
+    affectedCount: previewAffectedCount(operation.preview),
   });
 
   if (recomputed !== operation.planHash) {
@@ -1078,13 +1079,23 @@ export async function prepareRollback(operationId, context = {}) {
     __execPlan: rollbackPlan.execPlan,
   };
 
+  const rollbackPreview = {
+    title: `Откат: ${operation.preview?.title || operation.action}`,
+    entity: operation.preview?.entity || null,
+    changes: rollbackPlan.changes,
+    affectedCount: rollbackPlan.affectedCount,
+    risk: "high",
+    reversible: false,
+    expiresAt,
+  };
+
   const planHash = computePlanHash({
     action: `rollback:${operation.action}`,
     params,
-    entityIds: rollbackPlan.entityIds,
+    entityIds: planEntityIds({ before: rollbackPlan.before, items: rollbackPlan.items }),
     before: rollbackPlan.before,
     after: rollbackPlan.after,
-    affectedCount: rollbackPlan.affectedCount,
+    affectedCount: previewAffectedCount(rollbackPreview),
   });
 
   const rollbackOp = createOperation({
@@ -1097,15 +1108,7 @@ export async function prepareRollback(operationId, context = {}) {
     source,
     sessionId,
     params,
-    preview: {
-      title: `Откат: ${operation.preview?.title || operation.action}`,
-      entity: operation.preview?.entity || null,
-      changes: rollbackPlan.changes,
-      affectedCount: rollbackPlan.affectedCount,
-      risk: "high",
-      reversible: false,
-      expiresAt,
-    },
+    preview: rollbackPreview,
     before: rollbackPlan.before,
     after: rollbackPlan.after,
     planHash,
@@ -1321,18 +1324,18 @@ export async function commitRollback(confirmationId, context = {}) {
 }
 
 function stripExecPlan(params) {
-  if (!params || typeof params !== "object") return {};
-  const { __execPlan, __rollbackOf, ...rest } = params;
-  return rest;
+  return stripInternalParams(params);
+}
+
+function previewAffectedCount(preview) {
+  return Number(preview?.affectedCount) || 0;
 }
 
 function collectEntityIds(operation) {
-  if (operation.before?.entityId != null) return [String(operation.before.entityId)];
-  if (Array.isArray(operation.before?.items)) {
-    return operation.before.items.map((i) => i.entityId).filter(Boolean).map(String);
-  }
-  const items = getOperationItems(operation.id);
-  return items.map((i) => i.entityId).filter(Boolean).map(String);
+  return planEntityIds({
+    before: operation.before,
+    items: getOperationItems(operation.id),
+  });
 }
 
 export function listPublicOperations(filters = {}) {

@@ -15,6 +15,7 @@ export function getActionCatalogBudget() {
 }
 
 const DISCOVERY_ACTIONS = [
+  "deal_create_prepare",
   "deal_category_list",
   "deal_stage_list",
   "lead_stage_list",
@@ -51,7 +52,8 @@ const CATEGORY_KEYWORDS = {
   reports: ["быстр", "отчет", "отчёт"],
   documents: ["документ", "коммерческ", "kp", "кп"],
   users: ["пользовател", "менеджер", "сотрудник", "иван", "ответственн"],
-  timeline: ["комментар", "таймлайн", "timeline"],
+  timeline: ["комментар", "таймлайн", "timeline", "писали", "менеджер"],
+  stagehistory: ["истори", "стадий", "перемещ", "находилась", "сколько времени"],
   structure: ["воронк", "стади", "пользовательск", "поле", "кастом"],
 };
 
@@ -61,6 +63,7 @@ const ACTION_CATEGORY = {
   lead_: "leads",
   deal_: "deals",
   create_deal: "deals",
+  deal_create_prepare: "deals",
   company_: "companies",
   create_task: "tasks",
   update_task: "tasks",
@@ -73,6 +76,7 @@ const ACTION_CATEGORY = {
   stale_: "analytics",
   overdue_: "analytics",
   timeline_: "timeline",
+  stagehistory_: "stagehistory",
   search_users: "users",
   deal_category: "structure",
   deal_stage: "structure",

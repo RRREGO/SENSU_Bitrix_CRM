@@ -103,7 +103,11 @@ const ALLOWLISTS = {
     "confirmationId",
     "verified",
     "verificationRequired",
+    "verification",
+    "mismatch",
     "message",
+    // без error модель не видит причину отказа и может выдать неудачу за успех
+    "error",
   ],
 };
 

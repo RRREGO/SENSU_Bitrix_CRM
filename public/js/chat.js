@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
+import { renderMarkdown } from "./markdown.js";
 import { renderBreadcrumbs, wireBreadcrumbs } from "./workspace/ui/breadcrumbs.js";
 import { CRM_TYPE_LABELS } from "./workspace/helpers.js";
 
@@ -420,10 +421,19 @@ function renderCommunicationsContextBlock(communications, warnings) {
   </div>`;
 }
 
+function setMessageContent(el, role, text) {
+  if (role === "assistant") {
+    el.classList.add("message-markdown");
+    el.innerHTML = renderMarkdown(text);
+    return;
+  }
+  el.textContent = text;
+}
+
 function appendMessage(role, text) {
   const el = document.createElement("div");
   el.className = `message ${role}`;
-  el.textContent = text;
+  setMessageContent(el, role, text);
   els.messagesEl.appendChild(el);
   els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
   return el;
@@ -535,7 +545,12 @@ async function handleSubmit(event) {
 
 function showConfirmation(data) {
   pendingConfirmation = data.pendingConfirmation || data.confirmation || data;
-  els.confirmationTextEl.textContent = data.answer || data.reply || "Подтвердить действие?";
+  if (els.confirmationTextEl) {
+    els.confirmationTextEl.innerHTML = renderMarkdown(
+      data.answer || data.reply || "Подтвердить действие?"
+    );
+    els.confirmationTextEl.classList.add("message-markdown");
+  }
   const preview = pendingConfirmation?.preview || data.preview || {};
   const phrase = preview.requiredConfirmationPhrase || pendingConfirmation?.requiredConfirmationPhrase;
   const phraseWrap = document.getElementById("confirmationPhraseWrap");

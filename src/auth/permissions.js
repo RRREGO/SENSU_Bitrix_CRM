@@ -34,6 +34,8 @@ export const ALL_PERMISSIONS = [
   "users.manage",
   "roles.manage",
   "audit.view",
+  "crm.schema.read",
+  "crm.schema.capture",
 ];
 
 export const ROLE_DEFINITIONS = {
@@ -46,8 +48,9 @@ export const ROLE_DEFINITIONS = {
     name: "Директор",
     description: "CRM, аналитика, отчёты, коммуникации без управления пользователями",
     permissions: ALL_PERMISSIONS.filter(
-      (p) => !["users.manage", "roles.manage", "settings.manage"].includes(p)
-    ).concat(["settings.view"]),
+      (p) =>
+        !["users.manage", "roles.manage", "settings.manage", "crm.schema.capture"].includes(p)
+    ).concat(["settings.view", "crm.schema.read"]),
   },
   manager: {
     name: "Менеджер",
@@ -55,6 +58,7 @@ export const ROLE_DEFINITIONS = {
     permissions: [
       "crm.read.own",
       "crm.context.read",
+      "crm.schema.read",
       "analytics.run",
       "reports.view",
       "reports.run",
@@ -78,6 +82,7 @@ export const ROLE_DEFINITIONS = {
     permissions: [
       "crm.read.all",
       "crm.context.read",
+      "crm.schema.read",
       "analytics.run",
       "reports.view",
       "reports.run",

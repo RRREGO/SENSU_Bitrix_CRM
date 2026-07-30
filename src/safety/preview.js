@@ -134,7 +134,7 @@ export async function buildOperationPlan(action, params, policy) {
     case "update_task":
       return planTaskUpdate(params, title);
     case "create_deal":
-      return planCreate("deal", params, title);
+      return planCreateDeal(params, title);
     case "lead_create":
       return planCreate("lead", params, title);
     case "contact_create":
@@ -687,8 +687,45 @@ async function planTaskUpdate(params, title) {
     items: [{ entityType: "task", entityId: String(id), before: beforeFields, after: afterFields }],
     entityIds: [String(id)],
     affectedCount: 1,
-    execPlan: { kind: "task_update", entityId: String(id), fields: afterFields },
+    execPlan: {
+      kind: "task_update",
+      entityType: "task",
+      entityId: String(id),
+      fields: afterFields,
+    },
   };
+}
+
+async function planCreateDeal(params, title) {
+  const { buildCreateDealPlan } = await import("../deals/dealCreateService.js");
+  const built = await buildCreateDealPlan(params, {
+    step: "prepare_write",
+    confirmationState: "pending",
+    safetyContext: true,
+  });
+
+  if (built.status === "ready") {
+    return planCreate("deal", built.createParams, title);
+  }
+
+  if (built.status === "needs_input" || built.status === "ambiguous_assignee") {
+    throw Object.assign(new Error(built.message || "Не хватает данных для создания сделки."), {
+      code: built.code || "DEAL_CREATE_NOT_READY",
+      details: built,
+    });
+  }
+
+  if (built.status === "not_found" || built.status === "error") {
+    throw Object.assign(new Error(built.message || "Не удалось подготовить сделку."), {
+      code: built.code || "DEAL_CREATE_FAILED",
+      details: built,
+    });
+  }
+
+  throw Object.assign(new Error("Не удалось подготовить сделку."), {
+    code: "DEAL_CREATE_UNKNOWN",
+    details: built,
+  });
 }
 
 function planCreate(entityType, params, title) {
@@ -696,10 +733,14 @@ function planCreate(entityType, params, title) {
   if (entityType === "deal") {
     if (params.title) fields.TITLE = params.title;
     if (params.categoryId !== undefined) fields.CATEGORY_ID = params.categoryId;
-    if (params.stageId) fields.STAGE_ID = params.stageId;
+    if (params.stageId != null && String(params.stageId).trim() !== "") {
+      fields.STAGE_ID = String(params.stageId);
+    }
     if (params.opportunity !== undefined) fields.OPPORTUNITY = params.opportunity;
     if (params.currencyId) fields.CURRENCY_ID = params.currencyId;
-    if (params.assignedById) fields.ASSIGNED_BY_ID = params.assignedById;
+    if (params.assignedById !== undefined && params.assignedById !== null) {
+      fields.ASSIGNED_BY_ID = params.assignedById;
+    }
   }
 
   const safeFields = redactObject(fields);
@@ -759,7 +800,7 @@ function planCreateTask(params, title) {
     items: [{ entityType: "task", entityId: null, before: {}, after: safeFields }],
     entityIds: [],
     affectedCount: 1,
-    execPlan: { kind: "task_create", fields },
+    execPlan: { kind: "task_create", entityType: "task", fields },
   };
 }
 
@@ -931,7 +972,14 @@ async function planDelete(action, params, title) {
     ],
     entityIds: [String(id)],
     affectedCount: 1,
-    execPlan: { kind: "raw_handler", action, params: { ...params, confirm: true } },
+    execPlan: {
+      kind: "raw_handler",
+      action,
+      params: { ...params, confirm: true },
+      entityType,
+      entityId: String(id),
+      expectDeleted: true,
+    },
   };
 }
 

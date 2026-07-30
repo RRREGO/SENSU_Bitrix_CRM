@@ -1,3 +1,4 @@
+import * as dealCreateActions from "./dealCreateActions.js";
 import * as leadActions from "./leadActions.js";
 import * as dealActions from "./dealActions.js";
 import * as crmActions from "./crmActions.js";
@@ -14,6 +15,7 @@ import * as clientContextActions from "./clientContextActions.js";
 
 /** Канонические обработчики actions. */
 const handlers = {
+  ...dealCreateActions,
   ...leadActions,
   ...dealActions,
   ...crmActions,
@@ -52,6 +54,7 @@ const aliases = {
   "crm.company.update": "company_update",
   "crm.timeline.comment.add": "timeline_comment_add",
   "crm.timeline.comment.list": "timeline_comment_list",
+  "crm.stagehistory.list": "stagehistory_list",
   "crm.activity.list": "activity_list",
   "crm.activity.add": "activity_add",
   "crm.activity.update": "activity_update",
@@ -83,6 +86,7 @@ const actionCatalog = [
   // Воронки и CRM
   { name: "deal_category_list", description: "Список воронок сделок", params: { name: "string (optional)" }, destructive: false, implemented: true },
   { name: "deal_stage_list", description: "Стадии сделок в воронке", params: { categoryId: 0, name: "string (optional)" }, destructive: false, implemented: true },
+  { name: "deal_create_prepare", description: "Подготовить создание сделки (сотрудник, воронка, стадия, обязательные поля) без записи в CRM", params: { title: "string", assigneeQuery: "string", assignedById: "number", categoryId: 0, categoryName: "string", stageId: "string", fields: {} }, destructive: false, implemented: true },
   { name: "create_deal", description: "Создать сделку", params: { title: "string", categoryId: 0, stageId: "string", opportunity: 0, fields: {} }, destructive: false, implemented: true },
   { name: "create_default_funnel", description: "Создать воронку", params: { name: "string" }, destructive: false, implemented: true },
   { name: "create_funnel_with_custom_stages", description: "Создать воронку с кастомными стадиями", params: { name: "string", stages: [] }, destructive: false, implemented: true },
@@ -120,7 +124,30 @@ const actionCatalog = [
 
   // Таймлайн и дела
   { name: "timeline_comment_add", aliases: ["crm.timeline.comment.add"], description: "Комментарий в таймлайн CRM", params: { entityType: "lead|deal|contact|company", entityId: "number", comment: "string" }, destructive: false, implemented: true },
-  { name: "timeline_comment_list", aliases: ["crm.timeline.comment.list"], description: "Список комментариев таймлайна", params: { entityType: "string", entityId: "number" }, destructive: false, implemented: true },
+  {
+    name: "timeline_comment_list",
+    aliases: ["crm.timeline.comment.list"],
+    description: "Получение комментариев таймлайна CRM-элемента (лид, сделка, контакт, компания)",
+    params: { filter: { ENTITY_ID: "number", ENTITY_TYPE: "deal|lead|contact|company" }, entityType: "deal|lead|contact|company", entityId: "number", order: {}, select: [], start: 0, limit: 50, allPages: false },
+    userScenarios: [
+      "Покажи комментарии сделки 123",
+      "Что менеджеры писали в таймлайне лида 456",
+    ],
+    destructive: false,
+    implemented: true,
+  },
+  {
+    name: "stagehistory_list",
+    aliases: ["crm.stagehistory.list"],
+    description: "Получение истории перемещения лида, сделки или другого CRM-элемента по стадиям",
+    params: { entityTypeId: "number", entityType: "deal|lead|contact|company", entityId: "number", filter: { OWNER_ID: "number" }, order: {}, select: [], start: 0, limit: 50, allPages: false },
+    userScenarios: [
+      "Покажи историю стадий сделки 123",
+      "Сколько времени сделка 123 находилась на каждой стадии",
+    ],
+    destructive: false,
+    implemented: true,
+  },
   { name: "timeline_list", description: "История: комментарии + дела", params: { entityType: "string", entityId: "number" }, destructive: false, implemented: true },
   { name: "activity_list", aliases: ["crm.activity.list"], description: "Список дел CRM", params: { filter: {}, select: [], order: {} }, destructive: false, implemented: true },
   { name: "activity_add", aliases: ["crm.activity.add"], description: "Создать дело CRM", params: { fields: {} }, destructive: false, implemented: true },
@@ -181,7 +208,7 @@ const actionCatalog = [
   { name: "deals_without_activity", description: "Сделки без активности", params: { categoryId: 0 }, destructive: false, implemented: true },
   { name: "new_deals_period", description: "Новые сделки за период", params: { categoryId: 0, dateFrom: "string", dateTo: "string" }, destructive: false, implemented: true },
   { name: "closed_deals_period", description: "Закрытые сделки за период", params: { categoryId: 0, dateFrom: "string", dateTo: "string" }, destructive: false, implemented: true },
-  { name: "manager_workload", description: "Нагрузка и качество ведения CRM по менеджерам", params: { dateFrom: null, dateTo: null, responsibleIds: [], includeInactiveUsers: false }, destructive: false, implemented: true },
+  { name: "manager_workload", description: "Нагрузка и качество ведения CRM по активным менеджерам (includeInactiveUsers: true — вместе с уволенными и без данных CRM)", params: { dateFrom: null, dateTo: null, responsibleIds: [], includeInactiveUsers: false }, destructive: false, implemented: true },
   { name: "sales_forecast", description: "Прогноз продаж", params: {}, destructive: false, implemented: false },
 
   // Аналитика контактов и качество CRM
@@ -265,6 +292,7 @@ export function getActionRegistryEntries() {
       aliases: entry.aliases || [],
       description: entry.description,
       params: entry.params,
+      userScenarios: entry.userScenarios || [],
       destructive: entry.destructive || false,
       implemented,
       handler,
@@ -283,11 +311,12 @@ export function getActionList() {
 
 export function getActionCatalog() {
   return getActionRegistryEntries()
-    .map(({ name, aliases: actionAliases, description, params, destructive, implemented }) => ({
+    .map(({ name, aliases: actionAliases, description, params, userScenarios, destructive, implemented }) => ({
       name,
       aliases: actionAliases,
       description,
       params,
+      userScenarios: userScenarios || [],
       destructive,
       implemented,
     }))

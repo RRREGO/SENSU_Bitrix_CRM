@@ -1054,4 +1054,166 @@ CREATE INDEX IF NOT EXISTS idx_projects_sort ON projects(sort_order, updated_at)
     description: "Project color tokens, sort order, and CRM bindings for workspace UX",
     destructive: false,
   },
+  {
+    version: 14,
+    name: "v14_crm_schema_registry",
+    sql: `
+CREATE TABLE IF NOT EXISTS crm_schema_snapshots (
+  id TEXT PRIMARY KEY,
+  portal_key TEXT NOT NULL,
+  source_type TEXT NOT NULL,
+  schema_version TEXT NOT NULL,
+  captured_at TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  metadata_json TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_schema_snapshots_portal
+  ON crm_schema_snapshots(portal_key, captured_at);
+CREATE INDEX IF NOT EXISTS idx_crm_schema_snapshots_source
+  ON crm_schema_snapshots(source_type, status);
+
+CREATE TABLE IF NOT EXISTS crm_field_definitions (
+  id TEXT PRIMARY KEY,
+  snapshot_id TEXT NOT NULL,
+  portal_key TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  field_code TEXT NOT NULL,
+  field_name TEXT,
+  canonical_key TEXT,
+  data_type TEXT,
+  user_type_id TEXT,
+  is_multiple INTEGER NOT NULL DEFAULT 0,
+  is_required_globally INTEGER NOT NULL DEFAULT 0,
+  is_read_only INTEGER NOT NULL DEFAULT 0,
+  bi_usage TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'draft',
+  source_comment TEXT,
+  FOREIGN KEY (snapshot_id) REFERENCES crm_schema_snapshots(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_field_defs_snapshot
+  ON crm_field_definitions(snapshot_id);
+CREATE INDEX IF NOT EXISTS idx_crm_field_defs_lookup
+  ON crm_field_definitions(portal_key, entity_type, field_code);
+CREATE INDEX IF NOT EXISTS idx_crm_field_defs_canonical
+  ON crm_field_definitions(canonical_key);
+
+CREATE TABLE IF NOT EXISTS crm_field_enum_values (
+  id TEXT PRIMARY KEY,
+  field_definition_id TEXT NOT NULL,
+  enum_id TEXT,
+  xml_id TEXT,
+  value TEXT,
+  sort INTEGER,
+  canonical_value TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  FOREIGN KEY (field_definition_id) REFERENCES crm_field_definitions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_field_enums_field
+  ON crm_field_enum_values(field_definition_id);
+CREATE INDEX IF NOT EXISTS idx_crm_field_enums_canonical
+  ON crm_field_enum_values(canonical_value);
+
+CREATE TABLE IF NOT EXISTS crm_pipeline_definitions (
+  id TEXT PRIMARY KEY,
+  snapshot_id TEXT NOT NULL,
+  portal_key TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  category_id TEXT,
+  category_name TEXT,
+  canonical_pipeline TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (snapshot_id) REFERENCES crm_schema_snapshots(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_pipelines_snapshot
+  ON crm_pipeline_definitions(snapshot_id);
+CREATE INDEX IF NOT EXISTS idx_crm_pipelines_lookup
+  ON crm_pipeline_definitions(portal_key, entity_type, category_id);
+
+CREATE TABLE IF NOT EXISTS crm_stage_definitions (
+  id TEXT PRIMARY KEY,
+  pipeline_id TEXT NOT NULL,
+  stage_id TEXT NOT NULL,
+  stage_name TEXT,
+  canonical_stage TEXT,
+  stage_group TEXT,
+  sort_order INTEGER,
+  semantic TEXT,
+  probability INTEGER,
+  is_final INTEGER NOT NULL DEFAULT 0,
+  is_success INTEGER NOT NULL DEFAULT 0,
+  is_failure INTEGER NOT NULL DEFAULT 0,
+  is_optional INTEGER NOT NULL DEFAULT 0,
+  business_goal TEXT,
+  success_trigger TEXT,
+  recommended_action TEXT,
+  maximum_duration_hours INTEGER,
+  verification_status TEXT NOT NULL DEFAULT 'draft',
+  FOREIGN KEY (pipeline_id) REFERENCES crm_pipeline_definitions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_stages_pipeline
+  ON crm_stage_definitions(pipeline_id);
+CREATE INDEX IF NOT EXISTS idx_crm_stages_canonical
+  ON crm_stage_definitions(canonical_stage);
+CREATE INDEX IF NOT EXISTS idx_crm_stages_stage_id
+  ON crm_stage_definitions(stage_id);
+
+CREATE TABLE IF NOT EXISTS crm_stage_requirements (
+  id TEXT PRIMARY KEY,
+  stage_definition_id TEXT NOT NULL,
+  field_code TEXT NOT NULL,
+  requirement_type TEXT NOT NULL,
+  validation_rule_json TEXT,
+  error_message TEXT,
+  source_type TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'needs_confirmation',
+  FOREIGN KEY (stage_definition_id) REFERENCES crm_stage_definitions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_stage_reqs_stage
+  ON crm_stage_requirements(stage_definition_id);
+
+CREATE TABLE IF NOT EXISTS crm_stage_mappings (
+  id TEXT PRIMARY KEY,
+  canonical_stage TEXT NOT NULL,
+  source_portal TEXT NOT NULL,
+  source_stage_id TEXT,
+  target_portal TEXT NOT NULL,
+  target_stage_id TEXT,
+  mapping_type TEXT NOT NULL DEFAULT 'unmapped',
+  confidence REAL,
+  comment TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'draft',
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_stage_mappings_canonical
+  ON crm_stage_mappings(canonical_stage);
+CREATE INDEX IF NOT EXISTS idx_crm_stage_mappings_portals
+  ON crm_stage_mappings(source_portal, target_portal);
+
+CREATE TABLE IF NOT EXISTS crm_process_rules (
+  id TEXT PRIMARY KEY,
+  canonical_stage TEXT NOT NULL,
+  rule_type TEXT NOT NULL,
+  rule_json TEXT NOT NULL,
+  source_type TEXT,
+  verification_status TEXT NOT NULL DEFAULT 'draft',
+  version TEXT NOT NULL DEFAULT '1'
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_process_rules_stage
+  ON crm_process_rules(canonical_stage, rule_type);
+`,
+    backwardCompatibleFrom: 13,
+    description:
+      "CRM schema registry: snapshots, fields, enums, pipelines, stages, mappings, process rules (read-only audit)",
+    destructive: false,
+  },
 ];

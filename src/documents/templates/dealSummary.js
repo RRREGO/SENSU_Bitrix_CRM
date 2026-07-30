@@ -36,7 +36,7 @@ export async function build(params = {}) {
       entityType: "deal",
       entityId: dealId,
     });
-    if (!Array.isArray(comments)) comments = [];
+    if (!Array.isArray(comments)) comments = comments?.items || [];
   } catch {
     comments = [];
   }

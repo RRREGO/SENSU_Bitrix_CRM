@@ -1,0 +1,165 @@
+{
+  "portal_key": "sensu",
+  "source_type": "excel_sensu",
+  "schema_version": "sensu-draft-v1",
+  "verification_status": "draft",
+  "source_note": "Черновик стадий SENSU. stage_id — placeholder до live capture; не считать утверждённым.",
+  "pipelines": [
+    {
+      "entity_type": "lead",
+      "category_id": "0",
+      "category_name": "Лиды SENSU",
+      "canonical_pipeline": "sensu.lead.default",
+      "is_default": true,
+      "stages": [
+        {
+          "stage_id": "SENSU_L_TARGET",
+          "stage_name": "Target",
+          "canonical_stage": "lead.target",
+          "sort_order": 10,
+          "semantic": "new",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_READY",
+          "stage_name": "Готовность ко встрече",
+          "canonical_stage": "lead.meeting_ready",
+          "sort_order": 20,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_MEETING",
+          "stage_name": "Первичная встреча",
+          "canonical_stage": "lead.first_meeting",
+          "sort_order": 30,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_WORK",
+          "stage_name": "В работе",
+          "canonical_stage": "lead.in_progress",
+          "sort_order": 40,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_PAUSE",
+          "stage_name": "Пауза",
+          "canonical_stage": "lead.pause",
+          "sort_order": 50,
+          "semantic": "hold",
+          "is_optional": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_COLD",
+          "stage_name": "Холод",
+          "canonical_stage": "lead.cold",
+          "sort_order": 60,
+          "semantic": "hold",
+          "is_optional": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_L_SUCCESS",
+          "stage_name": "Успешный лид",
+          "canonical_stage": "lead.success",
+          "sort_order": 70,
+          "semantic": "success",
+          "is_final": true,
+          "is_success": true,
+          "verification_status": "imported_from_excel"
+        }
+      ]
+    },
+    {
+      "entity_type": "deal",
+      "category_id": "0",
+      "category_name": "Сделки SENSU",
+      "canonical_pipeline": "sensu.deal.default",
+      "is_default": true,
+      "stages": [
+        {
+          "stage_id": "SENSU_D_NDA",
+          "stage_name": "NDA",
+          "canonical_stage": "deal.nda",
+          "sort_order": 10,
+          "semantic": "new",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_EO",
+          "stage_name": "ЭО, подготовка КП",
+          "canonical_stage": "deal.eo_proposal_prep",
+          "sort_order": 20,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_KP",
+          "stage_name": "Подача КП",
+          "canonical_stage": "deal.proposal_submitted",
+          "sort_order": 30,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_TENDER",
+          "stage_name": "Тендер",
+          "canonical_stage": "deal.tender",
+          "sort_order": 40,
+          "semantic": "process",
+          "is_optional": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_VERBAL",
+          "stage_name": "Устное подтверждение",
+          "canonical_stage": "deal.verbal_confirm",
+          "sort_order": 50,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_SURVEY",
+          "stage_name": "Контракт на обследование",
+          "canonical_stage": "deal.contract_survey",
+          "sort_order": 60,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_PROJECT",
+          "stage_name": "Контракт на проект",
+          "canonical_stage": "deal.contract_project",
+          "sort_order": 70,
+          "semantic": "success",
+          "is_final": true,
+          "is_success": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_DEFERRED",
+          "stage_name": "Отложен",
+          "canonical_stage": "deal.deferred",
+          "sort_order": 80,
+          "semantic": "hold",
+          "is_optional": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "SENSU_D_LOSE",
+          "stage_name": "Сделка провалена",
+          "canonical_stage": "deal.failed",
+          "sort_order": 90,
+          "semantic": "failure",
+          "is_final": true,
+          "is_failure": true,
+          "verification_status": "imported_from_excel"
+        }
+      ]
+    }
+  ]
+}

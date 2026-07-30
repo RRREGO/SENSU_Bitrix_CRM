@@ -31,11 +31,17 @@ function getWebhookUrl() {
   return url.endsWith("/") ? url : `${url}/`;
 }
 
+/** Маскирует секрет в URL входящего вебхука для логов. */
+export function maskBitrixWebhookUrl(url) {
+  if (!url || typeof url !== "string") return "[redacted]";
+  return url.replace(/(\/rest\/\d+\/)[^/]+(\/)/, "$1***$2");
+}
+
 async function requestBitrixOnce(method, params = {}, { signal = undefined, classifyAsWrite = false } = {}) {
   const webhookUrl = getWebhookUrl();
   const url = `${webhookUrl}${method}.json`;
 
-  console.log(`Запрос к Bitrix24 отправлен: ${method}`);
+  console.log(`Запрос к Bitrix24 отправлен: ${method} url=${maskBitrixWebhookUrl(url)}`);
 
   let response;
   try {

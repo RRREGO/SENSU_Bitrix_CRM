@@ -1,0 +1,219 @@
+{
+  "source_type": "sales_process",
+  "schema_version": "sales-process-v1",
+  "verification_status": "draft",
+  "source_note": "Бизнес-онтология из Отчетность Sales_.xlsx. Не заменяет live Bitrix и не утверждает mappings.",
+  "stages": [
+    {
+      "canonical_stage": "lead.target",
+      "business_goal": "Зафиксировать целевой контакт/компанию для квалификации",
+      "success_trigger": "Есть контакт и согласие на следующий шаг",
+      "recommended_action": "Связаться, уточнить потребность, назначить встречу",
+      "maximum_duration_hours": 72,
+      "metrics": ["lead_created", "contact_rate"],
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.meeting_ready",
+      "business_goal": "Подготовить встречу (участники, повестка)",
+      "success_trigger": "Встреча подтверждена",
+      "recommended_action": "Отправить приглашение, собрать контекст",
+      "maximum_duration_hours": 120,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.before_meeting",
+      "business_goal": "Довести лид до первой встречи",
+      "success_trigger": "Встреча проведена или запланирована",
+      "recommended_action": "Квалификация и договорённость о встрече",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.first_meeting",
+      "business_goal": "Провести первичную встречу и зафиксировать итог",
+      "success_trigger": "Протокол/заметки и следующий шаг",
+      "recommended_action": "Провести встречу, обновить CRM",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.after_meeting",
+      "business_goal": "Конвертировать интерес после встречи",
+      "success_trigger": "Решение о работе/отказе/конверсии в сделку",
+      "recommended_action": "Follow-up, квалификация бюджета/сроков",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.in_progress",
+      "business_goal": "Вести активную работу по лиду",
+      "success_trigger": "Переход к успеху или паузе/холоду",
+      "recommended_action": "Регулярные касания, обновление статуса",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.pause",
+      "business_goal": "Временно приостановить без потери контекста",
+      "success_trigger": "Дата возобновления или перевод в работу",
+      "recommended_action": "Указать причину и дату follow-up",
+      "is_optional": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.cold",
+      "business_goal": "Отложить холодный интерес",
+      "success_trigger": "Реактивация или закрытие",
+      "recommended_action": "Nurture / редкие касания",
+      "is_optional": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.junk",
+      "business_goal": "Закрыть некачественный лид",
+      "success_trigger": "Причина отказа заполнена",
+      "recommended_action": "Указать причину junk",
+      "is_final": true,
+      "is_failure": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "lead.success",
+      "business_goal": "Конвертировать лид в сделку",
+      "success_trigger": "Создана связанная сделка",
+      "recommended_action": "Конверсия в deal",
+      "is_final": true,
+      "is_success": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.nda",
+      "business_goal": "Подписать NDA при необходимости",
+      "success_trigger": "NDA подписан или не требуется",
+      "recommended_action": "Согласовать и загрузить NDA",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.task_received",
+      "business_goal": "Принять входящую задачу/запрос",
+      "success_trigger": "Поняты scope и stakeholders",
+      "recommended_action": "Уточнить ТЗ, назначить ответственного",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.eo_proposal_prep",
+      "business_goal": "Подготовить экспресс-оценку / КП",
+      "success_trigger": "КП готово к подаче",
+      "recommended_action": "Собрать данные, рассчитать предложение",
+      "maximum_duration_hours": 168,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.proposal_prep",
+      "business_goal": "Подготовить коммерческое предложение",
+      "success_trigger": "КП готово",
+      "recommended_action": "Сформировать и согласовать КП",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.proposal_submitted",
+      "business_goal": "Подать КП клиенту",
+      "success_trigger": "КП отправлено / сдано",
+      "recommended_action": "Отправить КП, зафиксировать дату",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.tender",
+      "business_goal": "Пройти тендерную процедуру",
+      "success_trigger": "Итог тендера",
+      "recommended_action": "Подать пакет, отслеживать сроки",
+      "is_optional": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.verbal_confirm",
+      "business_goal": "Получить устное подтверждение",
+      "success_trigger": "Клиент подтвердил намерение",
+      "recommended_action": "Зафиксировать подтверждение и условия",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.contract_survey",
+      "business_goal": "Заключить контракт на обследование",
+      "success_trigger": "Контракт подписан",
+      "recommended_action": "Согласовать договор обследования",
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.contract_project",
+      "business_goal": "Заключить контракт на проект",
+      "success_trigger": "Проектный контракт подписан",
+      "recommended_action": "Согласовать и подписать проектный договор",
+      "is_final": true,
+      "is_success": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.contracted",
+      "business_goal": "Зафиксировать законтрактованную сделку",
+      "success_trigger": "Договор подписан",
+      "recommended_action": "Обновить сумму и дату контракта",
+      "is_final": true,
+      "is_success": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.deferred",
+      "business_goal": "Отложить сделку без проигрыша",
+      "success_trigger": "Дата возврата или реактивации",
+      "recommended_action": "Указать причину отложения",
+      "is_optional": true,
+      "verification_status": "inferred"
+    },
+    {
+      "canonical_stage": "deal.failed",
+      "business_goal": "Закрыть проигранную сделку",
+      "success_trigger": "Причина проигрыша заполнена",
+      "recommended_action": "Указать причину и конкурента при наличии",
+      "is_final": true,
+      "is_failure": true,
+      "verification_status": "inferred"
+    }
+  ],
+  "recommended_transitions": [
+    { "from": "lead.target", "to": ["lead.meeting_ready", "lead.before_meeting", "lead.junk"], "verification_status": "draft" },
+    { "from": "lead.meeting_ready", "to": ["lead.first_meeting", "lead.pause", "lead.cold"], "verification_status": "draft" },
+    { "from": "lead.first_meeting", "to": ["lead.in_progress", "lead.success", "lead.pause"], "verification_status": "draft" },
+    { "from": "lead.in_progress", "to": ["lead.success", "lead.pause", "lead.cold", "lead.junk"], "verification_status": "draft" },
+    { "from": "lead.before_meeting", "to": ["lead.after_meeting", "lead.junk"], "verification_status": "draft" },
+    { "from": "lead.after_meeting", "to": ["lead.success", "lead.junk"], "verification_status": "draft" },
+    { "from": "deal.nda", "to": ["deal.eo_proposal_prep", "deal.deferred", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.task_received", "to": ["deal.proposal_prep", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.eo_proposal_prep", "to": ["deal.proposal_submitted", "deal.deferred", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.proposal_prep", "to": ["deal.proposal_submitted", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.proposal_submitted", "to": ["deal.tender", "deal.verbal_confirm", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.tender", "to": ["deal.verbal_confirm", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.verbal_confirm", "to": ["deal.contract_survey", "deal.contract_project", "deal.contracted", "deal.deferred", "deal.failed"], "verification_status": "draft" },
+    { "from": "deal.contract_survey", "to": ["deal.contract_project", "deal.deferred", "deal.failed"], "verification_status": "draft" }
+  ],
+  "process_rules": [
+    {
+      "canonical_stage": "lead.success",
+      "rule_type": "conversion_expected",
+      "rule_json": { "expect_linked_deal": true },
+      "verification_status": "draft",
+      "version": "1"
+    },
+    {
+      "canonical_stage": "deal.failed",
+      "rule_type": "require_fields_on_exit",
+      "rule_json": { "fields": ["LOSE_REASON"], "note": "needs_confirmation — код поля причины уточнить на портале" },
+      "verification_status": "needs_confirmation",
+      "version": "1"
+    },
+    {
+      "canonical_stage": "deal.proposal_submitted",
+      "rule_type": "recommended_next",
+      "rule_json": { "next": ["deal.verbal_confirm", "deal.tender"] },
+      "verification_status": "draft",
+      "version": "1"
+    }
+  ]
+}

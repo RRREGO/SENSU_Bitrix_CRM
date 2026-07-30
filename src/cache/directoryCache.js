@@ -22,8 +22,22 @@ function chunk(arr, size) {
 }
 
 /**
+ * Статус «Активен» пользователя Bitrix24.
+ * @returns {boolean|null} null — статус неизвестен (пользователь не найден).
+ */
+function parseUserActiveFlag(user) {
+  const raw = user?.ACTIVE ?? user?.active;
+  if (raw === undefined || raw === null || raw === "") return null;
+  if (typeof raw === "boolean") return raw;
+  const value = String(raw).trim().toUpperCase();
+  if (value === "N" || value === "0" || value === "FALSE") return false;
+  if (value === "Y" || value === "1" || value === "TRUE") return true;
+  return null;
+}
+
+/**
  * Пакетно подтянуть пользователей по ID.
- * @returns {Map<string, { id: number, name: string|null }>}
+ * @returns {Map<string, { id: number, name: string|null, active: boolean|null, userType: string|null }>}
  */
 export async function resolveUsersByIds(ids = []) {
   const unique = [
@@ -42,18 +56,20 @@ export async function resolveUsersByIds(ids = []) {
         userCache.set(id, {
           id: Number(id),
           name: userDisplayName(user),
+          active: parseUserActiveFlag(user),
+          userType: user.USER_TYPE || user.userType || null,
         });
       }
       for (const id of batch) {
         if (!userCache.has(String(id))) {
-          userCache.set(String(id), { id: Number(id), name: null });
+          userCache.set(String(id), unknownUserRecord(id));
         }
       }
     } catch (error) {
       console.warn("resolveUsersByIds:", error.message);
       for (const id of batch) {
         if (!userCache.has(String(id))) {
-          userCache.set(String(id), { id: Number(id), name: null });
+          userCache.set(String(id), unknownUserRecord(id));
         }
       }
     }
@@ -61,9 +77,39 @@ export async function resolveUsersByIds(ids = []) {
 
   const map = new Map();
   for (const id of unique) {
-    map.set(id, userCache.get(id) || { id: Number(id), name: null });
+    map.set(id, userCache.get(id) || unknownUserRecord(id));
   }
   return map;
+}
+
+function unknownUserRecord(id) {
+  return { id: Number(id), name: null, active: null, userType: null };
+}
+
+/**
+ * Разделить записи по статусу «Активен» ответственного.
+ *
+ * - `active` — сотрудник со статусом «Активен» в Bitrix24;
+ * - `inactive` — статус «Не активен» (уволен / отключён);
+ * - `unknown` — ID без карточки пользователя: удалённый сотрудник или 0
+ *   (сущность без ответственного).
+ *
+ * @param {Array<object>} items
+ * @param {(item: object) => number|string} getUserId
+ * @returns {Promise<{ active: object[], inactive: object[], unknown: object[], users: Map<string, object> }>}
+ */
+export async function splitByUserActivity(items = [], getUserId = (item) => item?.responsibleId) {
+  const users = await resolveUsersByIds(items.map((item) => getUserId(item)));
+  const active = [];
+  const inactive = [];
+  const unknown = [];
+  for (const item of items) {
+    const user = users.get(String(getUserId(item)));
+    if (user?.active === true) active.push(item);
+    else if (user?.active === false) inactive.push(item);
+    else unknown.push(item);
+  }
+  return { active, inactive, unknown, users };
 }
 
 /**

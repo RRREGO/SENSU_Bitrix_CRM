@@ -1,0 +1,431 @@
+{
+  "portal_key": "twiga",
+  "source_type": "excel_twiga",
+  "schema_version": "twiga-bi-v1",
+  "verification_status": "draft",
+  "source_note": "imported_from_excel — Поля из битрикса для дашбордов. Не источник истины после live capture.",
+  "fields": [
+    {
+      "entity_type": "deal",
+      "field_code": "ID",
+      "field_name": "ID сделки",
+      "canonical_key": "deal.id",
+      "data_type": "integer",
+      "is_required_globally": true,
+      "is_read_only": true,
+      "bi_usage": "Sales Com, KPI, dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "TITLE",
+      "field_name": "Название",
+      "canonical_key": "deal.title",
+      "data_type": "string",
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1727864870",
+      "field_name": "Рынок (сделка)",
+      "canonical_key": "market",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "bi_usage": "BI, Sales Com, KPI",
+      "source_comment": "Enum IDs уникальны для deal — не путать с lead/company market",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_64FA17C1E8AD3",
+      "field_name": "Бизнес-юнит (сделка)",
+      "canonical_key": "business_unit",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "bi_usage": "BI, Sales Com",
+      "source_comment": "Enum IDs уникальны для deal",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1719232278820",
+      "field_name": "UF_CRM_1719232278820",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation",
+      "source_comment": "Назначение поля требует подтверждения у владельца CRM"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1703674933",
+      "field_name": "UF_CRM_1703674933",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "LEAD_ID",
+      "field_name": "Лид",
+      "canonical_key": "deal.lead_id",
+      "data_type": "crm_lead",
+      "bi_usage": "Sales Com",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "COMPANY_ID",
+      "field_name": "Компания",
+      "canonical_key": "deal.company_id",
+      "data_type": "crm_company",
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "OPPORTUNITY",
+      "field_name": "Сумма",
+      "canonical_key": "deal.opportunity",
+      "data_type": "double",
+      "bi_usage": "KPI, Sales Com",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_672CDC45401F9",
+      "field_name": "UF_CRM_672CDC45401F9",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "STAGE_ID",
+      "field_name": "Стадия",
+      "canonical_key": "deal.stage_id",
+      "data_type": "crm_status",
+      "bi_usage": "воронка, KPI",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "DATE_CREATE",
+      "field_name": "Дата создания",
+      "canonical_key": "deal.date_create",
+      "data_type": "datetime",
+      "is_read_only": true,
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_658DA84B3F318",
+      "field_name": "UF_CRM_658DA84B3F318",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1738567433801",
+      "field_name": "UF_CRM_1738567433801",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1739187904922",
+      "field_name": "UF_CRM_1739187904922",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "bi_usage": "BI",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "SOURCE_ID",
+      "field_name": "Источник",
+      "canonical_key": "deal.source_id",
+      "data_type": "crm_status",
+      "bi_usage": "BI",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "ID",
+      "field_name": "ID лида",
+      "canonical_key": "lead.id",
+      "data_type": "integer",
+      "is_required_globally": true,
+      "is_read_only": true,
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "TITLE",
+      "field_name": "Название",
+      "canonical_key": "lead.title",
+      "data_type": "string",
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "CREATED_BY_ID",
+      "field_name": "Кем создан",
+      "canonical_key": "lead.created_by_id",
+      "data_type": "user",
+      "bi_usage": "KPI",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "COMPANY_ID",
+      "field_name": "Компания",
+      "canonical_key": "lead.company_id",
+      "data_type": "crm_company",
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "STATUS_ID",
+      "field_name": "Стадия",
+      "canonical_key": "lead.status_id",
+      "data_type": "crm_status",
+      "bi_usage": "воронка",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "DATE_CREATE",
+      "field_name": "Дата создания",
+      "canonical_key": "lead.date_create",
+      "data_type": "datetime",
+      "is_read_only": true,
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "DATE_MODIFY",
+      "field_name": "Дата изменения",
+      "canonical_key": "lead.date_modify",
+      "data_type": "datetime",
+      "is_read_only": true,
+      "bi_usage": "dashboards",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "SOURCE_ID",
+      "field_name": "Источник",
+      "canonical_key": "lead.source_id",
+      "data_type": "crm_status",
+      "bi_usage": "BI",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "SOURCE_DESCRIPTION",
+      "field_name": "Дополнительно об источнике",
+      "canonical_key": "lead.source_description",
+      "data_type": "string",
+      "bi_usage": "BI",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1703779558",
+      "field_name": "Рынок (лид)",
+      "canonical_key": "market",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "bi_usage": "BI, Sales Com",
+      "source_comment": "Enum IDs лида ≠ deal/company market",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1746426869150",
+      "field_name": "UF_CRM_1746426869150",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748942262",
+      "field_name": "UF_CRM_1748942262",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748942418",
+      "field_name": "UF_CRM_1748942418",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748940325763",
+      "field_name": "UF_CRM_1748940325763",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748940346452",
+      "field_name": "UF_CRM_1748940346452",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748940367634",
+      "field_name": "UF_CRM_1748940367634",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748940386591",
+      "field_name": "UF_CRM_1748940386591",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1748940417627",
+      "field_name": "UF_CRM_1748940417627",
+      "canonical_key": null,
+      "data_type": "unknown",
+      "verification_status": "needs_confirmation"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_BU_TEXN",
+      "field_name": "Бизнес-юнит / техника (лид)",
+      "canonical_key": "business_unit",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "bi_usage": "BI",
+      "source_comment": "Enum IDs лида ≠ deal/company/contact",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "company",
+      "field_code": "ID",
+      "field_name": "ID компании",
+      "canonical_key": "company.id",
+      "data_type": "integer",
+      "is_required_globally": true,
+      "is_read_only": true,
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "company",
+      "field_code": "TITLE",
+      "field_name": "Название",
+      "canonical_key": "company.title",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "company",
+      "field_code": "UF_CRM_1723710339",
+      "field_name": "Рынок (компания)",
+      "canonical_key": "market",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "bi_usage": "BI",
+      "source_comment": "Enum IDs компании ≠ lead/deal market",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "ID",
+      "field_name": "ID контакта",
+      "canonical_key": "contact.id",
+      "data_type": "integer",
+      "is_required_globally": true,
+      "is_read_only": true,
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "NAME",
+      "field_name": "Имя",
+      "canonical_key": "contact.name",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "LAST_NAME",
+      "field_name": "Фамилия",
+      "canonical_key": "contact.last_name",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "COMPANY_ID",
+      "field_name": "Компания",
+      "canonical_key": "contact.company_id",
+      "data_type": "crm_company",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "CREATED_BY_ID",
+      "field_name": "Кем создан",
+      "canonical_key": "contact.created_by_id",
+      "data_type": "user",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "DATE_CREATE",
+      "field_name": "Дата создания",
+      "canonical_key": "contact.date_create",
+      "data_type": "datetime",
+      "is_read_only": true,
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "PHONE",
+      "field_name": "Телефон",
+      "canonical_key": "contact.phone",
+      "data_type": "crm_multifield",
+      "is_multiple": true,
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "UF_BU_TEXN",
+      "field_name": "Бизнес-юнит / техника (контакт)",
+      "canonical_key": "business_unit",
+      "data_type": "enumeration",
+      "user_type_id": "enumeration",
+      "source_comment": "Enum IDs контакта ≠ lead UF_BU_TEXN",
+      "verification_status": "imported_from_excel"
+    }
+  ]
+}

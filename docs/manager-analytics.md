@@ -45,6 +45,42 @@ Read-only отчёты для руководителя: нагрузка, про
 5. Просроченные CRM-дела по менеджерам  
 6. Дисциплина ведения CRM  
 
+## Отбор менеджеров (`manager_workload`)
+
+Строка появляется только у сотрудника, который одновременно:
+
+1. имеет статус **«Активен»** в Bitrix24 (`user.get` → `ACTIVE: true`);
+2. имеет данные CRM — контакты, лиды, сделки или CRM-дела.
+
+Кто не попадает в отчёт:
+
+| Категория | Поле в ответе | Почему |
+|-----------|---------------|--------|
+| Уволенные / отключённые (`ACTIVE: false`) | `inactiveManagers` | Уже не работают |
+| ID без карточки сотрудника (удалён) и сущности без ответственного (`ID 0`) | `unresolvedManagers` | Нечего показать в колонке «Менеджер» |
+| Только задачи Bitrix (`tasks.task`), без данных CRM | `summary.tasksOnlyManagersExcluded` | Задача — не работа в CRM |
+
+`includeInactiveUsers: true` отключает все три отсечки: возвращаются все ответственные, включая неактивных и без данных.
+
+Исключённые не теряются — они попадают в раздел отчёта «Исключены из отчёта» с количеством оставшихся на них лидов, сделок и контактов: это сигнал переназначить ответственного.
+
+```json
+{
+  "summary": {
+    "managers": 12,
+    "inactiveManagersExcluded": 32,
+    "unresolvedManagersExcluded": 3,
+    "tasksOnlyManagersExcluded": 93,
+    "includeInactiveUsers": false
+  },
+  "inactiveManagers": [
+    { "responsibleId": 4, "responsibleName": "Alexey Gorkunov", "contacts": 0, "leads": 8, "deals": 0, "overdueActivities": 12 }
+  ]
+}
+```
+
+`summary.activeLeads` / `summary.activeDeals` считаются по попавшим в отчёт менеджерам. Полный объём просканированных сущностей — в `diagnostics.activeLeadsScanned` / `diagnostics.activeDealsScanned`.
+
 ## Качество ведения CRM (`qualityScore`)
 
 Это **не KPI продаж** и не оценка эффективности сотрудника.

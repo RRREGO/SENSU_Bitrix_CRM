@@ -12,6 +12,44 @@ function stableStringify(value) {
 }
 
 /**
+ * Служебные ключи (__execPlan, __initiatedBy, __rollbackOf) в хеш не входят:
+ * они добавляются к params после построения плана и различаются между
+ * prepare и commit.
+ */
+export function stripInternalParams(params) {
+  if (!params || typeof params !== "object") return {};
+  const out = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (key.startsWith("__")) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * JSON-нормализация: prepare хеширует объекты в памяти, commit — те же данные
+ * после SQLite. Без нормализации undefined/Date дают разный хеш.
+ */
+function normalizeForHash(value) {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null));
+  } catch {
+    return value ?? null;
+  }
+}
+
+/**
+ * Список entityIds операции. Одинаково считается на prepare и commit.
+ */
+export function planEntityIds({ before = null, items = [] } = {}) {
+  if (before?.entityId != null) return [String(before.entityId)];
+  if (Array.isArray(before?.items)) {
+    return before.items.map((i) => i.entityId).filter(Boolean).map(String);
+  }
+  return (items || []).map((i) => i.entityId).filter(Boolean).map(String);
+}
+
+/**
  * SHA-256 plan hash из нормализованных данных операции.
  */
 export function computePlanHash({
@@ -22,14 +60,14 @@ export function computePlanHash({
   after = null,
   affectedCount = 0,
 }) {
-  const payload = {
+  const payload = normalizeForHash({
     action,
-    params: redactObject(params || {}),
+    params: redactObject(stripInternalParams(params)),
     entityIds: [...entityIds].map(String).sort(),
     before: redactObject(before),
     after: redactObject(after),
     affectedCount: Number(affectedCount) || 0,
-  };
+  });
 
   return crypto.createHash("sha256").update(stableStringify(payload)).digest("hex");
 }

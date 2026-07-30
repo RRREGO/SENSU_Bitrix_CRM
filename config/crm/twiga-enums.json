@@ -1,0 +1,69 @@
+{
+  "portal_key": "twiga",
+  "source_type": "excel_twiga",
+  "schema_version": "twiga-bi-v1",
+  "verification_status": "draft",
+  "source_note": "ID справочников различаются между сущностями. Сопоставление только через canonical_value.",
+  "enums": [
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_1727864870",
+      "canonical_key": "market",
+      "values": [
+        { "enum_id": "101", "xml_id": "DEAL_MKT_RU", "value": "Россия", "sort": 10, "canonical_value": "market.ru", "is_active": true },
+        { "enum_id": "102", "xml_id": "DEAL_MKT_CIS", "value": "СНГ", "sort": 20, "canonical_value": "market.cis", "is_active": true },
+        { "enum_id": "103", "xml_id": "DEAL_MKT_INTL", "value": "Международный", "sort": 30, "canonical_value": "market.intl", "is_active": true }
+      ]
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_CRM_1703779558",
+      "canonical_key": "market",
+      "values": [
+        { "enum_id": "201", "xml_id": "LEAD_MKT_RU", "value": "Россия", "sort": 10, "canonical_value": "market.ru", "is_active": true },
+        { "enum_id": "202", "xml_id": "LEAD_MKT_CIS", "value": "СНГ", "sort": 20, "canonical_value": "market.cis", "is_active": true },
+        { "enum_id": "203", "xml_id": "LEAD_MKT_INTL", "value": "Международный", "sort": 30, "canonical_value": "market.intl", "is_active": true }
+      ]
+    },
+    {
+      "entity_type": "company",
+      "field_code": "UF_CRM_1723710339",
+      "canonical_key": "market",
+      "values": [
+        { "enum_id": "301", "xml_id": "CO_MKT_RU", "value": "Россия", "sort": 10, "canonical_value": "market.ru", "is_active": true },
+        { "enum_id": "302", "xml_id": "CO_MKT_CIS", "value": "СНГ", "sort": 20, "canonical_value": "market.cis", "is_active": true },
+        { "enum_id": "303", "xml_id": "CO_MKT_INTL", "value": "Международный", "sort": 30, "canonical_value": "market.intl", "is_active": true }
+      ]
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "UF_CRM_64FA17C1E8AD3",
+      "canonical_key": "business_unit",
+      "values": [
+        { "enum_id": "401", "xml_id": "DEAL_BU_SENS", "value": "Sens", "sort": 10, "canonical_value": "bu.sens", "is_active": true },
+        { "enum_id": "402", "xml_id": "DEAL_BU_TECH", "value": "Tech", "sort": 20, "canonical_value": "bu.tech", "is_active": true },
+        { "enum_id": "403", "xml_id": "DEAL_BU_OTHER", "value": "Other", "sort": 30, "canonical_value": "bu.other", "is_active": true }
+      ]
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "UF_BU_TEXN",
+      "canonical_key": "business_unit",
+      "values": [
+        { "enum_id": "501", "xml_id": "LEAD_BU_SENS", "value": "Sens", "sort": 10, "canonical_value": "bu.sens", "is_active": true },
+        { "enum_id": "502", "xml_id": "LEAD_BU_TECH", "value": "Tech", "sort": 20, "canonical_value": "bu.tech", "is_active": true },
+        { "enum_id": "503", "xml_id": "LEAD_BU_OTHER", "value": "Other", "sort": 30, "canonical_value": "bu.other", "is_active": true }
+      ]
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "UF_BU_TEXN",
+      "canonical_key": "business_unit",
+      "values": [
+        { "enum_id": "601", "xml_id": "CT_BU_SENS", "value": "Sens", "sort": 10, "canonical_value": "bu.sens", "is_active": true },
+        { "enum_id": "602", "xml_id": "CT_BU_TECH", "value": "Tech", "sort": 20, "canonical_value": "bu.tech", "is_active": true },
+        { "enum_id": "603", "xml_id": "CT_BU_OTHER", "value": "Other", "sort": 30, "canonical_value": "bu.other", "is_active": true }
+      ]
+    }
+  ]
+}

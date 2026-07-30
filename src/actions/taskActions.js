@@ -8,6 +8,42 @@ import {
   getAnalyticsMaxPages,
 } from "./helpers.js";
 
+/** ID задачи: модель и safety layer используют и id, и taskId. */
+function resolveTaskId(params = {}) {
+  const id = params.id ?? params.taskId;
+  if (id == null || id === "") throw new Error("id is required");
+  return Number(id);
+}
+
+/**
+ * Bitrix в tasks.task.list молча теряет `!` в операторе `!=`, превращая
+ * «не равно» в «равно» (проверено на портале: "!=STATUS" даёт те же задачи,
+ * что "=STATUS"). Неизвестные операторы тоже игнорируются, поэтому приводим
+ * их к поддерживаемым и сообщаем о непонятных ключах.
+ */
+export function normalizeTaskFilter(filter = {}) {
+  const out = {};
+  const warnings = [];
+
+  for (const [key, value] of Object.entries(filter || {})) {
+    const raw = String(key).trim();
+    const match = raw.match(/^(!=|<>|>=|<=|!<|!>|!%|!|=|>|<|%|@|)(.+)$/);
+    let op = match?.[1] ?? "";
+    const field = match?.[2] ?? raw;
+
+    if (op === "!=" || op === "<>") {
+      op = "!";
+      warnings.push(
+        `Оператор "${raw}" не поддерживается tasks.task.list и заменён на "!${field}" (не равно).`
+      );
+    }
+
+    out[`${op}${field}`] = value;
+  }
+
+  return { filter: out, warnings };
+}
+
 /** Собрать fields для tasks.task.add/update из params. */
 function buildTaskFields(params) {
   const fields = { ...(params.fields || {}) };
@@ -42,7 +78,8 @@ export async function search_tasks(params = {}) {
     limit = PAGINATION.DEFAULT_LIST_LIMIT,
   } = params;
 
-  const requestParams = { filter, order, start };
+  const { filter: taskFilter, warnings } = normalizeTaskFilter(filter);
+  const requestParams = { filter: taskFilter, order, start };
   if (select?.length) requestParams.select = select;
 
   const { result, next, total } = await callBitrixMethodFull(
@@ -55,17 +92,19 @@ export async function search_tasks(params = {}) {
   return {
     ...limited,
     tasks: limited.items,
+    ...(warnings.length ? { warnings: [...(limited.warnings || []), ...warnings] } : {}),
   };
 }
 
 /** Полная выборка задач для аналитики. */
 export async function searchTasksAll(params = {}, options = {}) {
   const { filter = {}, select = [], order = {} } = params;
+  const { filter: taskFilter, warnings } = normalizeTaskFilter(filter);
   const result = await fetchAllPages({
     actionName: options.actionName || "search_tasks_all",
     maxPages: options.maxPages ?? getAnalyticsMaxPages(),
     fetchPage: async (start) => {
-      const requestParams = { filter, order, start };
+      const requestParams = { filter: taskFilter, order, start };
       if (select?.length) requestParams.select = select;
       const { result: pageResult, next, total } = await callBitrixMethodFull(
         "tasks.task.list",
@@ -83,41 +122,36 @@ export async function searchTasksAll(params = {}, options = {}) {
 
 /** Получить задачу по ID. */
 export async function get_task_by_id(params = {}) {
-  if (!params.id) throw new Error("id is required");
-  return callBitrixMethod("tasks.task.get", { taskId: Number(params.id) });
+  return callBitrixMethod("tasks.task.get", { taskId: resolveTaskId(params) });
 }
 
 /** Обновить задачу. */
 export async function update_task(params = {}) {
-  if (!params.id) throw new Error("id is required");
+  const taskId = resolveTaskId(params);
   const fields = buildTaskFields(params);
   if (!Object.keys(fields).length) throw new Error("fields or task properties are required");
 
-  return callBitrixMethod("tasks.task.update", {
-    taskId: Number(params.id),
-    fields,
-  });
+  return callBitrixMethod("tasks.task.update", { taskId, fields });
 }
 
 /** Удалить задачу (требует confirm: true). */
 export async function delete_task(params = {}) {
   requireDestructiveConfirm(params);
-  if (!params.id) throw new Error("id is required");
-  return callBitrixMethod("tasks.task.delete", { taskId: Number(params.id) });
+  return callBitrixMethod("tasks.task.delete", { taskId: resolveTaskId(params) });
 }
 
 /** Очистить дедлайн задачи. */
 export async function clear_task_deadline(params = {}) {
-  if (!params.id) throw new Error("id is required");
+  const taskId = resolveTaskId(params);
 
   try {
     return await callBitrixMethod("tasks.task.update", {
-      taskId: Number(params.id),
+      taskId,
       fields: { DEADLINE: "" },
     });
   } catch (error) {
     return callBitrixMethod("tasks.task.update", {
-      taskId: Number(params.id),
+      taskId,
       fields: { DEADLINE: null },
     });
   }
@@ -125,16 +159,16 @@ export async function clear_task_deadline(params = {}) {
 
 /** Отвязать задачу от группы/проекта. */
 export async function detach_task_from_group(params = {}) {
-  if (!params.id) throw new Error("id is required");
+  const taskId = resolveTaskId(params);
 
   try {
     return await callBitrixMethod("tasks.task.update", {
-      taskId: Number(params.id),
+      taskId,
       fields: { GROUP_ID: 0 },
     });
   } catch (error) {
     return callBitrixMethod("tasks.task.update", {
-      taskId: Number(params.id),
+      taskId,
       fields: { GROUP_ID: null },
     });
   }

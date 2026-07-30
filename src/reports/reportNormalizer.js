@@ -403,11 +403,51 @@ function normalizeContactQuality(raw) {
 
 function normalizeManagerWorkload(raw) {
   const managers = raw.managers || [];
+  const inactiveManagers = raw.inactiveManagers || [];
+  const unresolvedManagers = raw.unresolvedManagers || [];
+  const inactiveExcluded = raw.summary?.inactiveManagersExcluded || 0;
+  const unresolvedExcluded = raw.summary?.unresolvedManagersExcluded || 0;
+  const tasksOnlyExcluded = raw.summary?.tasksOnlyManagersExcluded || 0;
   const formatSums = (sums = {}) => {
     const entries = Object.entries(sums);
     if (!entries.length) return "—";
     return entries.map(([c, v]) => `${Number(v || 0).toLocaleString("ru-RU")} ${c}`).join("; ");
   };
+  const sumField = (list, field) => list.reduce((sum, m) => sum + (m[field] || 0), 0);
+  const orphanLeads = sumField(inactiveManagers, "leads") + sumField(unresolvedManagers, "leads");
+  const orphanDeals = sumField(inactiveManagers, "deals") + sumField(unresolvedManagers, "deals");
+  const orphanContacts =
+    sumField(inactiveManagers, "contacts") + sumField(unresolvedManagers, "contacts");
+  const hasData = (m) => (m.leads || 0) + (m.deals || 0) + (m.contacts || 0) > 0;
+  const exclusionNotes = [];
+  if (inactiveExcluded) {
+    const withData = inactiveManagers
+      .filter(hasData)
+      .map((m) => m.responsibleName || `#${m.responsibleId}`);
+    exclusionNotes.push(
+      `Сотрудники со статусом «Не активен» (уволены или отключены): ${inactiveExcluded}.` +
+        (withData.length
+          ? ` С незакрытыми данными CRM: ${withData.slice(0, 10).join(", ")}${
+              withData.length > 10 ? ` и ещё ${withData.length - 10}` : ""
+            }.`
+          : "")
+    );
+  }
+  if (unresolvedExcluded) {
+    exclusionNotes.push(
+      `Ответственные без карточки сотрудника в Bitrix24 (удалены или сущности без ответственного): ${unresolvedExcluded}.`
+    );
+  }
+  if (tasksOnlyExcluded) {
+    exclusionNotes.push(
+      `Сотрудники только с задачами Bitrix, без данных CRM: ${tasksOnlyExcluded}.`
+    );
+  }
+  if (orphanLeads + orphanDeals + orphanContacts > 0) {
+    exclusionNotes.push(
+      `На исключённых числится: лидов ${orphanLeads}, сделок ${orphanDeals}, контактов ${orphanContacts} — требуется переназначить ответственного.`
+    );
+  }
 
   return {
     summary: [
@@ -454,9 +494,17 @@ function normalizeManagerWorkload(raw) {
       {
         title: "Краткий вывод",
         content: formatBusinessText(
-          `В отчёте ${managers.length} менеджеров. Просроченных CRM-дел: ${raw.summary?.overdueActivities ?? 0}.`
+          `В отчёте ${managers.length} активных менеджеров. Просроченных CRM-дел: ${raw.summary?.overdueActivities ?? 0}.`
         ),
       },
+      ...(exclusionNotes.length
+        ? [
+            {
+              title: "Исключены из отчёта",
+              content: formatBusinessText(exclusionNotes.join(" ")),
+            },
+          ]
+        : []),
       ...(raw.truncated
         ? [
             {
@@ -476,9 +524,18 @@ function normalizeManagerWorkload(raw) {
           ]
         : []),
     ],
-    recommendations: (raw.warnings || [])
-      .filter((w) => w.code === "TASKS_ACCESS_DENIED")
-      .map((w) => formatBusinessText(w.message)),
+    recommendations: [
+      ...(raw.warnings || [])
+        .filter((w) => w.code === "TASKS_ACCESS_DENIED")
+        .map((w) => formatBusinessText(w.message)),
+      ...(orphanLeads + orphanDeals > 0
+        ? [
+            formatBusinessText(
+              `Переназначить ответственных: у неактивных и удалённых сотрудников остались лиды (${orphanLeads}) и сделки (${orphanDeals}).`
+            ),
+          ]
+        : []),
+    ],
   };
 }
 

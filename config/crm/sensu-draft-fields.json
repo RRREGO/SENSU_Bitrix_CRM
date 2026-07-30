@@ -1,0 +1,108 @@
+{
+  "portal_key": "sensu",
+  "source_type": "excel_sensu",
+  "schema_version": "sensu-draft-v1",
+  "verification_status": "draft",
+  "source_note": "Черновик из CRM SENSU.xlsx. Незавершённое описание — требует live Bitrix SENSU и бизнес-подтверждения.",
+  "fields": [
+    {
+      "entity_type": "company",
+      "field_code": "TITLE",
+      "field_name": "Название компании",
+      "canonical_key": "company.title",
+      "data_type": "string",
+      "verification_status": "imported_from_excel",
+      "source_comment": "Карточка компании SENSU — черновик"
+    },
+    {
+      "entity_type": "company",
+      "field_code": "UF_CRM_MARKET",
+      "field_name": "Рынок (компания SENSU)",
+      "canonical_key": "market",
+      "data_type": "enumeration",
+      "verification_status": "needs_confirmation",
+      "source_comment": "Код поля предположителен; сверить с live SENSU"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "NAME",
+      "field_name": "Имя",
+      "canonical_key": "contact.name",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "LAST_NAME",
+      "field_name": "Фамилия",
+      "canonical_key": "contact.last_name",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "contact",
+      "field_code": "PHONE",
+      "field_name": "Телефон",
+      "canonical_key": "contact.phone",
+      "data_type": "crm_multifield",
+      "is_multiple": true,
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "TITLE",
+      "field_name": "Название лида",
+      "canonical_key": "lead.title",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "STATUS_ID",
+      "field_name": "Стадия лида",
+      "canonical_key": "lead.status_id",
+      "data_type": "crm_status",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "lead",
+      "field_code": "SOURCE_ID",
+      "field_name": "Источник",
+      "canonical_key": "lead.source_id",
+      "data_type": "crm_status",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "TITLE",
+      "field_name": "Название сделки",
+      "canonical_key": "deal.title",
+      "data_type": "string",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "STAGE_ID",
+      "field_name": "Стадия сделки",
+      "canonical_key": "deal.stage_id",
+      "data_type": "crm_status",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "OPPORTUNITY",
+      "field_name": "Сумма",
+      "canonical_key": "deal.opportunity",
+      "data_type": "double",
+      "verification_status": "imported_from_excel"
+    },
+    {
+      "entity_type": "deal",
+      "field_code": "COMPANY_ID",
+      "field_name": "Компания",
+      "canonical_key": "deal.company_id",
+      "data_type": "crm_company",
+      "verification_status": "imported_from_excel"
+    }
+  ]
+}

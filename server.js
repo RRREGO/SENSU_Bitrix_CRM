@@ -72,6 +72,7 @@ import {
 import { auditRoutePolicies } from "./src/auth/routePolicies.js";
 import { backfillNotificationRecipients } from "./src/scheduler/notificationService.js";
 import { createObservabilityRouter } from "./src/observability/adminRoutes.js";
+import { createCrmSchemaRouter } from "./src/crmSchema/routes.js";
 import { requestContextMiddleware, maintenanceMiddleware } from "./src/observability/requestContext.js";
 import { getReadinessReport } from "./src/observability/readiness.js";
 import {
@@ -169,6 +170,7 @@ app.use(createClientContextRouter());
 app.use(createSchedulerRouter());
 app.use(createCommunicationsRouter());
 app.use(createObservabilityRouter());
+app.use(createCrmSchemaRouter());
 
 /**
  * Read-only анализ сделки Claude. Bitrix24 не изменяется.
@@ -663,6 +665,18 @@ app.post("/chat", async (req, res, next) => {
       ...result,
     });
   } catch (error) {
+    const correlationId = req.requestId || "unknown";
+    if (error?.code === "PREPARE_FAILED" || error?.name === "DealCreateError") {
+      return res.status(400).json({
+        ok: false,
+        success: false,
+        error: {
+          code: error.code || "DEAL_CREATE_FAILED",
+          message: error.message,
+          requestId: correlationId,
+        },
+      });
+    }
     next(error);
   }
 });

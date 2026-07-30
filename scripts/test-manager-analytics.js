@@ -299,6 +299,39 @@ async function main() {
     ok("20. Sample limit константа", "100");
   });
 
+  await runCase("21. Только активные сотрудники с данными CRM", async () => {
+    assert(workload, "workload missing");
+    assert(Array.isArray(workload.inactiveManagers), "inactiveManagers");
+    assert(Array.isArray(workload.unresolvedManagers), "unresolvedManagers");
+
+    const users = await resolveUsersByIds(workload.managers.map((m) => m.responsibleId));
+    const notActive = workload.managers.filter(
+      (m) => users.get(String(m.responsibleId))?.active !== true
+    );
+    assert(notActive.length === 0, `не активных в отчёте: ${notActive.length}`);
+
+    const withoutCrmData = workload.managers.filter(
+      (m) =>
+        (m.contacts.total || 0) + (m.leads.total || 0) + (m.deals.total || 0) +
+          (m.activities.active || 0) ===
+        0
+    );
+    assert(withoutCrmData.length === 0, `менеджеров без данных CRM: ${withoutCrmData.length}`);
+
+    assert(
+      workload.summary.inactiveManagersExcluded === workload.inactiveManagers.length,
+      "inactiveManagersExcluded не совпадает со списком"
+    );
+    assert(
+      workload.summary.unresolvedManagersExcluded === workload.unresolvedManagers.length,
+      "unresolvedManagersExcluded не совпадает со списком"
+    );
+    ok(
+      "21. Только активные сотрудники с данными CRM",
+      `в отчёте=${workload.managers.length}, неактивных=${workload.summary.inactiveManagersExcluded}, без карточки=${workload.summary.unresolvedManagersExcluded}, только задачи=${workload.summary.tasksOnlyManagersExcluded}`
+    );
+  });
+
   const passed = results.filter((r) => r.status === "PASS").length;
   const failed = results.filter((r) => r.status === "FAIL").length;
   console.log("\n=== Summary ===");

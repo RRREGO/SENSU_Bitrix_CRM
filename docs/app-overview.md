@@ -111,6 +111,7 @@ Wazzup-каналы, диалоги, кампании и цепочки каса
 
 | Тема | Документ |
 |------|----------|
+| Полный перечень возможностей | [system-capabilities.md](./system-capabilities.md) |
 | Доступ и сессии | [access-control.md](./access-control.md), [session-security.md](./session-security.md) |
 | Workspace / SQLite | [workspace-persistence.md](./workspace-persistence.md) |
 | Деплой / go-live | [deployment.md](./deployment.md), [go-live-security.md](./go-live-security.md) |

@@ -28,6 +28,9 @@
     "db:backup-retention": "node scripts/backup-retention.js",
     "db:restore-drill": "node scripts/test-database-restore.js",
     "test:pilot": "node scripts/test-pilot-operations.js",
+    "test:crm-schema": "node scripts/test-crm-schema.js",
+    "test:timeline-read": "node scripts/test-timeline-read-actions.js",
+    "test:deal-create": "node scripts/test-deal-create.js",
     "smoke:production": "node scripts/run-production-smoke-tests.js"
   },
   "engines": {

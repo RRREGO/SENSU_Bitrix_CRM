@@ -8,7 +8,7 @@ import { searchTasksAll } from "./taskActions.js";
 import {
   collectContactQualityDataset,
 } from "./contactAnalyticsActions.js";
-import { resolveUsersByIds } from "../cache/directoryCache.js";
+import { resolveUsersByIds, splitByUserActivity } from "../cache/directoryCache.js";
 import { buildActivityIndex, OWNER_TYPE } from "../analytics/activityIndex.js";
 import { calculateCrmQualityScore } from "../analytics/qualityScore.js";
 import {
@@ -837,25 +837,15 @@ export async function manager_workload(params = {}) {
     }
   }
 
-  // Filter inactive users if needed
+  // В отчёт попадают только сотрудники со статусом «Активен» и с данными CRM.
+  // Задачи Bitrix (tasks.task) сами по себе менеджера в CRM-отчёт не добавляют.
+  const includeInactiveUsers = Boolean(params.includeInactiveUsers);
   let managerList = [...managers.values()];
   if (params.responsibleIds?.length) {
     managerList = managerList.filter((m) =>
       params.responsibleIds.map(String).includes(String(m.responsibleId))
     );
   }
-  if (!params.includeInactiveUsers) {
-    managerList = managerList.filter(
-      (m) =>
-        m.contacts.total +
-          m.leads.total +
-          m.deals.total +
-          m.activities.active +
-          (m.tasks.active || 0) >
-        0
-    );
-  }
-
   // Unknown user check
   if (params.responsibleIds?.length) {
     for (const id of params.responsibleIds) {
@@ -869,12 +859,42 @@ export async function manager_workload(params = {}) {
     }
   }
 
-  const users = await resolveUsersByIds(managerList.map((m) => m.responsibleId));
+  const {
+    active: activeManagers,
+    inactive: inactiveBuckets,
+    unknown: unresolvedBuckets,
+    users,
+  } = await splitByUserActivity(managerList, (m) => m.responsibleId);
+
+  let tasksOnlyExcluded = 0;
+  if (!includeInactiveUsers) {
+    managerList = activeManagers.filter((m) => {
+      if (m.contacts.total + m.leads.total + m.deals.total + m.activities.active > 0) return true;
+      if ((m.tasks.active || 0) > 0) tasksOnlyExcluded += 1;
+      return false;
+    });
+  }
+
+  const describeExcluded = (m) => ({
+    responsibleId: m.responsibleId,
+    responsibleName: users.get(String(m.responsibleId))?.name || null,
+    contacts: m.contacts.total,
+    leads: m.leads.total,
+    deals: m.deals.total,
+    overdueActivities: m.activities.overdue,
+  });
+  const inactiveManagers = inactiveBuckets.map(describeExcluded);
+  const unresolvedManagers = unresolvedBuckets.map(describeExcluded);
+
   let overdueActivitiesTotal = 0;
   let entitiesWithoutNextStep = 0;
+  let reportedLeads = 0;
+  let reportedDeals = 0;
 
   const resultManagers = managerList.map((m) => {
     overdueActivitiesTotal += m.activities.overdue;
+    reportedLeads += m.leads.total;
+    reportedDeals += m.deals.total;
     entitiesWithoutNextStep +=
       m.leads.withoutActivity +
       m.leads.withOverdueActivityOnly +
@@ -962,13 +982,19 @@ export async function manager_workload(params = {}) {
     period: { dateFrom, dateTo },
     summary: {
       managers: resultManagers.length,
-      activeLeads,
-      activeDeals,
+      activeLeads: reportedLeads,
+      activeDeals: reportedDeals,
       overdueActivities: overdueActivitiesTotal,
       entitiesWithoutNextStep,
       tasksAvailable,
+      inactiveManagersExcluded: includeInactiveUsers ? 0 : inactiveManagers.length,
+      unresolvedManagersExcluded: includeInactiveUsers ? 0 : unresolvedManagers.length,
+      tasksOnlyManagersExcluded: tasksOnlyExcluded,
+      includeInactiveUsers,
     },
     managers: resultManagers,
+    inactiveManagers,
+    unresolvedManagers,
     warnings,
     ...truncMeta,
     diagnostics: {
@@ -978,6 +1004,8 @@ export async function manager_workload(params = {}) {
         (contactDataset.activityRequests || 0),
       entitiesChecked:
         contactDataset.total + activeLeads + activeDeals,
+      activeLeadsScanned: activeLeads,
+      activeDealsScanned: activeDeals,
       contactPasses: 1,
       restRequests,
     },

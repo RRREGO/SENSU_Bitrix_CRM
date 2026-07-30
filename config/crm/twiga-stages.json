@@ -1,0 +1,139 @@
+{
+  "portal_key": "twiga",
+  "source_type": "excel_twiga",
+  "schema_version": "twiga-bi-v1",
+  "verification_status": "draft",
+  "source_note": "Стадии TWIGA из BI/Excel. STATUS_ID/STAGE_ID требуют сверки с live Bitrix.",
+  "pipelines": [
+    {
+      "entity_type": "lead",
+      "category_id": "0",
+      "category_name": "Лиды (default)",
+      "canonical_pipeline": "twiga.lead.default",
+      "is_default": true,
+      "stages": [
+        {
+          "stage_id": "NEW",
+          "stage_name": "Target",
+          "canonical_stage": "lead.target",
+          "stage_group": "process",
+          "sort_order": 10,
+          "semantic": "new",
+          "is_final": false,
+          "is_success": false,
+          "is_failure": false,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "IN_PROCESS",
+          "stage_name": "Лид до встречи",
+          "canonical_stage": "lead.before_meeting",
+          "stage_group": "process",
+          "sort_order": 20,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "PROCESSED",
+          "stage_name": "Лид после встречи",
+          "canonical_stage": "lead.after_meeting",
+          "stage_group": "process",
+          "sort_order": 30,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "JUNK",
+          "stage_name": "Некачественный лид",
+          "canonical_stage": "lead.junk",
+          "stage_group": "failure",
+          "sort_order": 40,
+          "semantic": "failure",
+          "is_final": true,
+          "is_failure": true,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "CONVERTED",
+          "stage_name": "Успешный лид",
+          "canonical_stage": "lead.success",
+          "stage_group": "success",
+          "sort_order": 50,
+          "semantic": "success",
+          "is_final": true,
+          "is_success": true,
+          "verification_status": "imported_from_excel"
+        }
+      ]
+    },
+    {
+      "entity_type": "deal",
+      "category_id": "0",
+      "category_name": "Сделки (default)",
+      "canonical_pipeline": "twiga.deal.default",
+      "is_default": true,
+      "stages": [
+        {
+          "stage_id": "NEW",
+          "stage_name": "Получена задача",
+          "canonical_stage": "deal.task_received",
+          "stage_group": "process",
+          "sort_order": 10,
+          "semantic": "new",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "PREPARATION",
+          "stage_name": "Готовим предложение",
+          "canonical_stage": "deal.proposal_prep",
+          "stage_group": "process",
+          "sort_order": 20,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "PREPAYMENT_INVOICE",
+          "stage_name": "Предложение сдано",
+          "canonical_stage": "deal.proposal_submitted",
+          "stage_group": "process",
+          "sort_order": 30,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "EXECUTING",
+          "stage_name": "Устное подтверждение",
+          "canonical_stage": "deal.verbal_confirm",
+          "stage_group": "process",
+          "sort_order": 40,
+          "semantic": "process",
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "WON",
+          "stage_name": "Законтрактовано",
+          "canonical_stage": "deal.contracted",
+          "stage_group": "success",
+          "sort_order": 50,
+          "semantic": "success",
+          "is_final": true,
+          "is_success": true,
+          "probability": 100,
+          "verification_status": "imported_from_excel"
+        },
+        {
+          "stage_id": "LOSE",
+          "stage_name": "Сделка провалена",
+          "canonical_stage": "deal.failed",
+          "stage_group": "failure",
+          "sort_order": 60,
+          "semantic": "failure",
+          "is_final": true,
+          "is_failure": true,
+          "probability": 0,
+          "verification_status": "imported_from_excel"
+        }
+      ]
+    }
+  ]
+}

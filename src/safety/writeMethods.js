@@ -57,6 +57,7 @@ export const EXPLICIT_READ_METHODS = new Set([
   "crm.activity.list",
   "crm.activity.get",
   "crm.timeline.comment.list",
+  "crm.stagehistory.list",
   "crm.timeline.list",
   "tasks.task.list",
   "tasks.task.get",
