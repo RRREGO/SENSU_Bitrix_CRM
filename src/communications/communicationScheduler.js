@@ -25,6 +25,16 @@ function workerId() {
 
 function shouldSendForReal(cfg, job) {
   if (job.dryRun) return false;
+  if (job.provider === "smtp" || job.provider === "email" || job.transport === "email") {
+    // Lazy sync import avoided — flags read from env each time
+    const emailSend = /^(1|true|yes|on)$/i.test(String(process.env.EMAIL_SEND_ENABLED || ""));
+    const emailDry = process.env.EMAIL_DRY_RUN == null || process.env.EMAIL_DRY_RUN === ""
+      ? true
+      : /^(1|true|yes|on)$/i.test(String(process.env.EMAIL_DRY_RUN));
+    if (!emailSend || emailDry) return false;
+    if (!cfg.enabled) return false;
+    return true;
+  }
   if (cfg.dryRun) return false;
   if (!cfg.sendEnabled) return false;
   if (!cfg.enabled) return false;
@@ -288,16 +298,30 @@ async function processOneJob(job, cfg, results) {
 
   // --- Real send gates ---
   try {
-    assertFlagsAllowSend({ level: jobSendLevel(job) });
-    assertNotEmergencyStopped();
-    assertSendCertified({
-      level: jobSendLevel(job),
-      provider: job.provider,
-      channel: job.transport || job.chatType,
-      transportId: job.channelId,
-      accountFingerprint: job.accountFingerprint,
-      dryRun: false,
-    });
+    if (job.provider === "smtp" || job.provider === "email" || job.transport === "email") {
+      assertNotEmergencyStopped();
+      const { isEmailSendAllowed } = await import(
+        "../database/repositories/smtpAccountsRepository.js"
+      );
+      const emailFlags = isEmailSendAllowed();
+      if (!emailFlags.sendEnabled || emailFlags.dryRun) {
+        throw new CommunicationError(
+          "EMAIL_SEND_DISABLED",
+          "Реальная отправка email отключена флагами EMAIL_SEND_ENABLED / EMAIL_DRY_RUN."
+        );
+      }
+    } else {
+      assertFlagsAllowSend({ level: jobSendLevel(job) });
+      assertNotEmergencyStopped();
+      assertSendCertified({
+        level: jobSendLevel(job),
+        provider: job.provider,
+        channel: job.transport || job.chatType,
+        transportId: job.channelId,
+        accountFingerprint: job.accountFingerprint,
+        dryRun: false,
+      });
+    }
   } catch (gateError) {
     if (gateError instanceof CommunicationError) {
       repo.completeOutboxJob(job.id, {
@@ -363,7 +387,12 @@ async function processOneJob(job, cfg, results) {
     return;
   }
 
-  const providerName = job.provider === "max_bot" ? "max_bot" : "wazzup";
+  const providerName =
+    job.provider === "max_bot"
+      ? "max_bot"
+      : job.provider === "smtp" || job.provider === "email" || job.transport === "email"
+        ? "smtp"
+        : "wazzup";
   const provider = getProvider(providerName);
 
   logger.info("communication.provider.request", {

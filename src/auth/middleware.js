@@ -92,7 +92,7 @@ export function accessGateMiddleware(req, res, next) {
 export function securityHeadersMiddleware(_req, res, next) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
-  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  res.setHeader("Permissions-Policy", "geolocation=(), microphone=(self), camera=()");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader(
     "Content-Security-Policy",
@@ -178,6 +178,20 @@ export function requireAuthentication() {
               "users.manage",
               "roles.manage",
               "audit.view",
+              "manage_ai_providers",
+              "use_ai_provider",
+              "manage_ai_models",
+              "select_chat_model",
+              "manage_prompt_profiles",
+              "assign_prompt_profiles",
+              "manage_proxy_profiles",
+              "use_proxy_profiles",
+              "use_voice_input",
+              "manage_communication_accounts",
+              "send_wazzup_messages",
+              "send_email_messages",
+              "view_communication_audit",
+              "approve_external_send",
             ]
           ),
           principal: "system:local_only",

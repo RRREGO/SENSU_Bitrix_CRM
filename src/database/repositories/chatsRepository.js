@@ -22,6 +22,9 @@ function mapChat(row) {
     crmEntityType: row.crm_entity_type || null,
     crmEntityId: row.crm_entity_id != null ? String(row.crm_entity_id) : null,
     modelName: row.model_name || null,
+    aiModelId: row.ai_model_id || null,
+    aiProviderId: row.ai_provider_id || null,
+    promptProfileId: row.prompt_profile_id || null,
     createdAt: row.created_at,
     updatedAt,
     lastActivityAt: updatedAt,
@@ -191,6 +194,9 @@ export function updateChat(id, patch = {}) {
           status = ?,
           archived_at = ?,
           model_name = ?,
+          ai_model_id = ?,
+          ai_provider_id = ?,
+          prompt_profile_id = ?,
           is_pinned = ?,
           updated_at = ?
         WHERE id = ?`
@@ -207,6 +213,9 @@ export function updateChat(id, patch = {}) {
         nextStatus,
         archivedAt,
         patch.modelName ?? current.modelName,
+        patch.aiModelId !== undefined ? patch.aiModelId : current.aiModelId,
+        patch.aiProviderId !== undefined ? patch.aiProviderId : current.aiProviderId,
+        patch.promptProfileId !== undefined ? patch.promptProfileId : current.promptProfileId,
         patch.isPinned !== undefined ? (patch.isPinned ? 1 : 0) : current.isPinned ? 1 : 0,
         now(),
         id

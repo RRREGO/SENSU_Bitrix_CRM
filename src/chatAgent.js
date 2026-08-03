@@ -1,4 +1,5 @@
 import { getActionHandler } from "./actions/index.js";
+import crypto from "crypto";
 import {
   getActionSafetyCategory,
   requiresConfirmation,
@@ -368,6 +369,8 @@ async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null }
     throw new Error("systemPrompt is required for Claude turn");
   }
   const tools = [getBitrixActionTool()];
+  const modelName = session.apiModelName || null;
+  let usedTools = false;
 
   session.messages = trimHistory(session.messages);
   let messages = [...session.messages];
@@ -381,6 +384,7 @@ async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null }
       messages,
       tools,
       toolChoice: { type: "auto" },
+      model: modelName,
     });
 
     const toolUses = extractToolUseBlocks(response);
@@ -402,8 +406,20 @@ async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null }
         sessionId: session.sessionId,
         chatId: session.chatId,
         persist: true,
+        metadata: {
+          providerId: session.aiProviderId || null,
+          modelId: session.aiModelId || null,
+          apiModelName: modelName || process.env.CLAUDE_MODEL || null,
+          correlationId: session.correlationId || null,
+          streaming: false,
+          tools: usedTools,
+          status: "completed",
+          modelSource: session.modelSource || "system",
+        },
       });
     }
+
+    usedTools = true;
 
     const toolResults = [];
 
@@ -681,11 +697,18 @@ export async function handleChatMessage({
     chatId: chat.id,
     projectId: chat.projectId || projectId,
     userMessage,
+    userId: user?.userId || user?.id || null,
   });
 
   session.systemPrompt = context.systemPrompt;
   session.selectedActionNames = (context.selectedActions || []).map((a) => a.name);
   session.contextDiagnostics = context.diagnostics;
+  session.apiModelName = context.modelResolution?.apiModelName || null;
+  session.aiModelId = context.modelResolution?.model?.id || null;
+  session.aiProviderId = context.modelResolution?.provider?.id || null;
+  session.modelSource = context.modelResolution?.source || "system";
+  session.correlationId = crypto.randomUUID?.() || `corr-${Date.now()}`;
+  session.chatId = chat.id;
   const history = [...context.historyMessages];
   const last = history[history.length - 1];
   if (last?.role === "user" && last.content === userMessage) {
@@ -696,6 +719,34 @@ export async function handleChatMessage({
     { role: "user", content: userMessage },
   ]);
 
+  // Non-Anthropic DB models without tools: keep Safety intact by refusing silent switch
+  if (
+    context.modelResolution &&
+    !context.modelResolution.useLegacyAnthropic &&
+    context.modelResolution.provider &&
+    context.modelResolution.provider.providerType !== "anthropic"
+  ) {
+    const supportsTools = context.modelResolution.model?.supportsTools;
+    if (!supportsTools) {
+      return finalizeTurn({
+        reply:
+          "Выбранная модель не поддерживает CRM-инструменты (tools). Выберите Anthropic или модель с поддержкой tools, либо системную модель.",
+        toolCalls: [],
+        pendingConfirmation: null,
+        chatId: chat.id,
+        sessionId: session.sessionId,
+        messageType: "error",
+        metadata: {
+          providerId: session.aiProviderId,
+          modelId: session.aiModelId,
+          apiModelName: session.apiModelName,
+          status: "model_capability_blocked",
+          correlationId: session.correlationId,
+        },
+      });
+    }
+  }
+
   const result = await runClaudeTurn(session, {
     toolCallsLog: [],
     systemPrompt: context.systemPrompt,
@@ -705,7 +756,16 @@ export async function handleChatMessage({
     ...result,
     chatId: chat.id,
     userMessageId: savedUser.id,
-    warnings: context.summaryWarning ? [context.summaryWarning] : undefined,
+    warnings: [
+      ...(context.summaryWarning ? [context.summaryWarning] : []),
+      ...(context.modelResolution?.warnings || []),
+    ].filter(Boolean),
+    model: {
+      source: session.modelSource,
+      apiModelName: session.apiModelName,
+      modelId: session.aiModelId,
+      providerId: session.aiProviderId,
+    },
   };
 }
 

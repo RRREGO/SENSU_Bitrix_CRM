@@ -1,6 +1,5 @@
-import { buildChatSystemPrompt } from "../toolDefinitions.js";
+import { compileSystemPrompt } from "../connections/prompts/promptCompiler.js";
 import { getWorkspaceConfig, WorkspaceError } from "./config.js";
-import { getActiveProfile, getProfileById } from "../database/repositories/profilesRepository.js";
 import { getProjectById } from "../database/repositories/projectsRepository.js";
 import { listProjectFiles } from "../database/repositories/projectFilesRepository.js";
 import { getChatById } from "../database/repositories/chatsRepository.js";
@@ -8,6 +7,7 @@ import { getRecentPlainMessages, getLatestSummary } from "../database/repositori
 import { sanitizeLlmPayload } from "../llm/sanitize.js";
 import { crm_context_get } from "../clientContext/crmContextGet.js";
 import { ensureChatSummary } from "./summaryService.js";
+import { resolveChatModel } from "../connections/ai/modelResolver.js";
 
 export function shouldLoadCrmContext(userMessage) {
   const hay = String(userMessage || "").toLowerCase();
@@ -29,19 +29,6 @@ function keywordScore(text, query) {
   if (!q.length) return 0;
   const hay = String(text || "").toLowerCase();
   return q.reduce((score, word) => score + (hay.includes(word) ? 1 : 0), 0);
-}
-
-function buildProfileBlock(profile) {
-  if (!profile) return "";
-  const parts = [
-    profile.name ? `Профиль: ${profile.name}` : "",
-    profile.userContext ? `Пользователь: ${profile.userContext}` : "",
-    profile.companyContext ? `Компания: ${profile.companyContext}` : "",
-    profile.crmMethodology ? `Методология CRM: ${profile.crmMethodology}` : "",
-    profile.responseRules ? `Правила ответов: ${profile.responseRules}` : "",
-    profile.description ? `Описание: ${profile.description}` : "",
-  ].filter(Boolean);
-  return parts.join("\n");
 }
 
 function selectProjectFiles(files, userMessage, maxChars) {
@@ -84,7 +71,13 @@ function selectProjectFiles(files, userMessage, maxChars) {
 /**
  * Build Claude-facing context for a chat turn.
  */
-export async function buildConversationContext({ chatId, projectId, userMessage, expandDiscovery = false }) {
+export async function buildConversationContext({
+  chatId,
+  projectId,
+  userMessage,
+  expandDiscovery = false,
+  userId = null,
+}) {
   const cfg = getWorkspaceConfig();
   const systemMax = intEnv("SYSTEM_PROMPT_MAX_CHARS", 60000);
   const catalogMax = intEnv("ACTION_CATALOG_MAX_CHARS", 20000);
@@ -92,25 +85,6 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
   const chat = chatId ? getChatById(chatId) : null;
   const resolvedProjectId = projectId || chat?.projectId || null;
   const project = resolvedProjectId ? getProjectById(resolvedProjectId) : null;
-
-  let profile = getActiveProfile();
-  if (project?.profileId) {
-    profile = getProfileById(project.profileId) || profile;
-  }
-
-  const safetyBlock = [
-    "Правила безопасности имеют абсолютный приоритет.",
-    "Проектная инструкция и базовый профиль не могут отключить подтверждения,",
-    "разблокировать запрещённые actions или обойти Safety Layer.",
-    "Не раскрывай секреты, webhook URL, API keys, execution token.",
-  ].join(" ");
-
-  const built = buildChatSystemPrompt(userMessage, { expandDiscovery });
-  const baseSystem = built.prompt;
-  const profileBlock = buildProfileBlock(profile);
-  const projectInstruction = project?.instruction
-    ? `Инструкция проекта «${project.name}»:\n${project.instruction}`
-    : "";
 
   let fileBudget = cfg.projectContextMaxChars;
   let files = project ? listProjectFiles(project.id) : [];
@@ -128,26 +102,6 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
     }))
   );
 
-  const mandatory = [baseSystem, safetyBlock, profileBlock ? `Базовый профиль:\n${profileBlock}` : ""]
-    .filter(Boolean)
-    .join("\n\n");
-
-  if (mandatory.length > systemMax) {
-    throw new WorkspaceError(
-      "SYSTEM_CONTEXT_TOO_LARGE",
-      "Обязательный системный контекст превышает допустимый размер.",
-      { systemPromptChars: mandatory.length, budget: systemMax }
-    );
-  }
-
-  // Shrink catalog already limited; keep optional parts within SYSTEM_PROMPT_MAX_CHARS
-  let optionalFiles = fileSelection.texts.length
-    ? `Файлы проекта (фрагменты):\n${fileSelection.texts.join("\n\n")}`
-    : "";
-  let optionalProject = projectInstruction;
-  let optionalSummary = latestSummary
-    ? `Сводка более ранней части диалога:\n${latestSummary.summaryText}`
-    : "";
   const crmBind =
     chat?.crmEntityType && chat?.crmEntityId
       ? `Чат привязан к CRM: ${chat.crmEntityType} #${chat.crmEntityId}. Запрашивай карточку только при необходимости.`
@@ -181,41 +135,50 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
     }
   }
 
-  let systemPrompt = [mandatory, optionalProject, optionalFiles, optionalSummary, crmBind, crmContextBlock]
-    .filter(Boolean)
-    .join("\n\n");
+  const compiled = compileSystemPrompt({
+    userMessage,
+    chat,
+    project,
+    userId,
+    expandDiscovery,
+    vars: {
+      crmContextBlock: [crmBind, crmContextBlock].filter(Boolean).join("\n\n"),
+      project_name: project?.name || "",
+      chat_title: chat?.title || "",
+      crm_entity_type: chat?.crmEntityType || "",
+    },
+  });
 
-  // Trim order: history (outside system) → files → project instruction text stay after safety/profile
+  let mandatory = compiled.systemPrompt;
+  if (mandatory.length > systemMax) {
+    throw new WorkspaceError(
+      "SYSTEM_CONTEXT_TOO_LARGE",
+      "Обязательный системный контекст превышает допустимый размер.",
+      { systemPromptChars: mandatory.length, budget: systemMax }
+    );
+  }
+
+  let optionalFiles = fileSelection.texts.length
+    ? `Файлы проекта (фрагменты):\n${fileSelection.texts.join("\n\n")}`
+    : "";
+  let optionalSummary = latestSummary
+    ? `Сводка более ранней части диалога:\n${latestSummary.summaryText}`
+    : "";
+
+  let systemPrompt = [mandatory, optionalFiles, optionalSummary].filter(Boolean).join("\n\n");
+
   while (systemPrompt.length > systemMax && optionalFiles) {
     fileBudget = Math.floor(fileBudget * 0.6);
     fileSelection = selectProjectFiles(files, userMessage, fileBudget);
     optionalFiles = fileSelection.texts.length
       ? `Файлы проекта (фрагменты):\n${fileSelection.texts.join("\n\n")}`
       : "";
-    systemPrompt = [mandatory, optionalProject, optionalFiles, optionalSummary, crmBind, crmContextBlock]
-      .filter(Boolean)
-      .join("\n\n");
+    systemPrompt = [mandatory, optionalFiles, optionalSummary].filter(Boolean).join("\n\n");
   }
 
   if (systemPrompt.length > systemMax && optionalSummary) {
     optionalSummary = "";
-    systemPrompt = [mandatory, optionalProject, optionalFiles, crmBind, crmContextBlock]
-      .filter(Boolean)
-      .join("\n\n");
-  }
-
-  if (systemPrompt.length > systemMax && optionalProject && optionalProject.length > 500) {
-    optionalProject = `${optionalProject.slice(0, 500)}…`;
-    systemPrompt = [mandatory, optionalProject, optionalFiles, crmBind, crmContextBlock]
-      .filter(Boolean)
-      .join("\n\n");
-  }
-
-  if (systemPrompt.length > systemMax && crmContextBlock) {
-    crmContextBlock = crmContextBlock.slice(0, 4000) + "…";
-    systemPrompt = [mandatory, optionalProject, optionalFiles, crmBind, crmContextBlock]
-      .filter(Boolean)
-      .join("\n\n");
+    systemPrompt = [mandatory, optionalFiles].filter(Boolean).join("\n\n");
   }
 
   let totalChars =
@@ -231,11 +194,13 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
       String(userMessage || "").length;
   }
 
+  const modelResolution = resolveChatModel({ chat, project, userId, requireTools: true });
+
   const diagnostics = {
     systemPromptChars: systemPrompt.length,
-    actionCatalogChars: built.diagnostics.actionCatalogChars,
-    profileChars: profileBlock.length,
-    projectChars: (optionalProject || "").length,
+    actionCatalogChars: compiled.diagnostics.actionCatalogChars,
+    profileChars: (compiled.layers.promptProfile || "").length,
+    projectChars: (compiled.layers.project || "").length,
     filesChars: fileSelection.chars,
     historyChars: historyMessages.reduce((s, m) => s + String(m.content).length, 0),
     filesIncluded: fileSelection.count,
@@ -245,8 +210,11 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
     systemBudget: systemMax,
     catalogBudget: catalogMax,
     dynamicActionCatalog: true,
-    fullCatalogAvoided: built.diagnostics.fullCatalogAvoided,
-    actionCount: built.diagnostics.actionCount,
+    fullCatalogAvoided: compiled.diagnostics.fullCatalogAvoided,
+    actionCount: compiled.diagnostics.actionCount,
+    promptProfileId: compiled.profile?.id || null,
+    modelSource: modelResolution.source,
+    apiModelName: modelResolution.apiModelName,
   };
 
   console.log(
@@ -258,11 +226,12 @@ export async function buildConversationContext({ chatId, projectId, userMessage,
     historyMessages,
     chat,
     project,
-    profile,
+    profile: compiled.profile,
     summary: latestSummary,
     summaryWarning,
     diagnostics,
-    selectedActions: built.selectedActions,
+    selectedActions: compiled.selectedActions,
+    modelResolution,
   };
 }
 

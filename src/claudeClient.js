@@ -27,7 +27,7 @@ function getClaudeConfig() {
 
   return {
     apiKey,
-    model: process.env.CLAUDE_MODEL || "claude-sonnet-4-5",
+    model: process.env.CLAUDE_MODEL || "claude-opus-4-8",
   };
 }
 
@@ -140,11 +140,12 @@ export async function callClaudeWithTools({
   tools,
   toolChoice = { type: "auto" },
   maxTokens = 2048,
+  model: modelOverride = null,
 }) {
   const { model } = getClaudeConfig();
 
   return requestClaude({
-    model,
+    model: modelOverride || model,
     max_tokens: maxTokens,
     system: systemPrompt,
     messages,

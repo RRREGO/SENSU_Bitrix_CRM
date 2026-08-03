@@ -50,6 +50,8 @@ function mapProject(row) {
     description: row.description || "",
     instruction: row.instruction || "",
     profileId: row.profile_id || null,
+    defaultAiModelId: row.default_ai_model_id || null,
+    defaultPromptProfileId: row.default_prompt_profile_id || null,
     isArchived: Boolean(row.is_archived),
     isPinned: Boolean(row.is_pinned),
     colorKey: row.color_key || null,

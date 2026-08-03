@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "../apiClient.js";
+import { apiGet, apiPost, apiPatch } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
 import { renderMarkdown } from "./markdown.js";
 import { renderBreadcrumbs, wireBreadcrumbs } from "./workspace/ui/breadcrumbs.js";
@@ -46,6 +46,8 @@ export function initChat(elements, hooks = {}) {
   els.confirmBtn.addEventListener("click", () => handleConfirm(true));
   els.cancelBtn.addEventListener("click", () => handleConfirm(false));
 
+  wireChatExtras();
+
   if (chatId) {
     loadChat(chatId).catch(() => {
       appendWelcome();
@@ -56,6 +58,259 @@ export function initChat(elements, hooks = {}) {
     updateMeta(null);
   }
   els.messageInput.focus();
+}
+
+let mediaRecorder = null;
+let mediaChunks = [];
+let voiceStartedAt = 0;
+
+function wireChatExtras() {
+  const modelSelect = document.getElementById("chatModelSelect");
+  const modelBtn = document.getElementById("chatModelBtn");
+  const modelMenu = document.getElementById("chatModelMenu");
+  const modelLabel = document.getElementById("chatModelLabel");
+  const micBtn = document.getElementById("voiceMicBtn");
+  const voiceStatus = document.getElementById("voiceStatus");
+  const extBtn = document.getElementById("chatExtMenuBtn");
+  const extMenu = document.getElementById("chatExtMenu");
+
+  loadAvailableModels(modelSelect);
+  modelSelect?.addEventListener("change", async () => {
+    syncModelLabel(modelSelect, modelLabel);
+    if (!chatId) return;
+    const val = modelSelect.value;
+    try {
+      await apiPatch(`/chats/${chatId}`, {
+        aiModelId: val || null,
+        modelName: modelSelect.selectedOptions[0]?.textContent || null,
+      });
+    } catch (e) {
+      alert(e.message || "Не удалось сохранить модель");
+    }
+  });
+
+  modelBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = modelMenu?.classList.toggle("hidden") === false;
+    modelBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    extMenu?.classList.add("hidden");
+    extBtn?.setAttribute("aria-expanded", "false");
+  });
+
+  modelMenu?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const opt = e.target.closest("[data-model-id]");
+    if (!opt || !modelSelect) return;
+    modelSelect.value = opt.dataset.modelId;
+    modelSelect.dispatchEvent(new Event("change"));
+    modelMenu.classList.add("hidden");
+    modelBtn?.setAttribute("aria-expanded", "false");
+    renderModelMenuActive(modelMenu, modelSelect.value);
+  });
+
+  micBtn?.addEventListener("click", async () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaChunks = [];
+      voiceStartedAt = Date.now();
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size) mediaChunks.push(e.data);
+      };
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const durationSec = Math.round((Date.now() - voiceStartedAt) / 1000);
+        if (voiceStatus) voiceStatus.textContent = "Обработка…";
+        setMicRecording(micBtn, false);
+        try {
+          const blob = new Blob(mediaChunks, { type: "audio/webm" });
+          const buf = await blob.arrayBuffer();
+          const bytes = new Uint8Array(buf);
+          let binary = "";
+          const chunk = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+          }
+          const b64 = btoa(binary);
+          const result = await apiPost("/voice/transcribe", {
+            audioBase64: b64,
+            mimeType: "audio/webm",
+            durationSec,
+          });
+          if (result.text) {
+            els.messageInput.value = result.text;
+            els.messageInput.focus();
+          }
+          if (voiceStatus) voiceStatus.textContent = result.text ? "Текст готов" : "Пустой результат";
+        } catch (e) {
+          if (voiceStatus) voiceStatus.textContent = e.message || "Ошибка распознавания";
+        }
+      };
+      mediaRecorder.start();
+      setMicRecording(micBtn, true);
+      if (voiceStatus) voiceStatus.textContent = "Запись…";
+    } catch (e) {
+      if (voiceStatus) {
+        voiceStatus.textContent =
+          e.name === "NotAllowedError" ? "Разрешение отклонено" : "Микрофон недоступен";
+      }
+    }
+  });
+
+  extBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = extMenu?.classList.toggle("hidden") === false;
+    extBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    modelMenu?.classList.add("hidden");
+    modelBtn?.setAttribute("aria-expanded", "false");
+  });
+  extMenu?.querySelectorAll("[data-ext-send]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      extMenu.classList.add("hidden");
+      extBtn?.setAttribute("aria-expanded", "false");
+      const channel = btn.dataset.extSend;
+      const body = els.messageInput.value.trim();
+      if (!body) {
+        alert("Сначала введите текст сообщения");
+        return;
+      }
+      try {
+        const prepared = await apiPost("/chat/external-send/prepare", {
+          channel,
+          body,
+          chatId,
+        });
+        alert(
+          `Черновик внешней отправки подготовлен (${channel}). Требуется подтверждение через Safety. Dry-run: ${prepared.dryRun ? "да" : "нет"}.\n\nИспользуйте подтверждение операции в чате или раздел Коммуникации.`
+        );
+      } catch (e) {
+        alert(e.message || "Не удалось подготовить отправку");
+      }
+    });
+  });
+
+  document.addEventListener("click", () => {
+    modelMenu?.classList.add("hidden");
+    modelBtn?.setAttribute("aria-expanded", "false");
+    extMenu?.classList.add("hidden");
+    extBtn?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function setMicRecording(micBtn, recording) {
+  if (!micBtn) return;
+  micBtn.classList.toggle("is-recording", recording);
+  micBtn.setAttribute("aria-label", recording ? "Остановить запись" : "Голосовой ввод");
+  micBtn.title = recording ? "Стоп" : "Голосовой ввод";
+}
+
+function syncModelLabel(select, labelEl) {
+  if (!labelEl || !select) return;
+  const text = select.selectedOptions[0]?.textContent?.trim() || "Системная";
+  labelEl.textContent = text;
+}
+
+function renderModelMenuActive(menu, value) {
+  if (!menu) return;
+  menu.querySelectorAll("[data-model-id]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.modelId === String(value || ""));
+  });
+}
+
+function rebuildModelMenu(select) {
+  const menu = document.getElementById("chatModelMenu");
+  const label = document.getElementById("chatModelLabel");
+  if (!menu || !select) return;
+  menu.innerHTML = "";
+  const options = [...select.querySelectorAll("option")];
+  const groups = [...select.querySelectorAll("optgroup")];
+
+  const addOption = (value, text) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "composer-model-option";
+    btn.setAttribute("role", "option");
+    btn.dataset.modelId = value;
+    btn.textContent = text;
+    menu.appendChild(btn);
+  };
+
+  addOption("", "Системная");
+  if (groups.length) {
+    for (const g of groups) {
+      const header = document.createElement("div");
+      header.className = "composer-model-group";
+      header.textContent = g.label || "Модели";
+      menu.appendChild(header);
+      for (const opt of g.querySelectorAll("option")) {
+        addOption(opt.value, opt.textContent);
+      }
+    }
+  } else {
+    for (const opt of options) {
+      if (opt.value === "") continue;
+      addOption(opt.value, opt.textContent);
+    }
+  }
+  renderModelMenuActive(menu, select.value);
+  syncModelLabel(select, label);
+}
+
+async function loadAvailableModels(select) {
+  if (!select) return;
+  try {
+    const data = await apiGet("/settings/ai/models/available");
+    const groups = data.groups || [];
+    select.innerHTML = "";
+    const sys = document.createElement("option");
+    sys.value = "";
+    sys.textContent = "Системная";
+    select.appendChild(sys);
+    for (const g of groups) {
+      const og = document.createElement("optgroup");
+      og.label = g.providerName || g.providerType;
+      for (const m of g.models || []) {
+        if (m.isSystem) continue;
+        const opt = document.createElement("option");
+        opt.value = m.id || "";
+        opt.textContent = m.displayName || m.apiModelName;
+        og.appendChild(opt);
+      }
+      if (og.children.length) select.appendChild(og);
+    }
+  } catch {
+    /* selector optional */
+  }
+  rebuildModelMenu(select);
+}
+
+async function refreshAiResolution() {
+  if (!chatId) return;
+  try {
+    const data = await apiGet(`/chats/${chatId}/ai-resolution`);
+    const ind = document.getElementById("chatPromptIndicator");
+    if (ind) {
+      ind.textContent = data.promptProfile
+        ? `Промпт: ${data.promptProfile.name}`
+        : data.resolved?.providerName
+          ? `Провайдер: ${data.resolved.providerName}`
+          : "";
+    }
+    const select = document.getElementById("chatModelSelect");
+    const label = document.getElementById("chatModelLabel");
+    const menu = document.getElementById("chatModelMenu");
+    if (select && data.resolved?.modelId) {
+      select.value = data.resolved.modelId;
+    }
+    syncModelLabel(select, label);
+    renderModelMenuActive(menu, select?.value);
+  } catch {
+    /* ignore */
+  }
 }
 
 const WELCOME_PROMPTS = [
@@ -184,6 +439,7 @@ function updateMeta(chat) {
   if (chat.projectName) parts.push(chat.projectName);
   if (chat.crmEntityType) parts.push(typeLabel);
   if (els.chatMetaLine) els.chatMetaLine.textContent = parts.join(" · ");
+  refreshAiResolution();
 
   const compact = window.matchMedia("(max-width: 860px)").matches;
   if (crumbsEl) {
@@ -526,8 +782,13 @@ async function handleSubmit(event) {
       onChatChanged?.(chatId);
     }
     appendMessage("assistant", data.answer || data.reply || "Готово.");
-    if (data.resultCards?.length) renderResultCards(data.resultCards);
-    if (data.pendingConfirmation || data.confirmation) {
+    // При подготовке write-операции детали уже в блоке подтверждения —
+    // карточки поиска (таблица «Лиды» и т.п.) только дублируют и шумят.
+    const hasConfirmation = Boolean(data.pendingConfirmation || data.confirmation);
+    if (data.resultCards?.length && !hasConfirmation) {
+      renderResultCards(data.resultCards);
+    }
+    if (hasConfirmation) {
       showConfirmation(data);
     }
     if (chatId) {

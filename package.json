@@ -31,6 +31,7 @@
     "test:crm-schema": "node scripts/test-crm-schema.js",
     "test:timeline-read": "node scripts/test-timeline-read-actions.js",
     "test:deal-create": "node scripts/test-deal-create.js",
+    "test:ai-connections": "node scripts/test-ai-connections.js",
     "smoke:production": "node scripts/run-production-smoke-tests.js"
   },
   "engines": {

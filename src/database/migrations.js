@@ -1216,4 +1216,193 @@ CREATE INDEX IF NOT EXISTS idx_crm_process_rules_stage
       "CRM schema registry: snapshots, fields, enums, pipelines, stages, mappings, process rules (read-only audit)",
     destructive: false,
   },
+  {
+    version: 15,
+    name: "v15_ai_communications_connections",
+    sql: `
+CREATE TABLE IF NOT EXISTS proxy_profiles (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT,
+  name TEXT NOT NULL,
+  proxy_type TEXT NOT NULL DEFAULT 'http',
+  host TEXT NOT NULL,
+  port INTEGER NOT NULL,
+  username_encrypted TEXT,
+  password_encrypted TEXT,
+  no_proxy TEXT,
+  connect_timeout_ms INTEGER NOT NULL DEFAULT 10000,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  scope_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_proxy_profiles_owner ON proxy_profiles(owner_user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_proxy_profiles_active ON proxy_profiles(is_active, updated_at);
+
+ALTER TABLE profiles ADD COLUMN base_instruction TEXT;
+ALTER TABLE profiles ADD COLUMN response_language TEXT DEFAULT 'ru';
+ALTER TABLE profiles ADD COLUMN response_style TEXT;
+ALTER TABLE profiles ADD COLUMN formatting_rules TEXT;
+ALTER TABLE profiles ADD COLUMN allowed_variables_json TEXT;
+ALTER TABLE profiles ADD COLUMN version INTEGER NOT NULL DEFAULT 1;
+
+CREATE TABLE IF NOT EXISTS prompt_profile_versions (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  version INTEGER NOT NULL,
+  snapshot_json TEXT NOT NULL,
+  created_by_user_id TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_prompt_profile_versions_uniq
+  ON prompt_profile_versions(profile_id, version);
+CREATE INDEX IF NOT EXISTS idx_prompt_profile_versions_profile
+  ON prompt_profile_versions(profile_id, created_at);
+
+CREATE TABLE IF NOT EXISTS prompt_profile_assignments (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  scope_type TEXT NOT NULL,
+  scope_id TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE INDEX IF NOT EXISTS idx_prompt_assignments_scope
+  ON prompt_profile_assignments(scope_type, scope_id);
+CREATE INDEX IF NOT EXISTS idx_prompt_assignments_profile
+  ON prompt_profile_assignments(profile_id);
+
+CREATE TABLE IF NOT EXISTS ai_providers (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT,
+  name TEXT NOT NULL,
+  provider_type TEXT NOT NULL,
+  base_url TEXT,
+  organization_id TEXT,
+  project_id TEXT,
+  extra_headers_json TEXT NOT NULL DEFAULT '{}',
+  proxy_mode TEXT NOT NULL DEFAULT 'system',
+  proxy_profile_id TEXT,
+  timeout_ms INTEGER NOT NULL DEFAULT 60000,
+  max_retries INTEGER NOT NULL DEFAULT 2,
+  is_enabled INTEGER NOT NULL DEFAULT 1,
+  allow_users INTEGER NOT NULL DEFAULT 1,
+  default_model_id TEXT,
+  last_check_at TEXT,
+  last_check_status TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (proxy_profile_id) REFERENCES proxy_profiles(id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_providers_owner ON ai_providers(owner_user_id, is_enabled);
+CREATE INDEX IF NOT EXISTS idx_ai_providers_type ON ai_providers(provider_type, is_enabled);
+
+CREATE TABLE IF NOT EXISTS ai_provider_secrets (
+  provider_id TEXT PRIMARY KEY,
+  api_key_encrypted TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (provider_id) REFERENCES ai_providers(id)
+);
+
+CREATE TABLE IF NOT EXISTS ai_models (
+  id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  api_model_name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  context_window INTEGER,
+  max_output_tokens INTEGER,
+  supports_streaming INTEGER NOT NULL DEFAULT 1,
+  supports_tools INTEGER NOT NULL DEFAULT 0,
+  supports_json_mode INTEGER NOT NULL DEFAULT 0,
+  supports_vision INTEGER NOT NULL DEFAULT 0,
+  supports_audio_input INTEGER NOT NULL DEFAULT 0,
+  supports_audio_output INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  priority INTEGER NOT NULL DEFAULT 100,
+  cost_input REAL,
+  cost_output REAL,
+  last_success_at TEXT,
+  capabilities_source TEXT NOT NULL DEFAULT 'manual',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (provider_id) REFERENCES ai_providers(id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_models_provider_name
+  ON ai_models(provider_id, api_model_name);
+CREATE INDEX IF NOT EXISTS idx_ai_models_active ON ai_models(is_active, priority);
+
+CREATE TABLE IF NOT EXISTS ai_provider_checks (
+  id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  check_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  latency_ms INTEGER,
+  result_json TEXT,
+  error_code TEXT,
+  actor_user_id TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (provider_id) REFERENCES ai_providers(id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_provider_checks_provider
+  ON ai_provider_checks(provider_id, created_at);
+
+CREATE TABLE IF NOT EXISTS smtp_accounts (
+  id TEXT PRIMARY KEY,
+  owner_user_id TEXT,
+  name TEXT NOT NULL,
+  host TEXT NOT NULL,
+  port INTEGER NOT NULL DEFAULT 587,
+  encryption TEXT NOT NULL DEFAULT 'starttls',
+  username TEXT,
+  password_encrypted TEXT,
+  from_email TEXT NOT NULL,
+  from_name TEXT,
+  reply_to TEXT,
+  proxy_mode TEXT NOT NULL DEFAULT 'none',
+  proxy_profile_id TEXT,
+  timeout_ms INTEGER NOT NULL DEFAULT 15000,
+  verify_tls INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  dry_run_override INTEGER,
+  allowed_roles_json TEXT NOT NULL DEFAULT '[]',
+  last_check_at TEXT,
+  last_check_status TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (proxy_profile_id) REFERENCES proxy_profiles(id)
+);
+CREATE INDEX IF NOT EXISTS idx_smtp_accounts_active ON smtp_accounts(is_active, updated_at);
+
+CREATE TABLE IF NOT EXISTS user_ai_settings (
+  user_id TEXT PRIMARY KEY,
+  default_model_id TEXT,
+  default_provider_id TEXT,
+  default_prompt_profile_id TEXT,
+  speech_provider_id TEXT,
+  speech_model TEXT,
+  speech_language TEXT DEFAULT 'ru',
+  speech_auto_detect INTEGER NOT NULL DEFAULT 0,
+  voice_max_duration_sec INTEGER NOT NULL DEFAULT 60,
+  keep_audio INTEGER NOT NULL DEFAULT 0,
+  tts_enabled INTEGER NOT NULL DEFAULT 0,
+  allow_model_fallback INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+
+ALTER TABLE chats ADD COLUMN ai_model_id TEXT;
+ALTER TABLE chats ADD COLUMN ai_provider_id TEXT;
+ALTER TABLE chats ADD COLUMN prompt_profile_id TEXT;
+ALTER TABLE projects ADD COLUMN default_ai_model_id TEXT;
+ALTER TABLE projects ADD COLUMN default_prompt_profile_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_chats_ai_model ON chats(ai_model_id);
+CREATE INDEX IF NOT EXISTS idx_chats_prompt_profile ON chats(prompt_profile_id);
+`,
+    backwardCompatibleFrom: 14,
+    description:
+      "AI providers/models, proxy profiles, prompt versions/assignments, SMTP accounts, voice/user AI settings",
+    destructive: false,
+  },
 ];

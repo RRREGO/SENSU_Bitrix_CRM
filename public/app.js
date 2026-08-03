@@ -4,6 +4,7 @@ import { initReports, onReportsTabOpen } from "./js/reports.js";
 import { initDocuments, showDocumentPreview, onDocumentsTabOpen } from "./js/documents.js";
 import { initHistory, onHistoryTabOpen } from "./js/history.js";
 import { loadSettings, saveSettings } from "./js/settings.js";
+import { initExtendedSettings } from "./js/settingsExtended.js";
 import { formatRuDate, getPeriodRange } from "./js/dateUtils.js";
 import { initMeetings } from "./js/meetings.js";
 import { initNotifications, onNotificationsTabOpen, refreshBadge } from "./js/notifications.js";
@@ -216,6 +217,11 @@ function loadSettingsForm() {
   document.getElementById("settingsDocStyle").value = settings.documentStyle;
   document.getElementById("settingsDocFormat").value = settings.documentFormat;
   document.getElementById("settingsLanguage").value = settings.language;
+  const root = document.getElementById("extendedSettingsRoot");
+  if (root && !root.dataset.ready) {
+    root.dataset.ready = "1";
+    initExtendedSettings(root);
+  }
 }
 
 document.getElementById("settingsDocStyle")?.addEventListener("change", (e) => {

@@ -34,12 +34,13 @@ bitrix-claude-local-bridge/
     workspace/           # чаты, проекты, профиль
     clientContext/       # CRM-контекст, протоколы, черновики
     communications/      # Hub (Wazzup/campaigns/sequences) + legacy outbound
+    connections/         # AI providers, proxy, prompt compiler, voice, SMTP
     documents/
     llm/
     bitrix/
 ```
 
-Актуальная миграция: **v11** (`v11_communications_certification`) поверх v1–v10. По умолчанию `APP_ACCESS_MODE=local_only`. Документация: [docs/access-control.md](docs/access-control.md), [docs/user-roles.md](docs/user-roles.md), [docs/session-security.md](docs/session-security.md), [docs/go-live-security.md](docs/go-live-security.md), [docs/deployment.md](docs/deployment.md) (pilot), [docs/communications.md](docs/communications.md) (Hub), [docs/communications-certification.md](docs/communications-certification.md).
+Актуальная миграция: **v15** (`v15_ai_communications_connections`) поверх v1–v14. По умолчанию `APP_ACCESS_MODE=local_only`. Документация: [docs/access-control.md](docs/access-control.md), [docs/user-roles.md](docs/user-roles.md), [docs/session-security.md](docs/session-security.md), [docs/go-live-security.md](docs/go-live-security.md), [docs/deployment.md](docs/deployment.md) (pilot), [docs/communications.md](docs/communications.md) (Hub), [docs/communications-certification.md](docs/communications-certification.md), [docs/ai-providers.md](docs/ai-providers.md), [docs/proxy-profiles.md](docs/proxy-profiles.md), [docs/prompt-profiles.md](docs/prompt-profiles.md), [docs/voice-control.md](docs/voice-control.md), [docs/wazzup-email-send.md](docs/wazzup-email-send.md), [docs/security-secrets.md](docs/security-secrets.md).
 
 ## Быстрый старт
 

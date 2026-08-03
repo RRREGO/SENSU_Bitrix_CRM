@@ -79,7 +79,7 @@ async function openProjectSettingsDetail(id, detailEl = projectDetailEl, { embed
       <div class="project-settings-toolbar">
         ${
           embedded
-            ? `<button type="button" class="btn btn-ghost btn-sm" data-back-overview>К проекту</button>`
+            ? `<button type="button" class="btn btn-ghost btn-sm" data-back-overview>← К проекту</button>`
             : `<span></span>`
         }
         <div class="project-settings-toolbar-actions">
@@ -88,120 +88,138 @@ async function openProjectSettingsDetail(id, detailEl = projectDetailEl, { embed
         </div>
       </div>
 
-      <header class="project-settings-header">
-        <p class="project-settings-eyebrow">Настройки проекта</p>
-        <input type="text" class="project-name-input" id="projectName" value="${escapeHtml(p.name)}" aria-label="Название проекта">
-        <textarea class="project-desc-input" id="projectDescription" rows="2" placeholder="Краткое описание рабочего пространства…" aria-label="Описание">${escapeHtml(p.description || "")}</textarea>
-        <div class="project-meta">
-          <span class="chip chip-muted">${escapeHtml(formatRelativeDate(p.lastActivityAt || p.updatedAt) || "—")}</span>
-          <span class="chip chip-muted">${files.length} файл(ов)</span>
-          <span class="chip chip-muted">${chats.length} чат(ов)</span>
-        </div>
-      </header>
-
-      <div class="project-settings-grid">
-        <section class="project-settings-block project-settings-block--wide">
-          <h3 class="section-title">Инструкции</h3>
-          <p class="section-hint">Дополняет базовый профиль для всех чатов этого проекта.</p>
-          <textarea id="projectInstruction" class="project-settings-textarea" rows="5" placeholder="Как ассистенту работать в этом проекте…">${escapeHtml(p.instruction || "")}</textarea>
-        </section>
-
-        <section class="project-settings-block">
-          <h3 class="section-title">Файлы</h3>
-          <p class="section-hint">Markdown и TXT в контексте ассистента.</p>
-          ${
-            files.length
-              ? `<ul class="project-file-list">${files
-                  .map(
-                    (f) => `<li>
-                      <span>${escapeHtml(f.filename)} · ${formatBytes(f.sizeBytes)}</span>
-                      <button type="button" class="btn btn-ghost btn-sm" data-del-file="${escAttr(f.id)}">Удалить</button>
-                    </li>`
-                  )
-                  .join("")}</ul>`
-              : `<p class="project-note">Файлов пока нет.</p>`
-          }
-          <div class="file-field project-settings-file">
-            <input type="file" id="projectFileInput" class="file-field-input visually-hidden" accept=".md,.txt,text/plain,text/markdown">
-            <label for="projectFileInput" class="btn btn-secondary btn-sm file-field-btn">Загрузить</label>
-            <span class="file-field-name is-empty" data-empty="Файл не выбран" aria-live="polite">Файл не выбран</span>
+      <div class="project-settings-studio">
+        <aside class="project-settings-side" aria-label="Параметры проекта">
+          <h3 class="project-overview-panel-title">Параметры</h3>
+          <label class="project-settings-field">
+            <span>Название</span>
+            <input type="text" class="project-name-input" id="projectName" value="${escapeHtml(p.name)}" aria-label="Название проекта">
+          </label>
+          <label class="project-settings-field">
+            <span>Описание</span>
+            <textarea class="project-desc-input" id="projectDescription" rows="3" placeholder="Краткое описание рабочего пространства…" aria-label="Описание">${escapeHtml(p.description || "")}</textarea>
+          </label>
+          <div class="project-settings-meta">
+            <span>${escapeHtml(formatRelativeDate(p.lastActivityAt || p.updatedAt) || "—")}</span>
+            <span>${files.length} файл(ов)</span>
+            <span>${chats.length} чат(ов)</span>
           </div>
-        </section>
+          <label class="project-settings-field project-settings-field--grow">
+            <span>Инструкции</span>
+            <p class="project-settings-field-hint">Дополняет базовый профиль для всех чатов проекта.</p>
+            <textarea id="projectInstruction" class="project-settings-textarea" rows="8" placeholder="Как ассистенту работать в этом проекте…">${escapeHtml(p.instruction || "")}</textarea>
+          </label>
+          <button type="button" class="btn btn-primary project-overview-primary-btn" id="saveProjectBtnSide">Сохранить</button>
+        </aside>
 
-        <section class="project-settings-block" id="projectCrmSection">
-          <h3 class="section-title">CRM-связи</h3>
-          <p class="section-hint">Воронка, сделка, компания и другие сущности.</p>
-          <div id="projectCrmList" class="project-crm-editor-list"></div>
-          <div class="project-crm-add-grid">
-            <label class="project-crm-field">
-              <span>Тип</span>
-              <select id="crmBindType">${typeOptions}</select>
-            </label>
-            <label class="project-crm-field project-crm-field--grow">
-              <span>Название</span>
-              <input type="text" id="crmBindTitle" placeholder="Воронка Продажи SENSU" autocomplete="off">
-            </label>
-            <label class="project-crm-field">
-              <span>ID <small>опц.</small></span>
-              <input type="text" id="crmBindId" placeholder="123" inputmode="numeric" autocomplete="off">
-            </label>
-            <button type="button" class="btn btn-secondary btn-sm" id="crmBindAddBtn">Добавить</button>
-          </div>
-          <p id="crmBindStatus" class="panel-desc"></p>
+        <div class="project-settings-main">
+          <section class="project-settings-card">
+            <div class="project-settings-card-head">
+              <div>
+                <h3 class="project-overview-panel-title">Файлы</h3>
+                <p class="section-hint">Markdown и TXT в контексте ассистента.</p>
+              </div>
+            </div>
+            ${
+              files.length
+                ? `<ul class="project-file-list">${files
+                    .map(
+                      (f) => `<li>
+                        <span>${escapeHtml(f.filename)} · ${formatBytes(f.sizeBytes)}</span>
+                        <button type="button" class="btn btn-ghost btn-sm" data-del-file="${escAttr(f.id)}">Удалить</button>
+                      </li>`
+                    )
+                    .join("")}</ul>`
+                : `<p class="project-note">Файлов пока нет.</p>`
+            }
+            <div class="file-field project-settings-file">
+              <input type="file" id="projectFileInput" class="file-field-input visually-hidden" accept=".md,.txt,text/plain,text/markdown">
+              <label for="projectFileInput" class="btn btn-secondary btn-sm file-field-btn">Загрузить</label>
+              <span class="file-field-name is-empty" data-empty="Файл не выбран" aria-live="polite">Файл не выбран</span>
+            </div>
+          </section>
+
+          <section class="project-settings-card" id="projectCrmSection">
+            <div class="project-settings-card-head">
+              <div>
+                <h3 class="project-overview-panel-title">CRM-связи</h3>
+                <p class="section-hint">Воронка, сделка, компания и другие сущности.</p>
+              </div>
+            </div>
+            <div id="projectCrmList" class="project-crm-editor-list"></div>
+            <div class="project-crm-add-grid">
+              <label class="project-crm-field">
+                <span>Тип</span>
+                <select id="crmBindType">${typeOptions}</select>
+              </label>
+              <label class="project-crm-field project-crm-field--grow">
+                <span>Название</span>
+                <input type="text" id="crmBindTitle" placeholder="Воронка Продажи SENSU" autocomplete="off">
+              </label>
+              <label class="project-crm-field">
+                <span>ID <small>опц.</small></span>
+                <input type="text" id="crmBindId" placeholder="123" inputmode="numeric" autocomplete="off">
+              </label>
+              <button type="button" class="btn btn-secondary btn-sm" id="crmBindAddBtn">Добавить</button>
+            </div>
+            <p id="crmBindStatus" class="panel-desc"></p>
+            ${
+              fromChats.length
+                ? `<div class="project-crm-inferred">
+                    <p class="section-hint">Из чатов проекта:</p>
+                    <div class="project-crm-list">${fromChats
+                      .map((l) => `<span class="chip chip-muted">${escapeHtml(formatCrmBinding(l))}</span>`)
+                      .join("")}</div>
+                  </div>`
+                : ""
+            }
+          </section>
+
           ${
-            fromChats.length
-              ? `<div class="project-crm-inferred">
-                  <p class="section-hint">Из чатов проекта:</p>
-                  <div class="project-crm-list">${fromChats
-                    .map((l) => `<span class="chip chip-muted">${escapeHtml(formatCrmBinding(l))}</span>`)
-                    .join("")}</div>
-                </div>`
+            SHOW_PROJECT_PROTOCOL_TEMPLATE
+              ? `<section class="project-settings-card">
+            <h3 class="project-overview-panel-title">Шаблон протокола</h3>
+            <p class="section-hint">Опциональный шаблон для протоколов встреч.</p>
+            <label class="setting-row"><span>Название шаблона</span>
+              <input type="text" id="protocolTemplateName" value="Шаблон проекта">
+            </label>
+            <label class="setting-row"><span>Инструкция</span>
+              <textarea id="protocolTemplateInstruction" rows="4" placeholder="Как оформлять протокол…"></textarea>
+            </label>
+            <button type="button" class="btn btn-secondary" id="saveProtocolTemplateBtn">Сохранить шаблон</button>
+            <p id="protocolTemplateStatus" class="panel-desc"></p>
+          </section>`
               : ""
           }
-        </section>
 
-        ${
-          SHOW_PROJECT_PROTOCOL_TEMPLATE
-            ? `<section class="project-settings-block project-settings-block--wide">
-          <h3 class="section-title">Шаблон протокола</h3>
-          <p class="section-hint">Опциональный шаблон для протоколов встреч.</p>
-          <label class="setting-row"><span>Название шаблона</span>
-            <input type="text" id="protocolTemplateName" value="Шаблон проекта">
-          </label>
-          <label class="setting-row"><span>Инструкция</span>
-            <textarea id="protocolTemplateInstruction" rows="4" placeholder="Как оформлять протокол…"></textarea>
-          </label>
-          <button type="button" class="btn btn-secondary" id="saveProtocolTemplateBtn">Сохранить шаблон</button>
-          <p id="protocolTemplateStatus" class="panel-desc"></p>
-        </section>`
-            : ""
-        }
-
-        <section class="project-settings-block project-settings-block--wide">
-          <div class="project-settings-block-head">
-            <div>
-              <h3 class="section-title">Чаты проекта</h3>
-              <p class="section-hint">Диалоги с инструкциями и файлами проекта.</p>
+          <section class="project-settings-card">
+            <div class="project-settings-card-head">
+              <div>
+                <h3 class="project-overview-panel-title">Чаты проекта</h3>
+                <p class="section-hint">Диалоги с инструкциями и файлами проекта.</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="openProjectChatBtn">Новый чат</button>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="openProjectChatBtn">Новый чат</button>
-          </div>
-          ${
-            chats.length
-              ? `<ul class="project-chat-list project-chat-list--overview">${chats
-                  .slice(0, 8)
-                  .map((c) => {
-                    const meta = formatRelativeDate(c.lastActivityAt || c.updatedAt);
-                    return `<li>
-                      <button type="button" class="project-chat-item" data-chat-id="${escAttr(c.id)}">
-                        <span class="project-chat-item-title">${escapeHtml(c.title || "Диалог")}</span>
-                        ${meta ? `<span class="project-chat-item-meta">${escapeHtml(meta)}</span>` : ""}
-                      </button>
-                    </li>`;
-                  })
-                  .join("")}</ul>`
-              : `<p class="project-note">В проекте пока нет чатов.</p>`
-          }
-        </section>
+            ${
+              chats.length
+                ? `<ul class="project-chat-list project-chat-list--overview">${chats
+                    .slice(0, 8)
+                    .map((c) => {
+                      const meta = formatRelativeDate(c.lastActivityAt || c.updatedAt);
+                      return `<li>
+                        <button type="button" class="project-chat-item" data-chat-id="${escAttr(c.id)}">
+                          <span class="project-chat-item-top">
+                            <span class="project-chat-item-title">${escapeHtml(c.title || "Диалог")}</span>
+                            ${meta ? `<span class="project-chat-item-meta">${escapeHtml(meta)}</span>` : ""}
+                          </span>
+                        </button>
+                      </li>`;
+                    })
+                    .join("")}</ul>`
+                : `<p class="project-note">В проекте пока нет чатов.</p>`
+            }
+          </section>
+        </div>
       </div>
     </div>
   `;
@@ -330,7 +348,7 @@ async function openProjectSettingsDetail(id, detailEl = projectDetailEl, { embed
       .catch(() => {});
   }
 
-  detailEl.querySelector("#saveProjectBtn")?.addEventListener("click", async () => {
+  async function saveProject() {
     await apiPatch(`/projects/${id}`, {
       name: detailEl.querySelector("#projectName")?.value || p.name,
       description: detailEl.querySelector("#projectDescription")?.value || "",
@@ -339,7 +357,10 @@ async function openProjectSettingsDetail(id, detailEl = projectDetailEl, { embed
     });
     await refreshProjects();
     await hooks.refreshSidebar?.();
-  });
+  }
+
+  detailEl.querySelector("#saveProjectBtn")?.addEventListener("click", saveProject);
+  detailEl.querySelector("#saveProjectBtnSide")?.addEventListener("click", saveProject);
 
   detailEl.querySelector("#archiveProjectBtn")?.addEventListener("click", async () => {
     const ok = await confirmDialog({

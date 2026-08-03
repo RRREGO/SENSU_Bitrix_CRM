@@ -12,7 +12,7 @@
 </head>
 <body>
   <div id="loginGate" class="login-gate">
-    <form id="loginForm" class="login-card">
+    <form id="loginForm" class="login-card" method="post" action="#" autocomplete="on">
       <h2>Вход в CRM Assistant</h2>
       <label>
         <span>Логин</span>
@@ -30,10 +30,12 @@
   <div id="changePasswordGate" class="login-gate hidden">
     <form id="changePasswordForm" class="login-card">
       <h2>Смена пароля</h2>
-      <label><span>Текущий пароль</span><input type="password" id="currentPassword" required></label>
-      <label><span>Новый пароль</span><input type="password" id="newPassword" required></label>
+      <p class="panel-desc">После первого входа нужно задать новый пароль (минимум 12 символов: заглавные, строчные, цифра и спецсимвол).</p>
+      <label><span>Текущий пароль</span><input type="password" id="currentPassword" required autocomplete="current-password"></label>
+      <label><span>Новый пароль</span><input type="password" id="newPassword" required autocomplete="new-password"></label>
       <p id="changePasswordError" class="login-error hidden"></p>
       <button type="submit" class="btn btn-primary">Сохранить</button>
+      <button type="button" class="btn btn-secondary" id="changePasswordLogoutBtn">Выйти</button>
     </form>
   </div>
   <div class="app" id="appRoot">
@@ -145,6 +147,9 @@
                   </div>
                 </div>
                 <div class="chat-meta-line" id="chatMetaLine"></div>
+                <div class="chat-toolbar-extra" id="chatToolbarExtra">
+                  <span class="chat-prompt-indicator" id="chatPromptIndicator" title="Профиль промпта"></span>
+                </div>
                 <div class="chat-meta-actions">
                   <a id="crmCardLink" class="btn btn-secondary hidden" href="#" target="_blank" rel="noopener">Открыть карточку</a>
                   <button type="button" id="refreshCrmContextBtn" class="btn btn-secondary hidden">Обновить контекст</button>
@@ -164,9 +169,40 @@
                   <button id="cancelBtn" type="button" class="btn btn-secondary">Отмена</button>
                 </div>
               </div>
-              <form id="chatForm" class="composer">
-                <textarea id="messageInput" class="message-input" rows="3" placeholder="Например: Покажи сделки в работе" autocomplete="off"></textarea>
-                <button id="sendBtn" type="submit" class="btn btn-primary send-btn">Отправить</button>
+              <form id="chatForm" class="composer composer-shell">
+                <textarea id="messageInput" class="message-input" rows="2" placeholder="Спросите что угодно…" autocomplete="off"></textarea>
+                <div class="composer-bar">
+                  <div class="composer-bar-start">
+                    <div class="composer-model-wrap">
+                      <button type="button" id="chatModelBtn" class="composer-model-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="chatModelMenu" title="Модель ИИ">
+                        <span class="composer-model-status" aria-hidden="true"></span>
+                        <span id="chatModelLabel" class="composer-model-label">Системная</span>
+                        <span class="composer-model-chevron" aria-hidden="true"></span>
+                      </button>
+                      <div id="chatModelMenu" class="composer-model-menu hidden" role="listbox" aria-label="Выбор модели"></div>
+                      <select id="chatModelSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                        <option value="">Системная</option>
+                      </select>
+                    </div>
+                    <button type="button" id="voiceMicBtn" class="composer-icon-btn" aria-label="Голосовой ввод" title="Голосовой ввод">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                    </button>
+                    <span id="voiceStatus" class="composer-voice-status" aria-live="polite"></span>
+                    <div class="chat-ext-menu-wrap">
+                      <button type="button" id="chatExtMenuBtn" class="composer-icon-btn" aria-haspopup="true" aria-expanded="false" title="Ещё">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+                      </button>
+                      <div id="chatExtMenu" class="sidebar-dropdown composer-ext-menu hidden" role="menu">
+                        <button type="button" class="sidebar-dropdown-item" role="menuitem" data-ext-send="wazzup">Отправить через Wazzup</button>
+                        <button type="button" class="sidebar-dropdown-item" role="menuitem" data-ext-send="email">Отправить через email</button>
+                      </div>
+                    </div>
+                  </div>
+                  <button id="sendBtn" type="submit" class="composer-send-btn">
+                    <span>Отправить</span>
+                    <kbd class="composer-send-kbd" aria-hidden="true">↵</kbd>
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -277,35 +313,35 @@
         <div class="reports-workspace page-fill">
           <div class="reports-main">
             <div class="report-filters">
-              <div class="report-filters-row">
-                <label class="filter-field">
+              <div class="report-filters-bar">
+                <label class="filter-field filter-field--inline">
                   <span>Воронка</span>
                   <select id="funnelSelect"></select>
                 </label>
-                <div id="funnelError" class="filter-error hidden">
-                  <span id="funnelErrorText">Не удалось загрузить список воронок</span>
-                </div>
-              </div>
-              <div class="report-filters-row period-row">
-                <label class="filter-field">
-                  <span>Дата с</span>
+                <label class="filter-field filter-field--inline filter-field--date">
+                  <span>С</span>
                   <input type="text" id="reportDateFrom" placeholder="ДД.ММ.ГГГГ" inputmode="numeric">
                   <input type="hidden" id="reportDateFromIso">
                 </label>
-                <label class="filter-field">
-                  <span>Дата по</span>
+                <label class="filter-field filter-field--inline filter-field--date">
+                  <span>По</span>
                   <input type="text" id="reportDateTo" placeholder="ДД.ММ.ГГГГ" inputmode="numeric">
                   <input type="hidden" id="reportDateToIso">
                 </label>
+                <div class="period-presets" id="periodPresets" role="group" aria-label="Быстрый период"></div>
+                <details class="advanced-block advanced-block--inline" id="advancedBlock">
+                  <summary id="advancedToggle">Ещё</summary>
+                  <div class="advanced-block-panel">
+                    <label class="filter-field filter-field--inline">
+                      <span>ID воронки</span>
+                      <input type="number" id="funnelManualId" min="0" placeholder="0">
+                    </label>
+                  </div>
+                </details>
               </div>
-              <div class="period-presets" id="periodPresets"></div>
-              <details class="advanced-block" id="advancedBlock">
-                <summary id="advancedToggle">Дополнительно</summary>
-                <label class="filter-field">
-                  <span>ID воронки (резерв)</span>
-                  <input type="number" id="funnelManualId" min="0" placeholder="0">
-                </label>
-              </details>
+              <div id="funnelError" class="filter-error hidden">
+                <span id="funnelErrorText">Не удалось загрузить список воронок</span>
+              </div>
             </div>
             <div id="quickReportsGrid" class="cards-grid"></div>
           </div>
@@ -327,12 +363,17 @@
               <h4 id="reportResultTitle" class="report-result-title"></h4>
               <div id="reportResultBody" class="report-result-body"></div>
               <div class="report-result-actions">
-                <button type="button" class="btn btn-primary" id="reportOpenDocBtn">Открыть как документ</button>
-                <button type="button" class="btn btn-secondary" id="reportExportHtmlBtn">Скачать HTML</button>
-                <button type="button" class="btn btn-secondary" id="reportPrintPdfBtn">Сохранить в PDF</button>
-                <button type="button" class="btn btn-secondary" id="reportExportMdBtn">Сохранить в Markdown</button>
-                <button type="button" class="btn btn-secondary" id="reportCopyBtn">Скопировать текст</button>
-                <button type="button" class="btn btn-secondary" id="reportBitrixBtn" disabled title="Доступно для отчётов по конкретной сделке или лиду">Добавить в Bitrix24</button>
+                <button type="button" class="btn btn-primary" id="reportOpenDocBtn">В документ</button>
+                <button type="button" class="btn btn-secondary" id="reportCopyBtn">Копировать</button>
+                <div class="report-result-more">
+                  <button type="button" class="btn btn-secondary" id="reportMoreBtn" aria-haspopup="true" aria-expanded="false">Ещё</button>
+                  <div id="reportMoreMenu" class="sidebar-dropdown report-more-menu hidden" role="menu">
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportHtmlBtn">Скачать HTML</button>
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportPrintPdfBtn">Сохранить в PDF</button>
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportMdBtn">Markdown</button>
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportBitrixBtn" disabled title="Доступно для отчётов по конкретной сделке или лиду">В Bitrix24</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -628,13 +669,14 @@
         <div class="panel-header">
           <div>
             <h2>Настройки</h2>
-            <p class="panel-desc">Базовый профиль применяется ко всем чатам. Секреты и API keys здесь не хранятся.</p>
+            <p class="panel-desc">Профили промптов, ИИ, прокси, голос и каналы. Секреты хранятся только в зашифрованном виде.</p>
           </div>
         </div>
-        <div class="settings-layout">
+        <div id="extendedSettingsRoot" class="settings-ext"></div>
+        <div class="settings-layout settings-layout--spaced">
           <div class="settings-card">
-            <h3>Базовый профиль</h3>
-            <p class="section-hint">Контекст ассистента для всех диалогов без отдельного проекта.</p>
+            <h3>Базовый профиль (быстрый)</h3>
+            <p class="section-hint">Совместимость со старым UI. Полный редактор — во вкладке «Профили промптов» выше.</p>
             <label class="setting-row">
               <span>Название</span>
               <input type="text" id="profileName" placeholder="Базовый профиль">

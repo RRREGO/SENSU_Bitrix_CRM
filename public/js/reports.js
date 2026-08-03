@@ -49,9 +49,7 @@ function bindEvents({ onOpenDocument, onSwitchTab }) {
   els.quickReportsGrid.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-id]");
     if (!btn || btn.disabled) return;
-    const reportId = btn.dataset.id;
-    const asDocument = btn.dataset.action === "document";
-    await runReport(reportId, asDocument, { onOpenDocument, onSwitchTab });
+    await runReport(btn.dataset.id, false, { onOpenDocument, onSwitchTab });
   });
 
   els.reportOpenDocBtn?.addEventListener("click", () => openAsDocument({ onOpenDocument, onSwitchTab }));
@@ -61,6 +59,22 @@ function bindEvents({ onOpenDocument, onSwitchTab }) {
   els.reportCopyBtn?.addEventListener("click", () => copyReportText());
   els.reportBitrixBtn?.addEventListener("click", () => {
     alert("Добавление в Bitrix24 доступно для отчётов по конкретной сделке или лиду.");
+  });
+
+  const moreBtn = document.getElementById("reportMoreBtn");
+  const moreMenu = document.getElementById("reportMoreMenu");
+  moreBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    moreMenu?.classList.toggle("hidden");
+    moreBtn.setAttribute("aria-expanded", moreMenu && !moreMenu.classList.contains("hidden") ? "true" : "false");
+  });
+  moreMenu?.addEventListener("click", () => {
+    moreMenu.classList.add("hidden");
+    moreBtn?.setAttribute("aria-expanded", "false");
+  });
+  document.addEventListener("click", () => {
+    moreMenu?.classList.add("hidden");
+    moreBtn?.setAttribute("aria-expanded", "false");
   });
 }
 
@@ -180,8 +194,7 @@ async function loadQuickReports() {
         <p>${escapeHtml(report.description)}</p>
         ${stubNote}
         <div class="report-card-actions">
-          <button type="button" class="btn btn-primary" data-action="run" data-id="${escapeHtml(report.id)}">Сформировать</button>
-          <button type="button" class="btn btn-secondary" data-action="document" data-id="${escapeHtml(report.id)}" ${report.documentType ? "" : ""}>Документ</button>
+          <button type="button" class="btn btn-primary report-card-run-btn" data-action="run" data-id="${escapeHtml(report.id)}">Сформировать</button>
         </div>
       `;
       els.quickReportsGrid.appendChild(card);
@@ -359,7 +372,7 @@ async function copyReportText() {
   if (!text) return;
   await navigator.clipboard.writeText(text);
   els.reportCopyBtn.textContent = "Скопировано";
-  setTimeout(() => { els.reportCopyBtn.textContent = "Скопировать текст"; }, 1500);
+  setTimeout(() => { els.reportCopyBtn.textContent = "Копировать"; }, 1500);
 }
 
 export function getCurrentReport() {

@@ -7,6 +7,7 @@
 import { CommunicationError } from "../config.js";
 import { createWazzupProvider } from "./wazzupProvider.js";
 import { createMaxBotProvider } from "./maxBotProvider.js";
+import { createSmtpProvider } from "./smtpProvider.js";
 
 const cache = new Map();
 
@@ -19,6 +20,8 @@ export function getProvider(name, options = {}) {
     provider = createWazzupProvider(options);
   } else if (key === "max_bot" || key === "maxbot") {
     provider = createMaxBotProvider(options);
+  } else if (key === "smtp" || key === "email") {
+    provider = createSmtpProvider(options);
   } else {
     throw new CommunicationError("UNKNOWN_PROVIDER", `Неизвестный провайдер: ${name}`);
   }
@@ -35,4 +38,4 @@ export function clearProviderCache() {
   cache.clear();
 }
 
-export { createWazzupProvider, createMaxBotProvider };
+export { createWazzupProvider, createMaxBotProvider, createSmtpProvider };

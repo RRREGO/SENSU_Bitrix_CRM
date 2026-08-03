@@ -73,6 +73,7 @@ import { auditRoutePolicies } from "./src/auth/routePolicies.js";
 import { backfillNotificationRecipients } from "./src/scheduler/notificationService.js";
 import { createObservabilityRouter } from "./src/observability/adminRoutes.js";
 import { createCrmSchemaRouter } from "./src/crmSchema/routes.js";
+import { createConnectionsRouter } from "./src/connections/routes.js";
 import { requestContextMiddleware, maintenanceMiddleware } from "./src/observability/requestContext.js";
 import { getReadinessReport } from "./src/observability/readiness.js";
 import {
@@ -169,6 +170,7 @@ app.use(createWorkspaceRouter());
 app.use(createClientContextRouter());
 app.use(createSchedulerRouter());
 app.use(createCommunicationsRouter());
+app.use(createConnectionsRouter());
 app.use(createObservabilityRouter());
 app.use(createCrmSchemaRouter());
 

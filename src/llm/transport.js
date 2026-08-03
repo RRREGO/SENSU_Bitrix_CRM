@@ -137,7 +137,7 @@ export async function testLlmTransport() {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.CLAUDE_MODEL || "claude-sonnet-4-5",
+        model: process.env.CLAUDE_MODEL || "claude-opus-4-8",
         max_tokens: 16,
         messages: [{ role: "user", content: "ping" }],
       }),

@@ -71,47 +71,63 @@ export async function openProjectOverview(projectId) {
 
     root.innerHTML = `
       <div class="project-overview${colorClass}">
-        <header class="project-overview-header">
-          <div class="project-overview-heading">
+        <aside class="project-overview-side" aria-label="Параметры проекта">
+          <h3 class="project-overview-panel-title">Проект</h3>
+          <div class="project-overview-side-body">
             <h2 class="project-overview-title">${escapeHtml(p.name)}</h2>
             ${p.description ? `<p class="project-overview-desc">${escapeHtml(p.description)}</p>` : ""}
-            <div class="project-overview-stats">
-              <span>${files.length} ${plural(files.length, "файл", "файла", "файлов")}</span>
-              <span class="project-overview-stats-sep" aria-hidden="true">·</span>
-              <span>${chats.length} ${plural(chats.length, "чат", "чата", "чатов")}</span>
-              <span class="project-overview-stats-sep" aria-hidden="true">·</span>
-              <span>${escapeHtml(formatRelativeDate(p.lastActivityAt || p.updatedAt) || "Нет активности")}</span>
-            </div>
+            <dl class="project-overview-meta">
+              <div class="project-overview-meta-row">
+                <dt>Файлы</dt>
+                <dd>${files.length}</dd>
+              </div>
+              <div class="project-overview-meta-row">
+                <dt>Чаты</dt>
+                <dd>${chats.length}</dd>
+              </div>
+              <div class="project-overview-meta-row">
+                <dt>Активность</dt>
+                <dd>${escapeHtml(formatRelativeDate(p.lastActivityAt || p.updatedAt) || "Нет")}</dd>
+              </div>
+            </dl>
             ${
               bindings.length
-                ? `<div class="project-overview-bindings">${bindings
-                    .slice(0, 6)
-                    .map((b) => `<span class="chip chip-muted">${escapeHtml(formatCrmBinding(b))}</span>`)
-                    .join("")}</div>`
+                ? `<div class="project-overview-bindings">
+                    <span class="project-overview-bindings-label">CRM</span>
+                    <div class="project-overview-bindings-list">${bindings
+                      .slice(0, 6)
+                      .map((b) => `<span class="chip chip-muted">${escapeHtml(formatCrmBinding(b))}</span>`)
+                      .join("")}</div>
+                  </div>`
                 : ""
             }
           </div>
-          <div class="project-overview-actions">
+          <div class="project-overview-side-actions">
+            <button type="button" class="btn btn-primary project-overview-primary-btn" data-new-chat>Новый чат</button>
             <button type="button" class="btn btn-secondary" data-settings>Настройки</button>
-            <button type="button" class="btn btn-primary" data-new-chat>Новый чат</button>
           </div>
-        </header>
+        </aside>
 
-        <section class="project-overview-chats">
-          <h3 class="section-title">Последние чаты</h3>
+        <section class="project-overview-main" aria-label="Чаты проекта">
+          <div class="project-overview-main-toolbar">
+            <h3 class="project-overview-panel-title">Последние чаты</h3>
+            <span class="project-overview-count">${chats.length}</span>
+          </div>
           ${
             chats.length
               ? `<ul class="project-chat-list project-chat-list--overview">
                   ${chats
                     .slice(0, 12)
                     .map((c) => {
-                      const preview = escapeHtml((c.lastMessagePreview || "").slice(0, 80));
+                      const preview = escapeHtml((c.lastMessagePreview || "").slice(0, 120));
                       const meta = formatRelativeDate(c.lastActivityAt || c.updatedAt);
                       return `<li>
                         <button type="button" class="project-chat-item" data-chat-id="${escAttr(c.id)}">
-                          <span class="project-chat-item-title">${escapeHtml(c.title || "Диалог")}</span>
+                          <span class="project-chat-item-top">
+                            <span class="project-chat-item-title">${escapeHtml(c.title || "Диалог")}</span>
+                            ${meta ? `<span class="project-chat-item-meta">${escapeHtml(meta)}</span>` : ""}
+                          </span>
                           ${preview ? `<span class="project-chat-item-preview">${preview}</span>` : ""}
-                          ${meta ? `<span class="project-chat-item-meta">${escapeHtml(meta)}</span>` : ""}
                         </button>
                       </li>`;
                     })
@@ -120,6 +136,7 @@ export async function openProjectOverview(projectId) {
               : `<div class="project-overview-empty">
                   <p class="project-overview-empty-title">В этом проекте пока нет чатов</p>
                   <p class="project-overview-empty-text">Начните первый диалог — ассистент уже учтёт файлы, инструкции и CRM-контекст проекта.</p>
+                  <button type="button" class="btn btn-primary" data-new-chat-empty>Новый чат</button>
                 </div>`
           }
         </section>
@@ -131,7 +148,9 @@ export async function openProjectOverview(projectId) {
       await hooks.refreshSidebar?.();
     };
 
-    root.querySelector("[data-new-chat]")?.addEventListener("click", startChat);
+    root.querySelectorAll("[data-new-chat], [data-new-chat-empty]").forEach((btn) => {
+      btn.addEventListener("click", startChat);
+    });
     root.querySelector("[data-settings]")?.addEventListener("click", () => {
       hooks.openProjectSettings?.(projectId);
     });
@@ -176,12 +195,4 @@ function collectBindingsFromChats(chats) {
     }
   }
   return [...map.values()];
-}
-
-function plural(n, one, few, many) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
 }

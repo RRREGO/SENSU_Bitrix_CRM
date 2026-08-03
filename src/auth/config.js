@@ -30,12 +30,17 @@ export function getAuthConfig() {
   const nodeEnv = String(process.env.NODE_ENV || "development").toLowerCase();
   const isProduction = appEnv === "production" || nodeEnv === "production";
   const publicOrigin = (process.env.APP_PUBLIC_ORIGIN || "").trim();
+  const port = String(process.env.PORT || 3005).trim() || "3005";
+  const loopbackOrigins = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
   const allowedOrigins = listEnv(
     "APP_ALLOWED_ORIGINS",
-    publicOrigin ? [publicOrigin] : ["http://localhost:3005"]
+    publicOrigin ? [publicOrigin, ...loopbackOrigins] : loopbackOrigins
   );
   if (publicOrigin && !allowedOrigins.includes(publicOrigin)) {
     allowedOrigins.push(publicOrigin);
+  }
+  for (const origin of loopbackOrigins) {
+    if (!allowedOrigins.includes(origin)) allowedOrigins.push(origin);
   }
   const sendFlags = resolveCommunicationSendFlags();
   return {
