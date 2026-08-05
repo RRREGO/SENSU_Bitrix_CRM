@@ -363,6 +363,10 @@ export function listOperations(filters = {}) {
     where.push("session_id = ?");
     args.push(filters.sessionId);
   }
+  if (filters.chatId) {
+    where.push("chat_id = ?");
+    args.push(filters.chatId);
+  }
   if (filters.source) {
     where.push("source = ?");
     args.push(filters.source);

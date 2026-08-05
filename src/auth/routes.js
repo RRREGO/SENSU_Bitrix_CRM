@@ -13,6 +13,7 @@ import {
   adminResetPassword,
   revokeUserSessions,
   listUserSessions,
+  rotateCsrf,
 } from "./authService.js";
 import { listRoles, getRolePermissions, setRolePermissions } from "./authorizationService.js";
 import {
@@ -127,18 +128,22 @@ export function createAuthRouter() {
   });
 
   router.get("/auth/csrf", requireAuthentication(), (req, res) => {
-    if (req.user?.isLocalOnlySynthetic) {
-      return res.json({ success: true, csrfToken: generateOpaqueToken(24), localOnly: true });
+    try {
+      if (req.user?.isLocalOnlySynthetic) {
+        return res.json({ success: true, csrfToken: generateOpaqueToken(24), localOnly: true });
+      }
+      if (!req.sessionRow) {
+        return res.status(401).json({
+          success: false,
+          error: { code: "AUTHENTICATION_REQUIRED", message: "Требуется вход в систему." },
+        });
+      }
+      const csrfToken = rotateCsrf(req.sessionRow.id);
+      req.sessionRow.csrf_token_hash = undefined; // force re-read next request
+      res.json({ success: true, csrfToken });
+    } catch (error) {
+      sendAuthError(res, error);
     }
-    if (!req.sessionRow) {
-      return res.status(401).json({
-        success: false,
-        error: { code: "AUTHENTICATION_REQUIRED", message: "Требуется вход в систему." },
-      });
-    }
-    const csrfToken = rotateCsrf(req.sessionRow.id);
-    req.sessionRow.csrf_token_hash = undefined; // force re-read next request
-    res.json({ success: true, csrfToken });
   });
 
   router.post("/auth/change-password", requireAuthentication(), async (req, res) => {

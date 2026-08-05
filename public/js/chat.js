@@ -79,10 +79,13 @@ function wireChatExtras() {
     syncModelLabel(modelSelect, modelLabel);
     if (!chatId) return;
     const val = modelSelect.value;
+    const opt = modelSelect.selectedOptions[0];
+    const apiModelName = opt?.dataset?.apiModel || "";
     try {
       await apiPatch(`/chats/${chatId}`, {
         aiModelId: val || null,
-        modelName: modelSelect.selectedOptions[0]?.textContent || null,
+        modelName: val ? apiModelName || opt?.textContent || null : null,
+        aiProviderId: val && !String(val).startsWith("system:") ? undefined : null,
       });
     } catch (e) {
       alert(e.message || "Не удалось сохранить модель");
@@ -274,10 +277,11 @@ async function loadAvailableModels(select) {
       const og = document.createElement("optgroup");
       og.label = g.providerName || g.providerType;
       for (const m of g.models || []) {
-        if (m.isSystem) continue;
+        if (!m.id) continue;
         const opt = document.createElement("option");
-        opt.value = m.id || "";
+        opt.value = m.id;
         opt.textContent = m.displayName || m.apiModelName;
+        if (m.apiModelName) opt.dataset.apiModel = m.apiModelName;
         og.appendChild(opt);
       }
       if (og.children.length) select.appendChild(og);
@@ -303,8 +307,14 @@ async function refreshAiResolution() {
     const select = document.getElementById("chatModelSelect");
     const label = document.getElementById("chatModelLabel");
     const menu = document.getElementById("chatModelMenu");
-    if (select && data.resolved?.modelId) {
-      select.value = data.resolved.modelId;
+    if (select) {
+      const selectionId =
+        data.resolved?.selectionId != null
+          ? data.resolved.selectionId
+          : data.resolved?.modelId || "";
+      if ([...select.options].some((o) => o.value === selectionId)) {
+        select.value = selectionId;
+      }
     }
     syncModelLabel(select, label);
     renderModelMenuActive(menu, select?.value);

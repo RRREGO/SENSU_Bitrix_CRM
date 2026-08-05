@@ -14,9 +14,13 @@ export class BitrixAppError extends Error {
 
   toJSON() {
     return {
-      code: this.code,
-      message: this.message,
-      ...(this.details !== undefined ? { details: this.details } : {}),
+      ok: false,
+      success: false,
+      error: {
+        code: this.code,
+        message: this.message,
+        ...(this.details !== undefined ? { details: this.details } : {}),
+      },
     };
   }
 }
@@ -28,6 +32,8 @@ const USER_MESSAGES = {
   BITRIX_TEMPORARY_ERROR: "Временная ошибка Bitrix24. Повторите попытку позже.",
   BITRIX_INVALID_JSON: "Bitrix24 вернул некорректный ответ. Повторите попытку позже.",
   BITRIX_ACCESS_DENIED: "Недостаточно прав для выполнения запроса к Bitrix24.",
+  BITRIX_INVALID_CREDENTIALS:
+    "Bitrix24 отклонил учётные данные webhook. Проверьте BITRIX_WEBHOOK_URL (токен мог быть отозван или изменён).",
   BITRIX_INSUFFICIENT_SCOPE: "У webhook Bitrix24 недостаточно прав (scope).",
   BITRIX_INVALID_PARAMETER: "Некорректные параметры запроса к Bitrix24.",
   BITRIX_ENTITY_NOT_FOUND: "Сущность Bitrix24 не найдена.",
@@ -37,6 +43,13 @@ const USER_MESSAGES = {
 
 function detectBizError(raw) {
   const text = String(raw || "").toLowerCase();
+  if (
+    /invalid request credentials|wrong_client|expired_token|invalid_token|unauthorized|authentication failed|error_oauth/.test(
+      text
+    )
+  ) {
+    return "BITRIX_INVALID_CREDENTIALS";
+  }
   if (/access denied|access_denied|permission|права/.test(text)) {
     return "BITRIX_ACCESS_DENIED";
   }

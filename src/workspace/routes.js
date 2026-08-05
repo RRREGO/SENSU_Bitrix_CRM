@@ -74,7 +74,10 @@ export function createWorkspaceRouter() {
     }
   });
 
-  router.get("/profiles/:id", (req, res) => {
+  router.get("/profiles/:id", (req, res, next) => {
+    // Reserved path handled by connections router (GET /profiles/variables).
+    if (req.params.id === "variables") return next("router");
+
     const profile = getProfileById(req.params.id);
     if (!profile) {
       return res.status(404).json({
@@ -410,6 +413,10 @@ export function createWorkspaceRouter() {
         crmEntityId: req.body?.crmEntityId,
         status: req.body?.status,
         isPinned: req.body?.isPinned,
+        ...(req.body?.aiModelId !== undefined ? { aiModelId: req.body.aiModelId } : {}),
+        ...(req.body?.modelName !== undefined ? { modelName: req.body.modelName } : {}),
+        ...(req.body?.aiProviderId !== undefined ? { aiProviderId: req.body.aiProviderId } : {}),
+        ...(req.body?.promptProfileId !== undefined ? { promptProfileId: req.body.promptProfileId } : {}),
       });
       res.json({ success: true, chat: updated });
     } catch (error) {

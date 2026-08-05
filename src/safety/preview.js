@@ -1,4 +1,5 @@
 import { ENTITY_TYPE } from "../actions/helpers.js";
+import { normalizeActivityAddParams, defaultActivityDeadline } from "../actions/timelineActions.js";
 import { callReadMethod } from "../bitrixClient.js";
 import { pickFields, redactObject } from "./redact.js";
 import { getActionPolicy } from "./policies.js";
@@ -23,6 +24,9 @@ const FIELD_LABELS = {
   DEADLINE: "Крайний срок",
   COMPLETED: "Завершено",
   SUBJECT: "Тема",
+  OWNER_TYPE_ID: "Тип владельца",
+  OWNER_ID: "Владелец",
+  TYPE_ID: "Тип дела",
 };
 
 function label(field) {
@@ -805,14 +809,25 @@ function planCreateTask(params, title) {
 }
 
 function planActivityAdd(params, title) {
-  const fields = redactObject(params.fields || params);
+  const { fields: normalized, useTodo } = normalizeActivityAddParams(params);
+  const previewFields = { ...normalized };
+  if (useTodo && !previewFields.DEADLINE && !previewFields.END_TIME) {
+    previewFields.DEADLINE = defaultActivityDeadline();
+  }
+  if (useTodo) {
+    delete previewFields.TYPE_ID;
+    delete previewFields.COMPLETED;
+    delete previewFields.COMMUNICATIONS;
+  }
+  const fields = redactObject(previewFields);
+  const execParams = { fields: normalized };
   return {
     preview: {
       title,
       entity: {
         type: "activity",
         id: null,
-        name: fields.SUBJECT || fields.subject || "Новое CRM-дело",
+        name: fields.SUBJECT || "Новое CRM-дело",
       },
       changes: Object.entries(fields).map(([field, after]) => ({
         field,
@@ -822,13 +837,16 @@ function planActivityAdd(params, title) {
       })),
       affectedCount: 1,
       reversible: false,
+      note: useTodo
+        ? "Дело создаётся через crm.activity.todo.add"
+        : "Дело создаётся через crm.activity.add",
     },
     before: { entityType: "activity", fields: {} },
     after: { entityType: "activity", fields },
     items: [{ entityType: "activity", entityId: null, before: {}, after: fields }],
     entityIds: [],
     affectedCount: 1,
-    execPlan: { kind: "raw_handler", action: "activity_add", params },
+    execPlan: { kind: "raw_handler", action: "activity_add", params: execParams },
   };
 }
 

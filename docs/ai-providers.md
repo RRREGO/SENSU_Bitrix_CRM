@@ -19,12 +19,15 @@
 ## Проверка и модели
 
 - `POST /settings/ai/providers/:id/test` — проверка авторизации/URL
-- `POST /settings/ai/providers/:id/sync-models` — список моделей (если API отдаёт)
+- `POST /settings/ai/providers/:id/sync-models` — список моделей через API (`GET /v1/models` для Anthropic)
 - Ручное добавление: `POST /settings/ai/models`
+- Системный ключ `ANTHROPIC_API_KEY`: модели подтягиваются в селектор чата (`Claude (API)`), id вида `system:<model>`
 
 ## Выбор в чате
 
 Иерархия: модель чата → проекта → пользователя → системный `CLAUDE_MODEL` / `ANTHROPIC_API_KEY`.
+
+В композере: «Системная» = `CLAUDE_MODEL` из env; остальные пункты группы Claude (API) — конкретные модели из Anthropic Models API.
 
 CRM tool-calling требует модели с `supportsTools` (или системный Anthropic). Модель без tools не переключается незаметно — пользователь видит ошибку.
 

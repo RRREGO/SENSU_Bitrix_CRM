@@ -177,20 +177,102 @@ export const openaiAdapter = {
   id: "openai",
 };
 
+/**
+ * List Claude models via Anthropic Models API (GET /v1/models).
+ * @param {{ apiKey: string, baseUrl?: string, extraHeaders?: object, timeoutMs?: number }} opts
+ */
+export async function listAnthropicModelsFromApi({
+  apiKey,
+  baseUrl = "https://api.anthropic.com",
+  extraHeaders = {},
+  timeoutMs = 20000,
+} = {}) {
+  if (!apiKey?.trim()) {
+    throw new ConnectionError(
+      CONNECTION_ERROR_CODES.INVALID_CONFIGURATION,
+      "Anthropic API key не задан."
+    );
+  }
+  const base = String(baseUrl || "https://api.anthropic.com").replace(/\/$/, "");
+  const models = [];
+  let afterId = null;
+  for (let page = 0; page < 20; page += 1) {
+    const qs = new URLSearchParams({ limit: "100" });
+    if (afterId) qs.set("after_id", afterId);
+    const res = await proxiedFetch(
+      `${base}/v1/models?${qs}`,
+      {
+        method: "GET",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          ...extraHeaders,
+        },
+        timeoutMs,
+      },
+      { mode: "system" }
+    );
+    const data = await readJsonSafe(res);
+    if (!res.ok) throwFromResponse(res, data);
+    const batch = Array.isArray(data?.data) ? data.data : [];
+    for (const m of batch) {
+      if (!m?.id) continue;
+      const caps = m.capabilities || {};
+      models.push({
+        apiModelName: m.id,
+        displayName: m.display_name || m.id,
+        contextWindow: m.max_input_tokens || null,
+        maxOutputTokens: m.max_tokens || null,
+        capabilitiesSource: "api",
+        supportsStreaming: true,
+        supportsTools: true,
+        supportsJsonMode: Boolean(caps.structured_outputs?.supported),
+        supportsVision: caps.image_input?.supported !== false,
+        supportsAudioInput: false,
+        supportsAudioOutput: false,
+      });
+    }
+    if (!data?.has_more || !data?.last_id || batch.length === 0) break;
+    afterId = data.last_id;
+  }
+  return models;
+}
+
 export const anthropicAdapter = {
   id: "anthropic",
   async listModels(provider) {
-    // Anthropic does not expose a stable public models list for all keys — return empty for sync;
-    // user adds models manually or uses configured default.
-    return [];
+    const apiKey = getProviderApiKey(provider.id);
+    return listAnthropicModelsFromApi({
+      apiKey,
+      baseUrl: provider.baseUrl || "https://api.anthropic.com",
+      extraHeaders: provider.extraHeaders || {},
+      timeoutMs: provider.timeoutMs || 20000,
+    });
   },
 
   async testConnection(provider, { modelName } = {}) {
     const started = Date.now();
     const apiKey = getProviderApiKey(provider.id);
     const base = String(provider.baseUrl || "https://api.anthropic.com").replace(/\/$/, "");
-    const model = modelName || "claude-sonnet-4-5";
     try {
+      let modelsCount = 0;
+      try {
+        const models = await this.listModels(provider);
+        modelsCount = models.length;
+        if (modelName && !models.some((m) => m.apiModelName === modelName)) {
+          return {
+            success: false,
+            latencyMs: Date.now() - started,
+            modelsCount,
+            modelFound: false,
+            status: "model_not_found",
+            capabilities: { listModels: true, messages: true, tools: true },
+          };
+        }
+      } catch {
+        /* listModels optional for connectivity — fall through to ping */
+      }
+      const model = modelName || "claude-sonnet-4-5";
       const res = await proxiedFetch(
         `${base}/v1/messages`,
         {
@@ -216,8 +298,10 @@ export const anthropicAdapter = {
       return {
         success: true,
         latencyMs: Date.now() - started,
+        modelsCount,
+        modelFound: true,
         status: "ok",
-        capabilities: { listModels: false, messages: true, tools: true },
+        capabilities: { listModels: true, messages: true, tools: true },
       };
     } catch (error) {
       return {

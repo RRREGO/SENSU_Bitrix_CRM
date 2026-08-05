@@ -13,6 +13,47 @@ import { getDatabase } from "../../database/index.js";
 import { getConnectionsFeatureFlags } from "../config.js";
 import { ConnectionError, CONNECTION_ERROR_CODES } from "../errors.js";
 
+/** Chat/project selection id for env-based Anthropic models (`system:claude-…`). */
+export const SYSTEM_MODEL_ID_PREFIX = "system:";
+
+export function isSystemModelSelectionId(id) {
+  return typeof id === "string" && id.startsWith(SYSTEM_MODEL_ID_PREFIX) && id.length > SYSTEM_MODEL_ID_PREFIX.length;
+}
+
+export function parseSystemModelSelectionId(id) {
+  if (!isSystemModelSelectionId(id)) return null;
+  return id.slice(SYSTEM_MODEL_ID_PREFIX.length);
+}
+
+export function systemModelSelectionId(apiModelName) {
+  if (!apiModelName) return null;
+  return `${SYSTEM_MODEL_ID_PREFIX}${apiModelName}`;
+}
+
+function resolveSystemModelSelection(selectionId, source, warnings) {
+  const apiModelName = parseSystemModelSelectionId(selectionId);
+  if (!apiModelName) return null;
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
+    warnings.push(`Системный Anthropic не настроен (${source}).`);
+    return null;
+  }
+  return {
+    source,
+    model: {
+      id: selectionId,
+      apiModelName,
+      displayName: apiModelName,
+      supportsTools: true,
+      supportsVision: true,
+      isActive: true,
+    },
+    provider: null,
+    apiModelName,
+    useLegacyAnthropic: true,
+    warnings,
+  };
+}
+
 export function getUserAiSettings(userId) {
   if (!userId) return null;
   const row = getDatabase().prepare("SELECT * FROM user_ai_settings WHERE user_id = ?").get(userId);
@@ -97,6 +138,8 @@ export function resolveChatModel({ chat = null, project = null, userId = null, r
 
   const tryModelId = (id, source) => {
     if (!id) return null;
+    const systemHit = resolveSystemModelSelection(id, source, warnings);
+    if (systemHit) return systemHit;
     const model = getAiModelById(id);
     if (!model || !model.isActive) {
       warnings.push(`Модель ${id} недоступна (${source}).`);

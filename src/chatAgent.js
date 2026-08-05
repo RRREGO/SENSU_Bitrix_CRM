@@ -32,10 +32,42 @@ import {
 import { addMessage } from "./database/repositories/messagesRepository.js";
 import { expandDiscoveryCatalog } from "./actions/catalogSelector.js";
 import { sanitizeLlmPayload } from "./llm/sanitize.js";
-import { getOperationByConfirmationId } from "./database/repositories/operationsRepository.js";
+import {
+  getOperationByConfirmationId,
+  listOperations,
+} from "./database/repositories/operationsRepository.js";
+import { classifyConfirmationReply } from "./chat/confirmationIntent.js";
 
 const MAX_HISTORY_MESSAGES = 20;
 const MAX_TOOL_ITERATIONS = 8;
+
+function isOperationStillPending(operation) {
+  if (!operation || operation.status !== "pending_confirmation") return false;
+  if (!operation.expiresAt) return true;
+  return new Date(operation.expiresAt).getTime() > Date.now();
+}
+
+/** Активное ожидание подтверждения в runtime или в SQLite по chat. */
+function resolvePendingConfirmation(session, chatId) {
+  if (session?.pendingConfirmations?.size) {
+    const entries = [...session.pendingConfirmations.values()];
+    return entries[entries.length - 1];
+  }
+  const ops = listOperations({
+    status: "pending_confirmation",
+    chatId,
+    limit: 5,
+  });
+  const match = ops.find(isOperationStillPending);
+  if (!match) return null;
+  return {
+    confirmationId: match.confirmationId,
+    action: match.action,
+    params: match.params || {},
+    preview: match.preview,
+    fromDb: true,
+  };
+}
 
 /** Short-lived runtime cache: chatId → Claude tool-turn state (not durable). */
 const runtimeSessions = new Map();
@@ -196,7 +228,8 @@ function buildConfirmationMessage({ action, params, category, assistantText, pre
         : preview.reversible === "conditional"
           ? "\nОткат: условный"
           : "\nОткат: доступен после выполнения";
-    return `${preview.title || action}\n${entityLabel}\n\nИзменения:\n${lines.join("\n")}${risk}${rev}\n\nПодтвердить выполнение?`;
+    const note = preview.note ? `\n${preview.note}` : "";
+    return `${preview.title || action}\n${entityLabel}\n\nИзменения:\n${lines.join("\n")}${risk}${rev}${note}\n\nПодтвердить выполнение?`;
   }
 
   if (assistantText) {
@@ -669,6 +702,35 @@ export async function handleChatMessage({
   const session = getRuntimeSession(chat.id);
   session.sessionId = sessionId || chat.sessionId || chat.id;
   session.user = user || null;
+
+  const pendingInfo = resolvePendingConfirmation(session, chat.id);
+  const confirmIntent = classifyConfirmationReply(userMessage);
+
+  if (pendingInfo?.confirmationId && confirmIntent) {
+    const savedUser = addMessage(chat.id, {
+      role: "user",
+      content: userMessage,
+      messageType: "text",
+      chatMeta: {
+        title: chat.title,
+        projectName: chat.projectName,
+        crmEntityType: chat.crmEntityType,
+        crmEntityId: chat.crmEntityId,
+      },
+    });
+    session.lastUserMessage = userMessage;
+    session.lastUserMessageId = savedUser.id;
+    session.projectId = chat.projectId || projectId || null;
+    session.chatId = chat.id;
+
+    return handleChatConfirmation({
+      sessionId: session.sessionId,
+      chatId: chat.id,
+      confirmationId: pendingInfo.confirmationId,
+      confirm: confirmIntent === "confirm",
+      user,
+    });
+  }
 
   session.pendingConfirmations.clear();
   closeOpenToolUses(session);

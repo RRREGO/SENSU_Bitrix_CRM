@@ -18,13 +18,14 @@ import {
   updateAiModel,
   deleteAiModel,
 } from "../database/repositories/aiProvidersRepository.js";
-import { testAiProvider, syncAiProviderModels } from "./ai/providerService.js";
+import { testAiProvider, syncAiProviderModels, listSystemAnthropicModels } from "./ai/providerService.js";
 import {
   listModelsGroupedForChat,
   resolveChatModel,
   getUserAiSettings,
   upsertUserAiSettings,
   validateModelCapabilities,
+  systemModelSelectionId,
 } from "./ai/modelResolver.js";
 import { previewPromptCompilation, PROMPT_SAFE_VARIABLES } from "./prompts/promptCompiler.js";
 import {
@@ -258,25 +259,27 @@ export function createConnectionsRouter() {
     }
   });
 
-  router.get("/settings/ai/models/available", (req, res) => {
+  router.get("/settings/ai/models/available", async (req, res) => {
     try {
       requirePerm(req.user, "select_chat_model");
       const grouped = listModelsGroupedForChat(req.user?.id);
-      const legacy = {
+      const systemRemote = await listSystemAnthropicModels();
+      const systemGroup = {
         providerId: null,
-        providerName: "Системный Anthropic",
+        providerName: "Claude (API)",
         providerType: "anthropic",
-        models: [
-          {
-            id: null,
-            displayName: process.env.CLAUDE_MODEL || "claude-opus-4-8",
-            apiModelName: process.env.CLAUDE_MODEL || "claude-opus-4-8",
-            supportsTools: true,
-            isSystem: true,
-          },
-        ],
+        models: systemRemote.map((m) => ({
+          id: systemModelSelectionId(m.apiModelName),
+          displayName: m.displayName || m.apiModelName,
+          apiModelName: m.apiModelName,
+          supportsTools: true,
+          supportsVision: m.supportsVision !== false,
+          contextWindow: m.contextWindow || null,
+          isSystemApi: true,
+        })),
       };
-      res.json({ success: true, groups: [legacy, ...grouped] });
+      const groups = systemGroup.models.length ? [systemGroup, ...grouped] : grouped;
+      res.json({ success: true, groups });
     } catch (e) {
       sendErr(res, e, 403);
     }
@@ -497,8 +500,9 @@ export function createConnectionsRouter() {
           source: resolved.source,
           apiModelName: resolved.apiModelName,
           modelId: resolved.model?.id || null,
+          selectionId: resolved.model?.id || "",
           providerId: resolved.provider?.id || null,
-          providerName: resolved.provider?.name || (resolved.useLegacyAnthropic ? "Системный Anthropic" : null),
+          providerName: resolved.provider?.name || (resolved.useLegacyAnthropic ? "Claude (API)" : null),
           warnings: resolved.warnings,
         },
         promptProfile: profile ? { id: profile.id, name: profile.name } : null,

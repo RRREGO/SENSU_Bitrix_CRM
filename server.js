@@ -940,7 +940,11 @@ app.use((error, req, res, _next) => {
       error.code === "PROJECT_NOT_FOUND" ||
       error.code === "PROFILE_NOT_FOUND"
         ? 404
-        : 400;
+        : error.code === "BITRIX_INVALID_CREDENTIALS"
+          ? 401
+          : error.httpStatus && Number(error.httpStatus) >= 400 && Number(error.httpStatus) < 600
+            ? Number(error.httpStatus)
+            : 400;
     const body = error.toJSON();
     if (body.error) body.error.requestId = req.requestId;
     return res.status(status).json(body);

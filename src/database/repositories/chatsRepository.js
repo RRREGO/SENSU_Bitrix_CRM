@@ -212,7 +212,7 @@ export function updateChat(id, patch = {}) {
           : current.crmEntityId,
         nextStatus,
         archivedAt,
-        patch.modelName ?? current.modelName,
+        patch.modelName !== undefined ? patch.modelName : current.modelName,
         patch.aiModelId !== undefined ? patch.aiModelId : current.aiModelId,
         patch.aiProviderId !== undefined ? patch.aiProviderId : current.aiProviderId,
         patch.promptProfileId !== undefined ? patch.promptProfileId : current.promptProfileId,

@@ -295,10 +295,153 @@ export async function activityListAll(params = {}, options = {}) {
   });
 }
 
-/** Создать дело CRM. */
+const ACTIVITY_FIELD_ALIASES = {
+  OWNETYPEID: "OWNER_TYPE_ID",
+  OWNERTYPEID: "OWNER_TYPE_ID",
+  OWNER_TYPE: "OWNER_TYPE_ID",
+  OWNERTYPE: "OWNER_TYPE_ID",
+  ownerTypeId: "OWNER_TYPE_ID",
+  owner_type_id: "OWNER_TYPE_ID",
+  OWNERID: "OWNER_ID",
+  ownerId: "OWNER_ID",
+  owner_id: "OWNER_ID",
+  RESPONSIBLEID: "RESPONSIBLE_ID",
+  responsibleId: "RESPONSIBLE_ID",
+  responsible_id: "RESPONSIBLE_ID",
+  ASSIGNED_BY_ID: "RESPONSIBLE_ID",
+  assignedById: "RESPONSIBLE_ID",
+  TYPEID: "TYPE_ID",
+  typeId: "TYPE_ID",
+  type_id: "TYPE_ID",
+  SUBJECT: "SUBJECT",
+  subject: "SUBJECT",
+  title: "SUBJECT",
+  TITLE: "SUBJECT",
+  DESCRIPTION: "DESCRIPTION",
+  description: "DESCRIPTION",
+  DEADLINE: "DEADLINE",
+  deadline: "DEADLINE",
+  END_TIME: "END_TIME",
+  endTime: "END_TIME",
+  START_TIME: "START_TIME",
+  startTime: "START_TIME",
+  COMPLETED: "COMPLETED",
+  completed: "COMPLETED",
+  COMMUNICATIONS: "COMMUNICATIONS",
+  communications: "COMMUNICATIONS",
+};
+
+/** Крайний срок по умолчанию (todo.add требует deadline). */
+export function defaultActivityDeadline(base = new Date()) {
+  const d = new Date(base);
+  d.setHours(23, 59, 0, 0);
+  if (d.getTime() <= Date.now()) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d.toISOString();
+}
+
+function pickActivityRawFields(params = {}) {
+  if (params.fields && typeof params.fields === "object" && !Array.isArray(params.fields)) {
+    return { ...params.fields };
+  }
+  const raw = { ...params };
+  delete raw.confirm;
+  delete raw.fields;
+  return raw;
+}
+
+/**
+ * Нормализация params для activity_add.
+ * Принимает { fields }, плоские CRM-поля или camelCase todo-параметры.
+ */
+export function normalizeActivityAddParams(params = {}) {
+  const raw = pickActivityRawFields(params);
+  const fields = {};
+
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === undefined) continue;
+    const canonical = ACTIVITY_FIELD_ALIASES[key] || ACTIVITY_FIELD_ALIASES[String(key).toUpperCase()] || key;
+    if (fields[canonical] === undefined) fields[canonical] = value;
+  }
+
+  if (fields.OWNER_TYPE_ID != null) fields.OWNER_TYPE_ID = Number(fields.OWNER_TYPE_ID);
+  if (fields.OWNER_ID != null) fields.OWNER_ID = Number(fields.OWNER_ID);
+  if (fields.RESPONSIBLE_ID != null) fields.RESPONSIBLE_ID = Number(fields.RESPONSIBLE_ID);
+  if (fields.TYPE_ID != null) fields.TYPE_ID = Number(fields.TYPE_ID);
+
+  if (!fields.OWNER_TYPE_ID || !fields.OWNER_ID) {
+    throw new Error("Для создания CRM-дела нужны OWNER_TYPE_ID и OWNER_ID (сделка=2, лид=1, контакт=3).");
+  }
+  if (!fields.SUBJECT && !fields.DESCRIPTION) {
+    throw new Error("Укажите тему дела (SUBJECT) или описание.");
+  }
+  if (!fields.SUBJECT) fields.SUBJECT = String(fields.DESCRIPTION).slice(0, 120);
+
+  const typeId = Number(fields.TYPE_ID) || null;
+  const hasCommunications =
+    Array.isArray(fields.COMMUNICATIONS) && fields.COMMUNICATIONS.length > 0;
+  // Звонок/письмо — классический crm.activity.add; остальное — универсальное todo.
+  const useTodo = !hasCommunications && typeId !== 2 && typeId !== 4;
+
+  return { fields, useTodo };
+}
+
+function buildTodoAddPayload(fields) {
+  const deadline =
+    fields.DEADLINE || fields.END_TIME || fields.START_TIME || defaultActivityDeadline();
+  const payload = {
+    ownerTypeId: Number(fields.OWNER_TYPE_ID),
+    ownerId: Number(fields.OWNER_ID),
+    deadline,
+    title: String(fields.SUBJECT || ""),
+    description: String(fields.DESCRIPTION || ""),
+  };
+  if (fields.RESPONSIBLE_ID) payload.responsibleId = Number(fields.RESPONSIBLE_ID);
+  return payload;
+}
+
+function buildClassicActivityFields(fields) {
+  const out = { ...fields };
+  if (!Array.isArray(out.COMMUNICATIONS) || !out.COMMUNICATIONS.length) {
+    out.COMMUNICATIONS = [
+      {
+        VALUE: "",
+        ENTITY_ID: Number(out.OWNER_ID),
+        ENTITY_TYPE_ID: Number(out.OWNER_TYPE_ID),
+      },
+    ];
+  }
+  if (!out.TYPE_ID) out.TYPE_ID = 1;
+  if (!out.RESPONSIBLE_ID) {
+    throw new Error("RESPONSIBLE_ID обязателен для crm.activity.add.");
+  }
+  // DEADLINE напрямую не пишется — переносим в START/END.
+  if (out.DEADLINE && !out.START_TIME && !out.END_TIME) {
+    out.START_TIME = out.DEADLINE;
+    out.END_TIME = out.DEADLINE;
+  }
+  delete out.DEADLINE;
+  return out;
+}
+
+/** Создать дело CRM (todo.add или классический activity.add). */
 export async function activity_add(params = {}) {
-  if (!params.fields) throw new Error("fields is required");
-  return callBitrixMethod("crm.activity.add", { fields: params.fields });
+  const { fields, useTodo } = normalizeActivityAddParams(params);
+
+  if (useTodo) {
+    try {
+      return await callBitrixMethod("crm.activity.todo.add", buildTodoAddPayload(fields));
+    } catch (todoError) {
+      // Старые порталы без todo.add — fallback на классический метод.
+      console.warn("crm.activity.todo.add failed, fallback to crm.activity.add:", todoError.message);
+      const classic = buildClassicActivityFields(fields);
+      return callBitrixMethod("crm.activity.add", { fields: classic });
+    }
+  }
+
+  const classic = buildClassicActivityFields(fields);
+  return callBitrixMethod("crm.activity.add", { fields: classic });
 }
 
 /** Обновить дело CRM. */
