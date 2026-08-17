@@ -91,10 +91,18 @@
           <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
           <aside class="chat-sidebar" id="chatSidebar" aria-label="Диалоги и проекты">
             <div class="sidebar-top-actions">
-              <button type="button" id="newChatBtn" class="btn btn-primary sidebar-new">Новый чат</button>
-              <button type="button" id="sidebarCollapseBtn" class="sidebar-icon-btn sidebar-collapse-btn" aria-label="Свернуть панель" title="Свернуть">‹</button>
+              <button type="button" id="newChatBtn" class="sidebar-nav-btn">
+                <svg class="sidebar-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                <span>Новый чат</span>
+              </button>
+              <button type="button" id="sidebarSearchToggle" class="sidebar-icon-btn" aria-label="Поиск" title="Поиск">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              </button>
+              <button type="button" id="sidebarCollapseBtn" class="sidebar-icon-btn sidebar-collapse-btn" aria-label="Свернуть панель" title="Свернуть">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+              </button>
             </div>
-            <label class="sidebar-search">
+            <label class="sidebar-search hidden" id="sidebarSearchWrap">
               <span class="visually-hidden">Поиск</span>
               <input type="search" id="chatSearchInput" placeholder="Поиск…" autocomplete="off">
             </label>
@@ -103,6 +111,15 @@
               <div class="sidebar-section-header">
                 <div class="sidebar-section-title" id="sidebarProjectsTitle">Проекты</div>
                 <div class="sidebar-section-actions">
+                  <button
+                    type="button"
+                    id="newProjectSidebarBtn"
+                    class="sidebar-icon-btn sidebar-icon-btn--always"
+                    aria-label="Новый проект"
+                    title="Новый проект"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
                   <button
                     type="button"
                     id="projectsMenuBtn"
@@ -124,13 +141,41 @@
             </div>
             <div class="sidebar-section" id="sidebarChatsSection">
               <div class="sidebar-section-header">
-                <div class="sidebar-section-title" id="sidebarChatsTitle">Чаты</div>
+                <div class="sidebar-section-title" id="sidebarChatsTitle">Общие чаты</div>
+                <div class="sidebar-section-actions">
+                  <button
+                    type="button"
+                    id="newChatSidebarBtn"
+                    class="sidebar-icon-btn sidebar-icon-btn--always"
+                    aria-label="Новый чат"
+                    title="Новый чат"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                  <button
+                    type="button"
+                    id="chatsMenuBtn"
+                    class="sidebar-icon-btn"
+                    aria-label="Меню раздела чатов"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    title="Меню"
+                  >⋯</button>
+                  <div id="chatsSectionMenu" class="sidebar-dropdown hidden" role="menu">
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" data-chats-menu="archive">
+                      Архивные чаты
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div id="chatsFilterBar" class="chats-filter-bar"></div>
+              <button type="button" id="backToChatsBtn" class="sidebar-back-btn hidden">Назад к чатам</button>
+              <div id="chatsFilterBar" class="chats-filter-bar hidden"></div>
               <ul id="sidebarChats" class="sidebar-list"></ul>
             </div>
           </aside>
-          <button type="button" id="sidebarExpandBtn" class="sidebar-expand-rail" aria-label="Развернуть панель" title="Развернуть">›</button>
+          <button type="button" id="sidebarExpandBtn" class="sidebar-expand-rail" aria-label="Развернуть панель" title="Развернуть">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+          </button>
           <div class="chat">
             <div class="chat-toolbar-mobile">
               <button type="button" id="mobileSidebarToggle" class="btn btn-secondary btn-sm">Меню</button>

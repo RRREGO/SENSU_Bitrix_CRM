@@ -3,17 +3,15 @@ import { escapeHtml } from "../utils.js";
 import { createNewChat, selectChat, getChatId, getCurrentChat } from "../chat.js";
 import {
   escAttr,
-  formatRelativeDate,
   renderPinMark,
 } from "./helpers.js";
-import { renderEmptyState } from "./ui/emptyState.js";
 import { confirmDialog, promptDialog } from "./ui/confirmDialog.js";
 import { renderSkeletonList } from "./ui/skeletonList.js";
-import { renderFilterTabs, wireFilterTabs } from "./ui/filterTabs.js";
 import {
   closeAllMenus,
   closeFlyouts,
   ensureMenuDocumentClose,
+  openPortaledMenu,
   positionFlyout,
   wireMenuToggle,
 } from "./ui/contextMenu.js";
@@ -23,7 +21,6 @@ import {
   getChatsFilter,
   setChatsFilter,
   getChatsSort,
-  setChatsSort,
   getProjectsView,
   setProjectsView,
   isProjectExpanded,
@@ -37,7 +34,7 @@ import {
   getFilterProjectId,
 } from "./state.js";
 
-const NESTED_CHAT_LIMIT = 5;
+const FOLDER_ICON = `<span class="sidebar-item-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>`;
 let hooks = {};
 
 export function initSidebar(workspaceHooks) {
@@ -51,6 +48,14 @@ function wireSidebarChrome() {
   const projectsMenuBtn = document.getElementById("projectsMenuBtn");
   const projectsSectionMenu = document.getElementById("projectsSectionMenu");
   const backToProjectsBtn = document.getElementById("backToProjectsBtn");
+  const chatsMenuBtn = document.getElementById("chatsMenuBtn");
+  const chatsSectionMenu = document.getElementById("chatsSectionMenu");
+  const backToChatsBtn = document.getElementById("backToChatsBtn");
+  const newProjectSidebarBtn = document.getElementById("newProjectSidebarBtn");
+  const newChatSidebarBtn = document.getElementById("newChatSidebarBtn");
+  const searchToggle = document.getElementById("sidebarSearchToggle");
+  const searchWrap = document.getElementById("sidebarSearchWrap");
+  const searchInput = document.getElementById("chatSearchInput");
   const collapseBtn = document.getElementById("sidebarCollapseBtn");
   const expandBtn = document.getElementById("sidebarExpandBtn");
   const mobileToggle = document.getElementById("mobileSidebarToggle");
@@ -61,8 +66,7 @@ function wireSidebarChrome() {
     const open = !projectsSectionMenu?.classList.contains("hidden");
     closeAllMenus();
     if (!open && projectsSectionMenu) {
-      projectsSectionMenu.classList.remove("hidden");
-      projectsMenuBtn.setAttribute("aria-expanded", "true");
+      openPortaledMenu(projectsSectionMenu, projectsMenuBtn);
     }
   });
 
@@ -75,6 +79,45 @@ function wireSidebarChrome() {
   backToProjectsBtn?.addEventListener("click", async () => {
     setProjectsView("projects");
     await refreshSidebar();
+  });
+
+  chatsMenuBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = !chatsSectionMenu?.classList.contains("hidden");
+    closeAllMenus();
+    if (!open && chatsSectionMenu) {
+      openPortaledMenu(chatsSectionMenu, chatsMenuBtn);
+    }
+  });
+
+  chatsSectionMenu?.querySelector('[data-chats-menu="archive"]')?.addEventListener("click", async () => {
+    closeAllMenus();
+    setFilterProjectId(null);
+    setChatsFilter("archived");
+    await refreshSidebar();
+  });
+
+  backToChatsBtn?.addEventListener("click", async () => {
+    setChatsFilter("all");
+    setFilterProjectId(null);
+    await refreshSidebar();
+  });
+
+  newProjectSidebarBtn?.addEventListener("click", () => hooks.openCreateProject?.());
+  newChatSidebarBtn?.addEventListener("click", () => document.getElementById("newChatBtn")?.click());
+
+  searchToggle?.addEventListener("click", () => {
+    const open = !searchWrap?.classList.contains("hidden");
+    closeAllMenus();
+    if (open) closeSidebarSearch();
+    else openSidebarSearch();
+  });
+
+  searchInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeSidebarSearch();
+    }
   });
 
   collapseBtn?.addEventListener("click", () => {
@@ -105,11 +148,26 @@ export function closeMobileSidebar() {
   document.getElementById("sidebarBackdrop")?.classList.add("hidden");
 }
 
+function openSidebarSearch() {
+  const wrap = document.getElementById("sidebarSearchWrap");
+  const input = document.getElementById("chatSearchInput");
+  wrap?.classList.remove("hidden");
+  input?.focus();
+}
+
+function closeSidebarSearch() {
+  const wrap = document.getElementById("sidebarSearchWrap");
+  const input = document.getElementById("chatSearchInput");
+  wrap?.classList.add("hidden");
+  if (input) input.value = "";
+  runSearch("", document.getElementById("searchResults"));
+}
+
 function buildChatsQuery() {
   const filter = getChatsFilter();
   const sort = getChatsSort();
   const params = new URLSearchParams();
-  params.set("limit", "40");
+  params.set("limit", "200");
   params.set("sort", sort);
 
   const projectFilter = getFilterProjectId();
@@ -132,19 +190,41 @@ function buildChatsQuery() {
   return `/chats?${params}`;
 }
 
-export async function refreshSidebar() {
+let refreshPromise = null;
+
+export function refreshSidebar() {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = runRefreshSidebar().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+async function runRefreshSidebar() {
   const sidebarProjects = document.getElementById("sidebarProjects");
   const sidebarChats = document.getElementById("sidebarChats");
   if (!sidebarChats) return;
 
+  closeAllMenus();
+
+  if (getChatsFilter() === "unassigned" || getChatsFilter() === "projects") {
+    setChatsFilter("all");
+  }
   updateProjectsSectionChrome();
+  updateChatsSectionChrome();
   renderChatsToolbar();
 
   const archivedProjects = getProjectsView() === "archived-projects";
-  if (sidebarProjects) {
-    sidebarProjects.innerHTML = renderSkeletonList({ rows: 3 });
+  const chatsScroll = sidebarChats.scrollTop;
+  const projectsScroll = sidebarProjects?.scrollTop || 0;
+  const showSkeleton = !sidebarChats.querySelector(".sidebar-row, .sidebar-quiet-note");
+
+  if (showSkeleton) {
+    if (sidebarProjects) {
+      sidebarProjects.innerHTML = renderSkeletonList({ rows: 3 });
+    }
+    sidebarChats.innerHTML = renderSkeletonList({ rows: 4 });
   }
-  sidebarChats.innerHTML = renderSkeletonList({ rows: 4 });
 
   try {
     const [projectsRes, chatsRes] = await Promise.all([
@@ -155,59 +235,43 @@ export async function refreshSidebar() {
     const projects = projectsRes.projects || [];
     setCachedProjects(projects);
 
+    const chats = chatsRes.chats || [];
+    const archived = getChatsFilter() === "archived";
+    const { byProject, unassigned } = groupChatsByProject(chats);
+
     if (sidebarProjects) {
       if (archivedProjects) {
         if (!projects.length) {
-          sidebarProjects.innerHTML = `<li>${renderEmptyState({
-            title: "Архив пуст",
-            text: "Архивные проекты появятся здесь.",
-            size: "sm",
-            inset: true,
-          })}</li>`;
+          sidebarProjects.innerHTML = `<li class="sidebar-quiet-note">Архив пуст</li>`;
         } else {
           sidebarProjects.innerHTML = projects
             .map((p) => `<li class="sidebar-row">${renderProjectItem(p, { archived: true })}</li>`)
             .join("");
         }
       } else if (!projects.length) {
-        sidebarProjects.innerHTML = `<li>${renderEmptyState({
-          title: "Нет проектов",
-          text: "Создайте рабочее пространство для связанных чатов, файлов и CRM-контекста.",
-          actionsHtml: `<button type="button" class="btn btn-primary btn-sm" data-new-project>Создать проект</button>`,
-          size: "sm",
-          inset: true,
-        })}</li>`;
+        sidebarProjects.innerHTML = `<li class="sidebar-quiet-note">Пока нет проектов</li>`;
       } else {
-        const items = await Promise.all(projects.map((p) => renderProjectItemWithChats(p)));
-        const newProjectRow = `<li>
-          <button type="button" class="sidebar-item sidebar-item-new-project" data-new-project>
-            <span class="sidebar-item-title">Новый проект</span>
-          </button>
-        </li>`;
-        sidebarProjects.innerHTML = items.join("") + newProjectRow;
+        sidebarProjects.innerHTML = projects
+          .map((p) => {
+            const nestedChats = archived ? [] : byProject.get(p.id) || [];
+            const expanded = isProjectExpanded(p.id);
+            const selected = getSelectedProjectId() === p.id;
+            return `<li class="sidebar-row sidebar-project-row${expanded ? " is-expanded" : ""}${selected ? " is-selected" : ""}">${renderProjectItem(p, { nestedChats })}</li>`;
+          })
+          .join("");
       }
       wireProjectItems(sidebarProjects);
+      sidebarProjects.scrollTop = projectsScroll;
     }
 
-    let chats = chatsRes.chats || [];
-    if (getChatsFilter() === "projects" && !getFilterProjectId()) {
-      chats = chats.filter((c) => c.projectId);
-    }
-
-    const archived = getChatsFilter() === "archived";
-    if (!chats.length) {
-      sidebarChats.innerHTML = `<li>${renderEmptyState({
-        title: archived ? "Архив пуст" : "Нет чатов",
-        text: archived
-          ? "Архивные диалоги появятся здесь."
-          : "Здесь появятся ваши диалоги с ассистентом.",
-        size: "sm",
-        inset: true,
-      })}</li>`;
+    const generalChats = archived ? chats : unassigned;
+    if (!generalChats.length) {
+      sidebarChats.innerHTML = `<li class="sidebar-quiet-note">${archived ? "Архив пуст" : "Пока нет общих чатов"}</li>`;
     } else {
-      sidebarChats.innerHTML = chats.map((c) => renderChatItem(c, archived)).join("");
+      sidebarChats.innerHTML = generalChats.map((c) => renderChatItem(c, archived)).join("");
     }
     wireChatItems(sidebarChats);
+    sidebarChats.scrollTop = chatsScroll;
   } catch (err) {
     const msg = escapeHtml(err.message || "Ошибка загрузки");
     if (sidebarProjects) {
@@ -227,10 +291,24 @@ export async function refreshSidebar() {
 function updateProjectsSectionChrome() {
   const titleEl = document.getElementById("sidebarProjectsTitle");
   const menuBtn = document.getElementById("projectsMenuBtn");
+  const newBtn = document.getElementById("newProjectSidebarBtn");
   const backBtn = document.getElementById("backToProjectsBtn");
   const archived = getProjectsView() === "archived-projects";
   if (titleEl) titleEl.textContent = archived ? "Архивные проекты" : "Проекты";
   menuBtn?.classList.toggle("hidden", archived);
+  newBtn?.classList.toggle("hidden", archived);
+  backBtn?.classList.toggle("hidden", !archived);
+}
+
+function updateChatsSectionChrome() {
+  const titleEl = document.getElementById("sidebarChatsTitle");
+  const menuBtn = document.getElementById("chatsMenuBtn");
+  const newBtn = document.getElementById("newChatSidebarBtn");
+  const backBtn = document.getElementById("backToChatsBtn");
+  const archived = getChatsFilter() === "archived";
+  if (titleEl) titleEl.textContent = archived ? "Архив" : "Общие чаты";
+  menuBtn?.classList.toggle("hidden", archived);
+  newBtn?.classList.toggle("hidden", archived);
   backBtn?.classList.toggle("hidden", !archived);
 }
 
@@ -242,120 +320,43 @@ function renderChatsToolbar() {
     ? getCachedProjects().find((p) => p.id === filterProjectId)?.name
     : null;
 
-  toolbar.innerHTML = `
-    ${
-      filterLabel
-        ? `<div class="sidebar-filter-chip">
-            <span>Проект: ${escapeHtml(filterLabel)}</span>
-            <button type="button" class="sidebar-icon-btn" data-clear-project-filter aria-label="Сбросить фильтр">×</button>
-          </div>`
-        : renderFilterTabs({
-            name: "chats",
-            active: getChatsFilter(),
-            tabs: [
-              { id: "all", label: "Все" },
-              { id: "unassigned", label: "Без проекта" },
-              { id: "projects", label: "По проектам" },
-              { id: "archived", label: "Архив" },
-            ],
-          })
-    }
-    <label class="sidebar-sort">
-      <span class="visually-hidden">Сортировка</span>
-      <select data-chats-sort aria-label="Сортировка чатов">
-        <option value="activity"${getChatsSort() === "activity" ? " selected" : ""}>По активности</option>
-        <option value="created"${getChatsSort() === "created" ? " selected" : ""}>По созданию</option>
-        <option value="title"${getChatsSort() === "title" ? " selected" : ""}>По названию</option>
-      </select>
-    </label>
-    ${
-      getChatsFilter() === "unassigned" && !filterLabel
-        ? `<button type="button" class="btn btn-ghost btn-sm sidebar-bulk-delete" data-delete-unassigned>Удалить все без проекта</button>`
-        : ""
-    }`;
+  if (!filterLabel) {
+    toolbar.classList.add("hidden");
+    toolbar.innerHTML = "";
+    return;
+  }
 
-  wireFilterTabs(toolbar, async (id) => {
-    setFilterProjectId(null);
-    setChatsFilter(id);
-    await refreshSidebar();
-  });
+  toolbar.classList.remove("hidden");
+  toolbar.innerHTML = `<div class="sidebar-filter-chip">
+    <span>${escapeHtml(filterLabel)}</span>
+    <button type="button" class="sidebar-icon-btn" data-clear-project-filter aria-label="Сбросить фильтр">×</button>
+  </div>`;
+
   toolbar.querySelector("[data-clear-project-filter]")?.addEventListener("click", async () => {
     setFilterProjectId(null);
     setChatsFilter("all");
     await refreshSidebar();
   });
-  toolbar.querySelector("[data-chats-sort]")?.addEventListener("change", async (e) => {
-    setChatsSort(e.target.value);
-    await refreshSidebar();
-  });
-  toolbar.querySelector("[data-delete-unassigned]")?.addEventListener("click", async () => {
-    const ok = await confirmDialog({
-      title: "Удалить чаты без проекта?",
-      message: "Все диалоги без проекта и их сообщения будут удалены безвозвратно.",
-      confirmLabel: "Удалить все",
-      danger: true,
-    });
-    if (!ok) return;
-    const res = await apiGet("/chats?unassigned=1&status=active&limit=200");
-    const chats = res.chats || [];
-    for (const c of chats) {
-      await apiDelete(`/chats/${c.id}?permanent=true`);
-    }
-    const archived = await apiGet("/chats?unassigned=1&status=archived&limit=200");
-    for (const c of archived.chats || []) {
-      await apiDelete(`/chats/${c.id}?permanent=true`);
-    }
-    await refreshSidebar();
-  });
 }
 
-async function renderProjectItemWithChats(project) {
-  const expanded = isProjectExpanded(project.id);
-  const selected = getSelectedProjectId() === project.id;
-  let nested = "";
-  if (expanded) {
-    try {
-      const res = await apiGet(`/chats?projectId=${encodeURIComponent(project.id)}&status=active&limit=${NESTED_CHAT_LIMIT + 1}&sort=activity`);
-      const chats = res.chats || [];
-      const shown = chats.slice(0, NESTED_CHAT_LIMIT);
-      const hasMore = chats.length > NESTED_CHAT_LIMIT;
-      nested = `<ul class="sidebar-nested-list">
-        ${
-          shown.length
-            ? shown
-                .map((c) => {
-                  const active = c.id === getChatId() ? " active" : "";
-                  return `<li>
-                    <button type="button" class="sidebar-item sidebar-item--nested${active}" data-chat-id="${escAttr(c.id)}">
-                      <span class="sidebar-item-title">${escapeHtml(c.title || "Диалог")}</span>
-                    </button>
-                  </li>`;
-                })
-                .join("")
-            : `<li><p class="project-note">Нет чатов</p></li>`
-        }
-        ${
-          hasMore
-            ? `<li><button type="button" class="sidebar-show-all" data-show-all-project="${escAttr(project.id)}">Показать все</button></li>`
-            : ""
-        }
-      </ul>`;
-    } catch {
-      nested = `<p class="project-note">Не удалось загрузить чаты</p>`;
+function groupChatsByProject(chats) {
+  const byProject = new Map();
+  const unassigned = [];
+  for (const chat of chats) {
+    if (chat.projectId) {
+      const list = byProject.get(chat.projectId) || [];
+      list.push(chat);
+      byProject.set(chat.projectId, list);
+    } else {
+      unassigned.push(chat);
     }
   }
-
-  return `<li class="sidebar-row sidebar-project-row${expanded ? " is-expanded" : ""}${selected ? " is-selected" : ""}">
-    ${renderProjectItem(project, { nested })}
-  </li>`;
+  return { byProject, unassigned };
 }
 
-function renderProjectItem(project, { archived = false, nested = "" } = {}) {
+function renderProjectItem(project, { archived = false, nestedChats = [] } = {}) {
   const selected = getSelectedProjectId() === project.id ? " active" : "";
-  const expanded = isProjectExpanded(project.id);
-  const colorDot = project.colorKey
-    ? `<span class="project-color-dot color-swatch--${escAttr(project.colorKey)}" aria-hidden="true"></span>`
-    : "";
+  const expanded = !archived && isProjectExpanded(project.id);
 
   const menuItems = archived
     ? `
@@ -370,6 +371,17 @@ function renderProjectItem(project, { archived = false, nested = "" } = {}) {
       <button type="button" class="sidebar-dropdown-item" role="menuitem" data-project-action="archive" data-project-id="${escAttr(project.id)}">Архивировать</button>
       <button type="button" class="sidebar-dropdown-item sidebar-dropdown-item-danger" role="menuitem" data-project-action="delete" data-project-id="${escAttr(project.id)}">Удалить</button>`;
 
+  const nested =
+    expanded
+      ? `<ul class="sidebar-nested-list">
+          ${
+            nestedChats.length
+              ? nestedChats.map((c) => renderChatItem(c, false, true)).join("")
+              : `<li class="sidebar-quiet-note">Нет чатов</li>`
+          }
+        </ul>`
+      : "";
+
   return `
     <div class="sidebar-row-card">
       ${
@@ -380,7 +392,8 @@ function renderProjectItem(project, { archived = false, nested = "" } = {}) {
             </button>`
       }
       <button type="button" class="sidebar-item${selected}" data-project-id="${escAttr(project.id)}">
-        <span class="sidebar-item-title">${colorDot}${renderPinMark(project.isPinned)}${escapeHtml(project.name)}</span>
+        ${FOLDER_ICON}
+        <span class="sidebar-item-title">${renderPinMark(project.isPinned)}${escapeHtml(project.name)}</span>
       </button>
       <div class="sidebar-item-menu-wrap">
         <button type="button" class="sidebar-item-menu-btn" data-project-menu="${escAttr(project.id)}" aria-label="Действия с проектом" aria-haspopup="true" aria-expanded="false" title="Действия">⋯</button>
@@ -390,15 +403,10 @@ function renderProjectItem(project, { archived = false, nested = "" } = {}) {
     ${nested}`;
 }
 
-function renderChatItem(chat, archived = false) {
+function renderChatItem(chat, archived = false, nested = false) {
   const active = chat.id === getChatId() ? " active" : "";
-  const date = formatRelativeDate(chat.lastActivityAt || chat.updatedAt);
-  const preview = escapeHtml((chat.lastMessagePreview || "").slice(0, 60));
   const archiveActionLabel = archived ? "Вернуть из архива" : "Архивировать";
   const archiveAction = archived ? "restore" : "archive";
-  const projectLine = [chat.projectName || (chat.projectId ? "Проект" : "Без проекта"), date]
-    .filter(Boolean)
-    .join(" · ");
 
   const projectOptions = [
     `<button type="button" class="sidebar-dropdown-item" role="menuitem" data-chat-action="move-project" data-chat-id="${escAttr(chat.id)}" data-project-id="">Без проекта</button>`,
@@ -413,10 +421,8 @@ function renderChatItem(chat, archived = false) {
 
   return `<li class="sidebar-row${archived ? " is-archived" : ""}">
     <div class="sidebar-row-card">
-      <button type="button" class="sidebar-item${active}" data-chat-id="${escAttr(chat.id)}">
+      <button type="button" class="sidebar-item${nested ? " sidebar-item--nested" : ""}${active}" data-chat-id="${escAttr(chat.id)}" data-project-id="${escAttr(chat.projectId || "")}">
         <span class="sidebar-item-title">${renderPinMark(chat.isPinned)}${escapeHtml(chat.title || "Диалог")}</span>
-        ${preview ? `<span class="sidebar-item-preview">${preview}</span>` : ""}
-        <span class="sidebar-item-meta">${escapeHtml(projectLine)}</span>
       </button>
       <div class="sidebar-item-menu-wrap">
         <button type="button" class="sidebar-item-menu-btn" data-chat-menu="${escAttr(chat.id)}" aria-label="Действия с чатом" aria-haspopup="true" aria-expanded="false" title="Действия">⋯</button>
@@ -445,10 +451,6 @@ function renderChatItem(chat, archived = false) {
 }
 
 function wireProjectItems(root) {
-  root.querySelectorAll("[data-new-project]").forEach((btn) => {
-    btn.addEventListener("click", () => hooks.openCreateProject?.());
-  });
-
   root.querySelectorAll("[data-expand-project]").forEach((btn) => {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -459,17 +461,7 @@ function wireProjectItems(root) {
 
   root.querySelectorAll("[data-project-id].sidebar-item").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      expandProject(btn.dataset.projectId);
-      await hooks.openProjectOverview?.(btn.dataset.projectId);
-      await refreshSidebar();
-      closeMobileSidebar();
-    });
-  });
-
-  root.querySelectorAll("[data-show-all-project]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      setFilterProjectId(btn.dataset.showAllProject);
-      setChatsFilter("all");
+      toggleProjectExpanded(btn.dataset.projectId);
       await refreshSidebar();
     });
   });
@@ -486,7 +478,6 @@ function wireProjectItems(root) {
     });
   });
 
-  // nested chats
   wireChatItems(root);
 }
 
@@ -496,9 +487,11 @@ function wireChatItems(root) {
     if (btn.dataset.wired === "1") return;
     btn.dataset.wired = "1";
     btn.addEventListener("click", async () => {
+      const projectId = btn.dataset.projectId || null;
+      if (projectId) expandProject(projectId);
+      setSelectedProjectId(projectId);
       await selectChat(btn.dataset.chatId);
       hooks.showChatView?.();
-      await refreshSidebar();
       hooks.onOpenChatTab?.();
       closeMobileSidebar();
     });
@@ -547,6 +540,7 @@ async function handleProjectAction(action, projectId) {
   if (!projectId) return;
 
   if (action === "open") {
+    expandProject(projectId);
     await hooks.openProjectOverview?.(projectId);
     await refreshSidebar();
     return;
@@ -556,9 +550,10 @@ async function handleProjectAction(action, projectId) {
     return;
   }
   if (action === "new-chat") {
+    expandProject(projectId);
+    setSelectedProjectId(projectId);
     await createNewChat(projectId);
     hooks.showChatView?.();
-    await refreshSidebar();
     hooks.onOpenChatTab?.();
     return;
   }
@@ -629,7 +624,6 @@ export async function handleChatAction(action, chatId, extras = {}) {
   if (action === "open") {
     await selectChat(chatId);
     hooks.showChatView?.();
-    await refreshSidebar();
     hooks.onOpenChatTab?.();
     closeMobileSidebar();
     return;
@@ -652,6 +646,8 @@ export async function handleChatAction(action, chatId, extras = {}) {
   if (action === "move-project") {
     const projectId = extras.projectId === "" || extras.projectId == null ? null : extras.projectId;
     await apiPatch(`/chats/${chatId}`, { projectId });
+    if (projectId) expandProject(projectId);
+    setSelectedProjectId(projectId);
     await refreshSidebar();
     hooks.refreshChatMeta?.(chatId);
     return;
@@ -699,6 +695,9 @@ export async function handleChatAction(action, chatId, extras = {}) {
 export async function runSearch(query, container) {
   if (!container) return;
   const q = query.trim();
+  const listsHidden = Boolean(q);
+  document.getElementById("sidebarProjectsSection")?.classList.toggle("hidden", listsHidden);
+  document.getElementById("sidebarChatsSection")?.classList.toggle("hidden", listsHidden);
   if (!q) {
     container.classList.add("hidden");
     container.innerHTML = "";
@@ -708,19 +707,17 @@ export async function runSearch(query, container) {
   container.classList.remove("hidden");
   const results = data.results || [];
   if (!results.length) {
-    container.innerHTML = `<div class="sidebar-section-title">Результаты</div>
-      <p class="project-note">Ничего не найдено</p>`;
+    container.innerHTML = `<p class="sidebar-quiet-note">Ничего не найдено</p>`;
     return;
   }
-  container.innerHTML = `<div class="sidebar-section-title">Результаты</div>${results
+  container.innerHTML = results
     .map(
       (r) =>
         `<button type="button" class="sidebar-item" data-search-type="${escAttr(r.entityType)}" data-search-id="${escAttr(r.entityId)}">
           <span class="sidebar-item-title">${escapeHtml(r.title || r.entityType)}</span>
-          <span class="sidebar-item-preview">${escapeHtml(r.snippet || "")}</span>
         </button>`
     )
-    .join("")}`;
+    .join("");
 
   container.querySelectorAll("[data-search-id]").forEach((btn) => {
     btn.addEventListener("click", async () => {
@@ -734,6 +731,10 @@ export async function runSearch(query, container) {
         } else {
           await selectChat(btn.dataset.searchId);
         }
+        const chat = getCurrentChat?.();
+        if (chat?.projectId) expandProject(chat.projectId);
+        setSelectedProjectId(chat?.projectId || null);
+        closeSidebarSearch();
         hooks.showChatView?.();
         await refreshSidebar();
         hooks.onOpenChatTab?.();

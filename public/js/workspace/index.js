@@ -13,7 +13,7 @@ import {
   refreshProjects,
   openProjectSettings,
 } from "./projectSettings.js";
-import { setSelectedProjectId, getSelectedProjectId, setCachedProjects } from "./state.js";
+import { setSelectedProjectId, setCachedProjects } from "./state.js";
 
 let profileFieldsRef = null;
 
@@ -56,10 +56,9 @@ export function initWorkspaceUI({
   });
 
   newChatBtn?.addEventListener("click", async () => {
-    const projectId = getSelectedProjectId();
-    await createNewChat(projectId || null);
+    setSelectedProjectId(null);
+    await createNewChat(null);
     showChatView();
-    await refreshSidebar();
     onOpenChatTab?.();
     closeMobileSidebar();
   });
