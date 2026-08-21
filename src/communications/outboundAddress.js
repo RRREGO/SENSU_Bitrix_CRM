@@ -102,17 +102,66 @@ export async function inferPreferredHubChannel(params = {}) {
   return "telegram";
 }
 
+export function wazzupApiChannelId(hubChannel, fallback = null) {
+  const candidates = [
+    hubChannel?.externalChannelId,
+    fallback,
+    hubChannel?.id,
+  ];
+  for (const value of candidates) {
+    const id = String(value || "").trim();
+    if (!id || id.startsWith("wazzup:")) continue;
+    return id;
+  }
+  return null;
+}
+
 export function pickHubChannel(transports) {
   const wanted = (transports || []).map((t) => String(t).toLowerCase());
   const channels = repo.listHubChannels({ provider: "wazzup" });
-  const active = channels.filter((c) =>
-    ["active", "authorized", "ok", "ready"].includes(String(c.state || c.status || "").toLowerCase())
-  );
-  for (const t of wanted) {
-    const hit = active.find((c) => String(c.transport || "").toLowerCase() === t);
-    if (hit) return hit;
+  const isActive = (c) =>
+    ["active", "authorized", "ok", "ready"].includes(String(c.state || c.status || "").toLowerCase());
+  const matches = (c) => {
+    const transport = String(c.transport || "").toLowerCase();
+    const channel = String(c.channel || "").toLowerCase();
+    return wanted.includes(transport) || wanted.includes(channel);
+  };
+  for (const c of channels) {
+    if (isActive(c) && matches(c) && wazzupApiChannelId(c)) return c;
   }
-  return null;
+  return channels.find((c) => matches(c) && wazzupApiChannelId(c)) || null;
+}
+
+/**
+ * Pick a Wazzup channel for the chat type. If the local catalog is empty, sync from API once.
+ */
+export async function ensureHubChannel(channel, transportHint) {
+  const mapped = mapChannelToWazzup(channel, transportHint);
+  let hit = pickHubChannel(mapped.transports);
+  if (wazzupApiChannelId(hit)) return hit;
+  try {
+    const { getProvider } = await import("./providers/index.js");
+    const provider = getProvider("wazzup");
+    if (!provider?.isEnabled?.()) return hit;
+    const listed = await provider.listChannels();
+    for (const ch of listed) {
+      repo.upsertHubChannel({
+        id: `wazzup:${ch.externalChannelId}`,
+        channel: ch.transport || "unknown",
+        provider: "wazzup",
+        status: ch.state,
+        externalChannelId: ch.externalChannelId,
+        transport: ch.transport,
+        displayName: ch.displayName,
+        plainId: ch.plainId,
+        state: ch.state,
+        capabilities: ch.capabilities,
+      });
+    }
+  } catch {
+    return hit;
+  }
+  return pickHubChannel(mapped.transports);
 }
 
 export function listIdentitiesForContact(contactId) {
@@ -162,8 +211,12 @@ export async function resolveHubOutboundAddress(params = {}) {
   const chatType = String(params.chatType || mapped.chatType).toLowerCase();
   const transports = mapped.transports;
   const hubChannel = params.channelId
-    ? repo.getHubChannel(params.channelId) || { id: params.channelId, transport: params.transport }
-    : pickHubChannel(transports);
+    ? repo.getHubChannel(params.channelId) || {
+        id: params.channelId,
+        transport: params.transport,
+        externalChannelId: params.channelId,
+      }
+    : await ensureHubChannel(params.channel, params.transport);
   const transport = String(
     params.transport || hubChannel?.transport || transports[0] || chatType
   ).toLowerCase();
@@ -241,7 +294,7 @@ export async function resolveHubOutboundAddress(params = {}) {
   return {
     chatType,
     transport,
-    channelId: hubChannel?.externalChannelId || hubChannel?.id || params.channelId || null,
+    channelId: wazzupApiChannelId(hubChannel, params.channelId),
     phone,
     username,
     chatId,

@@ -11,6 +11,7 @@ import { evaluateSendPolicy } from "./communicationPolicy.js";
 import { getProvider } from "./providers/index.js";
 import * as repo from "./communicationRepository.js";
 import logger from "../observability/logger.js";
+import { ensureHubChannel, wazzupApiChannelId } from "./outboundAddress.js";
 import {
   assertFlagsAllowSend,
   assertNotEmergencyStopped,
@@ -395,6 +396,18 @@ async function processOneJob(job, cfg, results) {
         : "wazzup";
   const provider = getProvider(providerName);
 
+  let channelId = job.channelId || job.payload?.channelId || null;
+  if (!channelId && providerName === "wazzup") {
+    const hub = await ensureHubChannel(job.chatType, job.transport);
+    channelId = wazzupApiChannelId(hub);
+  }
+  if (!channelId && providerName === "wazzup") {
+    throw new CommunicationError(
+      "WAZZUP_INVALID_PAYLOAD",
+      "channelId обязателен: канал Wazzup не синхронизирован."
+    );
+  }
+
   logger.info("communication.provider.request", {
     outboxId: job.id,
     provider: providerName,
@@ -406,7 +419,7 @@ async function processOneJob(job, cfg, results) {
   let sendResult;
   try {
     sendResult = await provider.sendMessage({
-      channelId: job.channelId || job.payload?.channelId,
+      channelId,
       chatType: job.chatType || "whatsapp",
       chatId: job.externalChatId,
       phone: job.payload?.phone,
@@ -528,6 +541,13 @@ export function startCommunicationScheduler() {
   if (typeof hubTimer.unref === "function") hubTimer.unref();
   hubStarted = true;
   console.log(`[Communications] scheduler started poll=${pollMs / 1000}s`);
+  ensureHubChannel("telegram")
+    .then((ch) =>
+      console.log(
+        `[Communications] wazzup channel ready transport=${ch?.transport || "none"}`
+      )
+    )
+    .catch((e) => console.warn("[Communications] channel sync failed:", e.message));
   tickCommunications().catch(() => {});
   return { started: true };
 }

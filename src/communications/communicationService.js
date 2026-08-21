@@ -258,6 +258,16 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
     resolutionStatus: params.resolutionStatus,
   });
 
+  if (policy.allowed && !address.channelId) {
+    policy = {
+      allowed: false,
+      code: "WAZZUP_CHANNEL_MISSING",
+      message:
+        "Нет подключённого канала Wazzup для этого мессенджера. Сообщение не отправлено — сначала синхронизируйте каналы.",
+      details: { chatType, transport },
+    };
+  }
+
   const dryRun = cfg.dryRun || !cfg.sendEnabled;
   const preview = buildSingleMessagePreparePreview({
     contactId,

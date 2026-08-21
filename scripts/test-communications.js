@@ -830,6 +830,16 @@ async function main() {
     picked.actions.some((a) => a.name === "communication_message_send_prepare"),
     "H20c. Wazzup/Telegram request selects send_prepare"
   );
+  repo.upsertHubChannel({
+    id: "wazzup:ch-tg-test",
+    provider: "wazzup",
+    channel: "telegram",
+    externalChannelId: "ch-tg-test",
+    transport: "telegram",
+    state: "active",
+    status: "active",
+    displayName: "TG test",
+  });
   const { prepareMessageSend } = await import("../src/communications/communicationService.js");
   const tgPrepared = await prepareMessageSend({
     contactId: "6882",
@@ -841,6 +851,7 @@ async function main() {
   });
   assert(tgPrepared.policy?.allowed === true, "H20d. Telegram prepare with username has address");
   assert(tgPrepared.outboxDraft?.chatType === "telegram", "H20e. Prepare chatType=telegram");
+  assert(tgPrepared.outboxDraft?.channelId === "ch-tg-test", "H20e2. Prepare has Wazzup channelId");
   const tgNoAddr = await prepareMessageSend({
     contactId: "missing-contact",
     channel: "telegram",
