@@ -13,7 +13,7 @@ import { getProvider } from "./providers/index.js";
 import { evaluateSendPolicy } from "./communicationPolicy.js";
 import { buildSingleMessagePreparePreview } from "./communicationSafety.js";
 import { renderTemplate, assertRequiredVarsFilled } from "./templateRenderer.js";
-import { resolveHubOutboundAddress } from "./outboundAddress.js";
+import { resolveHubOutboundAddress, inferPreferredHubChannel, HUB_CHANNEL_FALLBACK_ORDER } from "./outboundAddress.js";
 import * as repo from "./communicationRepository.js";
 import { getOutboxHealth } from "./communicationScheduler.js";
 import { buildCommunicationContext } from "./communicationContext.js";
@@ -180,6 +180,8 @@ export function draftThreadMessage(threadId, params = {}) {
 
 /**
  * Prepare a Hub send via Safety Layer path (returns preview; does not send).
+ * If channel is omitted / "wazzup", picks Telegram vs WhatsApp vs MAX from the contact.
+ * If the chosen channel has no address, tries the other messengers instead of asking.
  */
 export async function prepareMessageSend(params = {}) {
   const cfg = getCommunicationsConfig();
@@ -188,7 +190,31 @@ export async function prepareMessageSend(params = {}) {
   }
 
   const contactId = params.contactId ? String(params.contactId) : null;
-  const channel = String(params.channel || params.chatType || "whatsapp").toLowerCase();
+  const preferred = await inferPreferredHubChannel(params);
+  const order = [preferred, ...HUB_CHANNEL_FALLBACK_ORDER.filter((c) => c !== preferred)];
+
+  let last = null;
+  for (const channel of order) {
+    const prepared = await prepareMessageSendForChannel(params, contactId, channel, cfg);
+    last = prepared;
+    if (prepared.policy?.allowed) {
+      if (channel !== preferred && prepared.preview) {
+        prepared.preview.channelAutoSelected = channel;
+        prepared.preview.warnings = [
+          ...(prepared.preview.warnings || []),
+          `Канал ${preferred} без адреса — выбран ${channel}.`,
+        ];
+      }
+      return prepared;
+    }
+    if (prepared.policy?.code !== "NO_ADDRESS") {
+      return prepared;
+    }
+  }
+  return last;
+}
+
+async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
   const address = await resolveHubOutboundAddress({
     ...params,
     contactId,

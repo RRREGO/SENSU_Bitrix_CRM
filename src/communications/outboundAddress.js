@@ -57,9 +57,49 @@ function contactDisplayName(contact) {
   return name || null;
 }
 
+const EXPLICIT_CHANNELS = new Set([
+  "telegram",
+  "tgapi",
+  "whatsapp",
+  "wapi",
+  "waba",
+  "max",
+  "maxbot",
+]);
+
+export const HUB_CHANNEL_FALLBACK_ORDER = ["telegram", "whatsapp", "max"];
+
+export function normalizeHubChannel(channel) {
+  const key = String(channel || "").toLowerCase();
+  if (key === "tgapi") return "telegram";
+  if (key === "wapi" || key === "waba") return "whatsapp";
+  if (key === "maxbot") return "max";
+  return key;
+}
+
+export function isExplicitHubChannel(channel) {
+  return EXPLICIT_CHANNELS.has(String(channel || "").toLowerCase());
+}
+
 export function mapChannelToWazzup(channel, transportHint) {
-  const key = String(transportHint || channel || "whatsapp").toLowerCase();
+  const key = String(transportHint || channel || "telegram").toLowerCase();
   return CHANNEL_MAP[key] || { chatType: key, transports: [key] };
+}
+
+export async function inferPreferredHubChannel(params = {}) {
+  const requested = normalizeHubChannel(params.channel || params.chatType);
+  if (isExplicitHubChannel(requested)) return requested;
+  if (normalizeTelegramUsername(params.username)) return "telegram";
+  if (normalizePhone(params.phone)) return "whatsapp";
+  const contactId = params.contactId ? String(params.contactId) : null;
+  if (!contactId) return "telegram";
+  const contact = await fetchBitrixContact(contactId);
+  if (!contact) return "telegram";
+  const cfg = getCommunicationsConfig();
+  if (telegramFromContact(contact, cfg)) return "telegram";
+  if (phonesFromContact(contact).length) return "whatsapp";
+  if (maxFromContact(contact, cfg)) return "max";
+  return "telegram";
 }
 
 export function pickHubChannel(transports) {
@@ -129,7 +169,10 @@ export async function resolveHubOutboundAddress(params = {}) {
   ).toLowerCase();
 
   let phone = normalizePhone(params.phone);
-  let username = normalizeTelegramUsername(params.username);
+  let username =
+    chatType === "telegram" || chatType === "tgapi"
+      ? normalizeTelegramUsername(params.username)
+      : null;
   let chatId =
     params.chatId || params.externalChatId
       ? String(params.chatId || params.externalChatId)

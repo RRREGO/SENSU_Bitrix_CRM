@@ -842,13 +842,34 @@ async function main() {
   assert(tgPrepared.policy?.allowed === true, "H20d. Telegram prepare with username has address");
   assert(tgPrepared.outboxDraft?.chatType === "telegram", "H20e. Prepare chatType=telegram");
   const tgNoAddr = await prepareMessageSend({
-    contactId: "6882",
+    contactId: "missing-contact",
     channel: "telegram",
     body: "Привет",
     isFirstContact: false,
     channelState: "active",
   });
   assert(tgNoAddr.policy?.code === "NO_ADDRESS", "H20f. Telegram without username/chatId → NO_ADDRESS");
+
+  const autoChannel = await prepareMessageSend({
+    contactId: "6882",
+    username: "test_user",
+    body: "Привет",
+    isFirstContact: false,
+    channelState: "active",
+  });
+  assert(autoChannel.policy?.allowed === true, "H20g. No channel + username → allowed");
+  assert(autoChannel.outboxDraft?.chatType === "telegram", "H20g. No channel + username → telegram");
+
+  const waFallback = await prepareMessageSend({
+    contactId: "6882",
+    channel: "whatsapp",
+    username: "test_user",
+    body: "Привет",
+    isFirstContact: false,
+    channelState: "active",
+  });
+  assert(waFallback.policy?.allowed === true, "H20h. WhatsApp without phone falls back");
+  assert(waFallback.outboxDraft?.chatType === "telegram", "H20h. Fallback channel is telegram");
 
   assert(
     evaluateSendPolicy({
