@@ -274,12 +274,16 @@ export function evaluateSendPolicy(ctx = {}) {
   }
 
   if (ctx.contactId && !ctx.skipDailyLimit) {
-    const sentToday = repo.countMessagesForContactToday(ctx.contactId);
-    if (sentToday >= cfg.maxMessagesPerContactPerDay) {
-      return deny("DAILY_LIMIT", "Превышен дневной лимит сообщений контакту.", {
-        sentToday,
-        limit: cfg.maxMessagesPerContactPerDay,
-      });
+    const ground = String(ctx.firstContactGround || ctx.consentGround || "").toLowerCase();
+    const employeeAsked = ground === "manual_consent" || ground === "active_dialog";
+    if (!employeeAsked) {
+      const sentToday = repo.countMessagesForContactToday(ctx.contactId);
+      if (sentToday >= cfg.maxMessagesPerContactPerDay) {
+        return deny("DAILY_LIMIT", "Превышен дневной лимит автоматических сообщений контакту.", {
+          sentToday,
+          limit: cfg.maxMessagesPerContactPerDay,
+        });
+      }
     }
   }
 

@@ -66,7 +66,7 @@ function baseRules() {
 Если пользователь просит написать/отправить в WhatsApp, Telegram, MAX или через Wazzup:
 - сразу вызови communication_message_send_prepare с contactId и body. Канал можно не указывать: Hub сам возьмёт Telegram, если есть username, иначе WhatsApp/MAX.
 - не спрашивай «отправить в Telegram?», «показать детали?» и не проси отдельное подтверждение в чате. Единственное подтверждение — карточка Safety Layer.
-- не отказывайся из-за Safety: preview покажет Safety. Если сотрудник явно просит написать — firstContactGround=manual_consent.
+- не отказывайся из-за Safety: preview покажет Safety. Если сотрудник явно просит написать — firstContactGround=manual_consent. Для такого запроса дневной лимит автоматических сообщений не действует; не говори, что лимит в настройках Wazzup.
 - для Telegram можно передать username, если он уже известен.
 - не подтверждай отправку сам и не вызывай prepare повторно после того, как Safety уже показал карточку.
 

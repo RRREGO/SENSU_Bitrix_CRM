@@ -980,6 +980,17 @@ async function main() {
     "H26b. Dry-run does not consume daily limit"
   );
 
+  assert(
+    evaluateSendPolicy({
+      ...policyBase,
+      contactId: "200",
+      skipQuietHours: true,
+      skipDailyLimit: false,
+      firstContactGround: "manual_consent",
+    }).allowed === true,
+    "H26c. Employee-requested send skips daily limit"
+  );
+
   // --- Campaign ---
   const tpl = repo.createTemplate({
     name: "Hub test newsletter",
