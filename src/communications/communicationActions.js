@@ -65,7 +65,7 @@ export async function communication_message_draft(params = {}) {
   if (params.threadId) {
     return service.draftThreadMessage(params.threadId, params);
   }
-  const prepared = service.prepareMessageSend(params);
+  const prepared = await service.prepareMessageSend(params);
   return {
     success: true,
     body: prepared.preview.bodyPreview,
@@ -101,7 +101,7 @@ export async function communication_message_send_prepare(params = {}) {
     };
   }
 
-  const result = service.prepareMessageSend(params);
+  const result = await service.prepareMessageSend(params);
   if (!result.policy.allowed) {
     return {
       success: false,

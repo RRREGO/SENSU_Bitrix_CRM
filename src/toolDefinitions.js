@@ -62,6 +62,12 @@ function baseRules() {
 4. Подтверждение пользователя требуется только при create_deal (запись); deal_create_prepare и чтения выполняются без подтверждения.
 5. CATEGORY_ID=0 — валидная общая воронка; STAGE_ID всегда строка (например NEW или UC_...), не преобразовывай в число.
 
+Если пользователь просит написать/отправить в WhatsApp, Telegram, MAX или через Wazzup:
+- это подготовка, не отправка. Вызови communication_message_send_prepare (channel=telegram|whatsapp|max, contactId, body).
+- не отказывайся только из-за Safety: preview и подтверждение покажет Safety Layer.
+- для Telegram передай username, если он известен, иначе Hub возьмёт поле CRM. Если сотрудник явно просит написать — firstContactGround=manual_consent.
+- не подтверждай отправку сам.
+
 Если пользователь спрашивает «что ты умеешь» или похожее — ответь простым списком возможностей на русском:
 - искать сделки и лиды
 - создавать сделки (сначала deal_create_prepare, затем один раз create_deal с готовыми параметрами)

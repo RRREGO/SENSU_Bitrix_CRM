@@ -17,7 +17,6 @@ export function redactProxyUrl(url) {
 }
 
 export function getLlmTransportConfig() {
-  const mode = String(process.env.LLM_PROXY_MODE || "none").trim().toLowerCase() || "none";
   const allowInsecure = boolEnv("LLM_PROXY_ALLOW_INSECURE_TLS", false);
   const isDev = boolEnv("LLM_ALLOW_INSECURE_TLS_DEV", false) || process.env.NODE_ENV === "development";
 
@@ -27,6 +26,15 @@ export function getLlmTransportConfig() {
     process.env.HTTPS_PROXY?.trim() ||
     process.env.HTTP_PROXY?.trim() ||
     "";
+
+  const rawMode = process.env.LLM_PROXY_MODE;
+  const modeExplicit = rawMode != null && String(rawMode).trim() !== "";
+  let mode = modeExplicit ? String(rawMode).trim().toLowerCase() : "";
+  // ANTHROPIC_PROXY without LLM_PROXY_MODE used to be silently ignored (500 on
+  // servers that cannot reach api.anthropic.com directly).
+  if (!mode) {
+    mode = proxyUrl ? "corporate" : "none";
+  }
 
   const username = process.env.LLM_PROXY_USERNAME?.trim() || "";
   const password = process.env.LLM_PROXY_PASSWORD || "";
@@ -75,6 +83,11 @@ export function assertLlmTransportSafeForBoot() {
   if ((cfg.mode === "corporate" || cfg.mode === "self_hosted") && !cfg.proxyUrl) {
     throw new Error(`LLM_PROXY_MODE=${cfg.mode} требует LLM_PROXY_URL (или ANTHROPIC_PROXY).`);
   }
+  if (cfg.mode === "none" && cfg.proxyUrl) {
+    console.warn(
+      "[LLM] Прокси задан (ANTHROPIC_PROXY/LLM_PROXY_URL), но LLM_PROXY_MODE=none — запросы к Claude идут напрямую. Чтобы включить прокси, укажите LLM_PROXY_MODE=corporate."
+    );
+  }
   return cfg;
 }
 
@@ -98,11 +111,15 @@ export function getLlmFetchDispatcher() {
     connect.rejectUnauthorized = false;
   }
 
-  cachedDispatcher = new ProxyAgent({
-    uri: cfg.proxyUrl,
-    requestTls: connect,
-    proxyTls: connect,
-  });
+  // SOCKS5 is plain TCP. Passing proxyTls (even {}) makes undici wrap the
+  // proxy hop in TLS → OpenSSL "wrong version number".
+  const isSocks = /^socks5h?:\/\//i.test(cfg.proxyUrl);
+  const agentOpts = { uri: cfg.proxyUrl };
+  if (Object.keys(connect).length > 0) {
+    agentOpts.requestTls = connect;
+    if (!isSocks) agentOpts.proxyTls = connect;
+  }
+  cachedDispatcher = new ProxyAgent(agentOpts);
   cachedKey = key;
   console.log(
     `[LLM] transport mode=${cfg.mode} proxy=${cfg.proxyUrlRedacted} tlsVerification=${cfg.tlsVerification}`

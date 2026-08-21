@@ -26,8 +26,7 @@ export async function runBitrixProbe() {
   const started = Date.now();
   try {
     const { callReadMethod } = await import("../bitrixClient.js");
-    // Minimal read that returns profile without dumping CRM cards
-    await callReadMethod("profile", {});
+    await callReadMethod("user.current", {});
     const durationMs = Date.now() - started;
     recordBitrixRead({ ok: true, durationMs });
     settingSet("bitrix_probe_last_ok_at", new Date().toISOString());

@@ -16,12 +16,33 @@ export const CONNECTION_ERROR_CODES = Object.freeze({
   EXTERNAL_SERVICE_ERROR: "EXTERNAL_SERVICE_ERROR",
 });
 
+function defaultHttpStatus(code) {
+  switch (code) {
+    case CONNECTION_ERROR_CODES.AUTHENTICATION_FAILED:
+      return 401;
+    case CONNECTION_ERROR_CODES.RATE_LIMITED:
+      return 429;
+    case CONNECTION_ERROR_CODES.TIMEOUT:
+      return 504;
+    case CONNECTION_ERROR_CODES.MODEL_NOT_FOUND:
+    case CONNECTION_ERROR_CODES.MODEL_UNAVAILABLE:
+    case CONNECTION_ERROR_CODES.INVALID_CONFIGURATION:
+    case CONNECTION_ERROR_CODES.UNSUPPORTED_CAPABILITY:
+      return 400;
+    default:
+      return 502;
+  }
+}
+
 export class ConnectionError extends Error {
   constructor(code, message, details = null) {
     super(message);
     this.name = "ConnectionError";
     this.code = code || CONNECTION_ERROR_CODES.EXTERNAL_SERVICE_ERROR;
     this.details = details;
+    const fromDetails = Number(details?.httpStatus);
+    this.httpStatus =
+      fromDetails >= 400 && fromDetails < 600 ? fromDetails : defaultHttpStatus(this.code);
   }
 
   toJSON() {
@@ -58,15 +79,18 @@ export function mapHttpStatusToConnectionCode(status) {
 }
 
 export function mapNetworkErrorToConnectionCode(error) {
+  const cause = error?.cause || {};
   const msg = String(error?.message || error || "").toLowerCase();
-  const code = String(error?.code || "").toLowerCase();
-  if (code === "aborterror" || /aborted|timeout|etimedout/.test(msg) || code.includes("timeout")) {
+  const causeMsg = String(cause.message || "").toLowerCase();
+  const code = String(error?.code || cause.code || "").toLowerCase();
+  const blob = `${msg} ${causeMsg} ${code}`;
+  if (code === "aborterror" || /aborted|timeout|etimedout/.test(blob) || code.includes("timeout")) {
     return CONNECTION_ERROR_CODES.TIMEOUT;
   }
-  if (/proxy|socks|econnrefused.*proxy/.test(msg) || code.includes("proxy")) {
+  if (/407|proxy authentication|proxy|socks|cancelled/.test(blob) || code.includes("proxy") || code.includes("socks")) {
     return CONNECTION_ERROR_CODES.PROXY_CONNECTION_FAILED;
   }
-  if (/enotfound|econnrefused|econnreset|network/.test(msg + code)) {
+  if (/enotfound|econnrefused|econnreset|network/.test(blob)) {
     return CONNECTION_ERROR_CODES.CONNECTION_FAILED;
   }
   return CONNECTION_ERROR_CODES.EXTERNAL_SERVICE_ERROR;

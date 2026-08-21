@@ -8,6 +8,7 @@ import { getDatabase } from "../database/index.js";
 import { getDefaultDatabasePath, getBackupDir, getReleaseMetadata } from "../config/paths.js";
 import { getOperationalModes } from "./operationalModes.js";
 import { getAuthConfig } from "../auth/config.js";
+import { getLlmTransportConfig } from "../llm/transport.js";
 
 const startedAt = Date.now();
 
@@ -162,7 +163,7 @@ export function getMetricsSnapshot() {
       durationP95Ms: percentile(ldur, 95),
       requestCharsTotal: llm.requestChars,
       responseCharsTotal: llm.responseChars,
-      proxyMode: process.env.LLM_PROXY_MODE || "none",
+      proxyMode: getLlmTransportConfig().mode,
       lastSuccessfulRequest: llm.lastSuccessAt,
       enabled: getOperationalModes().llmEnabled,
     },

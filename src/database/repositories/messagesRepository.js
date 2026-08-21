@@ -112,7 +112,11 @@ export function addMessage(chatId, { role, content, messageType = "text", metada
   }
 
   const message = getMessageById(info.lastInsertRowid);
-  indexMessage(message, chatMeta);
+  try {
+    indexMessage(message, chatMeta);
+  } catch (error) {
+    console.warn("[Chat] search index skip:", error.message);
+  }
   return message;
 }
 

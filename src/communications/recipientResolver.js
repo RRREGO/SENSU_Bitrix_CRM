@@ -4,7 +4,7 @@
 
 import { callReadMethod } from "../bitrixClient.js";
 import { ENTITY_TYPE, unwrapCrmItem } from "../actions/helpers.js";
-import { CommunicationError, maskEmail, maskPhone } from "./config.js";
+import { CommunicationError, maskEmail, maskPhone, normalizeTelegramUsername, getCommunicationsConfig } from "./config.js";
 import { getContactMethodologyConfig } from "../config/contactMethodology.js";
 import { getField, displayNameFromContact } from "../clientContext/fieldAllowlists.js";
 
@@ -131,7 +131,20 @@ export async function resolveMessageRecipient({
         _value: emails[i],
       });
     }
-  } else if (ch === "whatsapp" || ch === "telegram" || ch === "open_lines") {
+  } else if (ch === "telegram") {
+    const cfg = getCommunicationsConfig();
+    const field = cfg.bitrixFields.telegram;
+    const tgRaw = field ? raw[field] || getField(raw, field) : null;
+    const username = normalizeTelegramUsername(tgRaw);
+    if (username) {
+      options.push({
+        id: "telegram:username",
+        kind: "telegram_username",
+        maskedAddress: `@${username.slice(0, 2)}***`,
+        _username: username,
+      });
+    }
+  } else if (ch === "whatsapp" || ch === "open_lines") {
     for (let i = 0; i < phones.length; i++) {
       options.push({
         id: `phone:${i}`,
@@ -180,6 +193,7 @@ export async function resolveMessageRecipient({
     statusValue,
     email: chosen.kind === "email" ? chosen._value : null,
     phone: chosen.kind === "phone" ? chosen._value : null,
+    username: chosen.kind === "telegram_username" ? chosen._username : null,
     // Public options without secrets
     publicOptions: options.map(({ id, kind, maskedAddress }) => ({ id, kind, maskedAddress })),
   };

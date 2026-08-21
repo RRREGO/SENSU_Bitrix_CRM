@@ -116,6 +116,8 @@ await runCase("3. Read без safety context работает", async () => {
   assert(!(caught instanceof WriteOutsideSafetyError), "not write error");
   // classify
   assert(classifyBitrixMethod("crm.deal.get") === "read", "get=read");
+  assert(classifyBitrixMethod("profile") === "read", "profile=read");
+  assert(classifyBitrixMethod("user.current") === "read", "user.current=read");
   assert(!isWriteMethod("crm.deal.list"), "list not write");
   ok("3. Read без safety context работает");
 });

@@ -513,7 +513,7 @@ export function createConnectionsRouter() {
     }
   });
 
-  router.post("/chat/external-send/prepare", (req, res) => {
+  router.post("/chat/external-send/prepare", async (req, res) => {
     try {
       const channel = String(req.body?.channel || "").toLowerCase();
       const flags = getConnectionsFeatureFlags();
@@ -533,7 +533,7 @@ export function createConnectionsRouter() {
       }
 
       // Reuse Hub prepare — returns preview; actual send goes through Safety via bitrix action / chat confirm
-      const prepared = commService.prepareMessageSend({
+      const prepared = await commService.prepareMessageSend({
         ...(req.body || {}),
         channel: channel === "email" ? "email" : req.body?.transport || channel,
         provider: channel === "email" ? "smtp" : req.body?.provider || "wazzup",

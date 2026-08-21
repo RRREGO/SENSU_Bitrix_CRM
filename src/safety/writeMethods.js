@@ -63,7 +63,11 @@ export const EXPLICIT_READ_METHODS = new Set([
   "tasks.task.get",
   "tasks.task.getFields",
   "user.get",
+  "user.current",
   "user.search",
+  "profile",
+  "app.info",
+  "server.time",
   "department.get",
   "department.get.tree",
 ]);

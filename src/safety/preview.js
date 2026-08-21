@@ -182,7 +182,7 @@ export async function buildOperationPlan(action, params, policy) {
 
 async function planCommunicationMessageSend(params, title, policy) {
   const { prepareMessageSend } = await import("../communications/communicationService.js");
-  const prepared = prepareMessageSend(params || {});
+  const prepared = await prepareMessageSend(params || {});
   if (!prepared.policy?.allowed) {
     throw Object.assign(new Error(prepared.policy?.message || "Отправка запрещена политикой."), {
       code: prepared.policy?.code || "POLICY_BLOCKED",

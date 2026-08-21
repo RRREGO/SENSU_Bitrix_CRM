@@ -13,6 +13,7 @@ import { getProvider } from "./providers/index.js";
 import { evaluateSendPolicy } from "./communicationPolicy.js";
 import { buildSingleMessagePreparePreview } from "./communicationSafety.js";
 import { renderTemplate, assertRequiredVarsFilled } from "./templateRenderer.js";
+import { resolveHubOutboundAddress } from "./outboundAddress.js";
 import * as repo from "./communicationRepository.js";
 import { getOutboxHealth } from "./communicationScheduler.js";
 import { buildCommunicationContext } from "./communicationContext.js";
@@ -180,7 +181,7 @@ export function draftThreadMessage(threadId, params = {}) {
 /**
  * Prepare a Hub send via Safety Layer path (returns preview; does not send).
  */
-export function prepareMessageSend(params = {}) {
+export async function prepareMessageSend(params = {}) {
   const cfg = getCommunicationsConfig();
   if (!cfg.enabled) {
     throw new CommunicationError("COMMUNICATIONS_DISABLED", "Communications Hub выключен.");
@@ -188,8 +189,13 @@ export function prepareMessageSend(params = {}) {
 
   const contactId = params.contactId ? String(params.contactId) : null;
   const channel = String(params.channel || params.chatType || "whatsapp").toLowerCase();
-  const transport = String(params.transport || channel).toLowerCase();
-  const chatType = String(params.chatType || channel).toLowerCase();
+  const address = await resolveHubOutboundAddress({
+    ...params,
+    contactId,
+    channel,
+  });
+  const transport = address.transport;
+  const chatType = address.chatType;
 
   let body = params.body || "";
   let template = null;
@@ -208,17 +214,17 @@ export function prepareMessageSend(params = {}) {
   const policy = evaluateSendPolicy({
     contactId,
     statusValue: params.statusValue,
-    channel,
+    channel: chatType,
     transport,
     chatType,
-    externalChatId: params.chatId || params.externalChatId,
-    phone: params.phone,
-    username: params.username,
+    externalChatId: address.chatId,
+    phone: address.phone,
+    username: address.username,
     category: template?.category || params.category || "service",
     wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
     wabaTemplateStatus: params.wabaTemplateStatus,
-    isFirstContact: params.isFirstContact,
-    firstContactGround: params.firstContactGround,
+    isFirstContact: address.isFirstContact,
+    firstContactGround: address.firstContactGround,
     allowPersonal: params.allowPersonal,
     personalCommunicationReason: params.personalCommunicationReason,
     channelState: params.channelState || "active",
@@ -229,13 +235,13 @@ export function prepareMessageSend(params = {}) {
   const dryRun = cfg.dryRun || !cfg.sendEnabled;
   const preview = buildSingleMessagePreparePreview({
     contactId,
-    channel,
+    channel: chatType,
     transport,
     chatType,
     body,
     templateId: template?.id,
     wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
-    recipientMasked: params.phone ? maskPhone(params.phone) : params.chatId || params.username,
+    recipientMasked: address.recipientMasked,
     policy,
     dryRun,
   });
@@ -248,30 +254,33 @@ export function prepareMessageSend(params = {}) {
     success: true,
     prepareId,
     requiresConfirmation: true,
-    confirmationPhrase: params.recipientName
-      ? `ОТПРАВИТЬ СООБЩЕНИЕ ${String(params.recipientName).toUpperCase()}`
-      : null,
+    confirmationPhrase: address.recipientName
+      ? `ОТПРАВИТЬ СООБЩЕНИЕ ${String(address.recipientName).toUpperCase()}`
+      : params.recipientName
+        ? `ОТПРАВИТЬ СООБЩЕНИЕ ${String(params.recipientName).toUpperCase()}`
+        : null,
     policy,
     preview,
     outboxDraft: {
       idempotencyKey,
       provider: params.provider || "wazzup",
-      channelId: params.channelId,
+      channelId: address.channelId,
       transport,
       chatType,
-      externalChatId: params.chatId || params.externalChatId || params.phone,
+      externalChatId: address.chatId || address.phone,
       contactId,
       body,
       wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
       crmMessageId: idempotencyKey,
       dryRun,
       payload: {
-        phone: params.phone || null,
-        username: params.username || null,
+        phone: address.phone || null,
+        username: address.username || null,
         category: template?.category || params.category,
-        isFirstContact: params.isFirstContact,
-        firstContactGround: params.firstContactGround,
-        channelId: params.channelId,
+        isFirstContact: address.isFirstContact,
+        firstContactGround: address.firstContactGround,
+        channelId: address.channelId,
+        addressSource: address.addressSource,
       },
     },
     // LLM / actions must not call provider.send — only Safety commit may enqueue

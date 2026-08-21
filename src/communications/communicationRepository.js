@@ -289,6 +289,16 @@ export function findIdentitiesByUsername(provider, username) {
     .map(mapIdentity);
 }
 
+export function listIdentitiesByContact(contactId) {
+  if (!contactId) return [];
+  return getDatabase()
+    .prepare(
+      `SELECT * FROM communication_identities WHERE contact_id = ? ORDER BY updated_at DESC`
+    )
+    .all(String(contactId))
+    .map(mapIdentity);
+}
+
 export function upsertIdentity(data) {
   const db = getDatabase();
   const ts = now();
@@ -583,7 +593,8 @@ export function countMessagesForContactToday(contactId) {
     .prepare(
       `SELECT COUNT(*) AS c FROM communication_messages
        WHERE contact_id = ? AND direction IN ('outbound','outbound_echo')
-         AND created_at >= ? AND status NOT IN ('error','failed','cancelled','policy_blocked')`
+         AND created_at >= ?
+         AND status IN ('sent','accepted','delivered','read')`
     )
     .get(String(contactId), start.toISOString());
   return row?.c || 0;

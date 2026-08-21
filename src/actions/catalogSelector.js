@@ -49,6 +49,19 @@ const CATEGORY_KEYWORDS = {
     "quality",
     "без следующего",
   ],
+  communications: [
+    "wazzup",
+    "telegram",
+    "whatsapp",
+    "waba",
+    "напиши",
+    "напис",
+    "сообщен",
+    "отправ",
+    "хаб",
+    "viber",
+    "instagram",
+  ],
   reports: ["быстр", "отчет", "отчёт"],
   documents: ["документ", "коммерческ", "kp", "кп"],
   users: ["пользовател", "менеджер", "сотрудник", "иван", "ответственн"],
@@ -76,6 +89,7 @@ const ACTION_CATEGORY = {
   stale_: "analytics",
   overdue_: "analytics",
   timeline_: "timeline",
+  communication_: "communications",
   stagehistory_: "stagehistory",
   search_users: "users",
   deal_category: "structure",
@@ -102,7 +116,11 @@ function detectCategories(text) {
 
 function detectIntent(text) {
   const hay = String(text || "").toLowerCase();
-  if (/создай|добавь|измени|обнови|удали|перенес|назначь|переименуй/.test(hay)) {
+  if (
+    /создай|добавь|измени|обнови|удали|перенес|назначь|переименуй|напиши|отправ/.test(
+      hay
+    )
+  ) {
     return "write";
   }
   if (/сколько|отчет|отчёт|статистик|без |нагрузк|дисциплин|аналитик/.test(hay)) {
@@ -120,6 +138,7 @@ function categorizeAction(name) {
   if (name.includes("deal")) return "deals";
   if (name.includes("task")) return "tasks";
   if (name.includes("activity")) return "activities";
+  if (name.includes("communication") || name.includes("wazzup")) return "communications";
   if (name.includes("report") || name.includes("count") || name.includes("analytics")) {
     return "analytics";
   }
@@ -134,7 +153,7 @@ function scoreAction(entry, categories, intent, message) {
   if (intent === "analytics" && (cat === "analytics" || /count|report|quality|stale|without/.test(entry.name))) {
     score += 4;
   }
-  if (intent === "write" && (entry.destructive || /update|create|add|delete|move|rename|set/.test(entry.name))) {
+  if (intent === "write" && (entry.destructive || /update|create|add|delete|move|rename|set|send|prepare/.test(entry.name))) {
     score += 3;
   }
   if (intent === "read" && !entry.destructive) score += 1;

@@ -920,14 +920,22 @@ app.use((error, req, res, _next) => {
     requestId: req.requestId,
     message: error.message,
     code: error.code,
+    name: error.name,
+    stack: String(error.stack || "").split("\n").slice(0, 8).join(" | "),
   });
   try {
     recordApplicationError({
       requestId: req.requestId,
       source: "http",
-      errorCode: error.code || "INTERNAL_ERROR",
+      errorCode: error.code || error.name || "INTERNAL_ERROR",
       severity: "error",
-      messageSafe: "Внутренняя ошибка HTTP.",
+      messageSafe: String(error.message || "Внутренняя ошибка HTTP.").slice(0, 500),
+      details: {
+        method: req.method,
+        path: req.path,
+        name: error.name || null,
+        stack: String(error.stack || "").split("\n").slice(0, 6).join(" | "),
+      },
       userId: req.user?.userId || null,
     });
   } catch {
@@ -950,12 +958,16 @@ app.use((error, req, res, _next) => {
     return res.status(status).json(body);
   }
 
+  const isDev = getAppEnv() !== "production";
   res.status(500).json({
     ok: false,
     success: false,
     error: {
-      code: "INTERNAL_ERROR",
-      message: "Произошла внутренняя ошибка.",
+      code: error.code || "INTERNAL_ERROR",
+      message:
+        isDev && error.message
+          ? error.message
+          : "Произошла внутренняя ошибка.",
       requestId: req.requestId,
     },
   });

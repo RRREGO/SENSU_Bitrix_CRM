@@ -818,6 +818,38 @@ async function main() {
     }).allowed === true,
     "H20. Telegram with ground inbound allowed"
   );
+
+  const sendPrepareCat = getActionCatalog().find((a) => a.name === "communication_message_send_prepare");
+  assert(
+    String(sendPrepareCat?.params?.channel || "").includes("telegram"),
+    "H20b. Catalog allows channel=telegram"
+  );
+  const { selectRelevantActions } = await import("../src/actions/catalogSelector.js");
+  const picked = selectRelevantActions("напиши Дмитрию в Telegram через Wazzup Привет");
+  assert(
+    picked.actions.some((a) => a.name === "communication_message_send_prepare"),
+    "H20c. Wazzup/Telegram request selects send_prepare"
+  );
+  const { prepareMessageSend } = await import("../src/communications/communicationService.js");
+  const tgPrepared = await prepareMessageSend({
+    contactId: "6882",
+    channel: "telegram",
+    username: "test_user",
+    body: "Привет",
+    isFirstContact: false,
+    channelState: "active",
+  });
+  assert(tgPrepared.policy?.allowed === true, "H20d. Telegram prepare with username has address");
+  assert(tgPrepared.outboxDraft?.chatType === "telegram", "H20e. Prepare chatType=telegram");
+  const tgNoAddr = await prepareMessageSend({
+    contactId: "6882",
+    channel: "telegram",
+    body: "Привет",
+    isFirstContact: false,
+    channelState: "active",
+  });
+  assert(tgNoAddr.policy?.code === "NO_ADDRESS", "H20f. Telegram without username/chatId → NO_ADDRESS");
+
   assert(
     evaluateSendPolicy({
       ...policyBase,
@@ -894,6 +926,26 @@ async function main() {
       skipDailyLimit: false,
     }).code === "DAILY_LIMIT",
     "H26. Daily limit blocked"
+  );
+
+  repo.insertMessage({
+    provider: "wazzup",
+    externalMessageId: `daily-limit-dryrun-${Date.now()}`,
+    direction: "outbound",
+    status: "dry_run",
+    transport: "telegram",
+    chatType: "telegram",
+    contactId: "201",
+    textSafe: "dry-run should not consume daily limit",
+  });
+  assert(
+    evaluateSendPolicy({
+      ...policyBase,
+      contactId: "201",
+      skipQuietHours: true,
+      skipDailyLimit: false,
+    }).allowed === true,
+    "H26b. Dry-run does not consume daily limit"
   );
 
   // --- Campaign ---

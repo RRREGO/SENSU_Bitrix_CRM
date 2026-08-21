@@ -22,6 +22,8 @@ Anthropic API
 | `corporate` | Корпоративный HTTPS-прокси |
 | `self_hosted` | Собственный VPS как CONNECT/HTTPS proxy |
 
+Если `ANTHROPIC_PROXY` / `LLM_PROXY_URL` задан, а `LLM_PROXY_MODE` не указан, режим становится `corporate`. Явный `LLM_PROXY_MODE=none` по-прежнему идёт напрямую и игнорирует прокси.
+
 Публичный «случайный» proxy не поддерживается.
 
 ## Требования к VPS

@@ -73,6 +73,11 @@ export async function loadSystemPanel() {
         <div class="notif-meta">${escapeHtml(new Date(e.createdAt).toLocaleString("ru-RU"))} · ${escapeHtml(e.severity)} · ${escapeHtml(e.source)} · ${escapeHtml(e.errorCode)}</div>
         <div class="notif-title">${escapeHtml(e.messageSafe)}</div>
         ${e.requestId ? `<div class="panel-desc">requestId: ${escapeHtml(e.requestId)}</div>` : ""}
+        ${
+          e.details?.path
+            ? `<div class="panel-desc">${escapeHtml(e.details.method || "")} ${escapeHtml(e.details.path)}${e.details.stack ? ` · ${escapeHtml(String(e.details.stack).slice(0, 240))}` : ""}</div>`
+            : ""
+        }
       </article>`
       )
       .join("");

@@ -249,6 +249,16 @@ export function evaluateSendPolicy(ctx = {}) {
   const address =
     ctx.externalChatId || ctx.chatId || ctx.phone || ctx.username || ctx.recipientAddress;
   if (!address && !ctx.skipAddressCheck) {
+    const ch = String(ctx.chatType || ctx.channel || ctx.transport || "").toLowerCase();
+    if (ch === "telegram" || ch === "tgapi") {
+      return deny(
+        "NO_ADDRESS",
+        "Нет адреса Telegram: у контакта не заполнен username, нет chatId и нет identity Hub."
+      );
+    }
+    if (ch === "max" || ch === "maxbot") {
+      return deny("NO_ADDRESS", "Нет chatId MAX у контакта.");
+    }
     return deny("NO_ADDRESS", "Нет разрешённого адреса канала.");
   }
 
