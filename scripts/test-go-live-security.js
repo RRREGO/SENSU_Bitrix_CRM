@@ -477,6 +477,26 @@ process.exit(blocked ? 0 : 1);
   }
   assert(chatDenied, "26. Chat ownership: foreign denied");
 
+  const { filterChatsForUser, canSeeAllChats } = await import("../src/auth/resourceOwnership.js");
+  assert(canSeeAllChats(adminP) === false, "26b. Administrator does not list all chats");
+  const listedForAdmin = filterChatsForUser(
+    [
+      { id: ownChatId, ownerUserId: mgrPrincipal.userId, createdByUserId: mgrPrincipal.userId },
+      { id: foreignChatId, ownerUserId: otherUserId, createdByUserId: otherUserId },
+      { id: "admin-own", ownerUserId: adminP.userId, createdByUserId: adminP.userId },
+    ],
+    adminP
+  );
+  assert(
+    listedForAdmin.length === 1 && listedForAdmin[0].id === "admin-own",
+    "26c. Admin sidebar shows only own chats"
+  );
+  const adminForeignSearch = searchWorkspace("ForeignDealAlpha", { limit: 20, user: adminP });
+  assert(
+    !adminForeignSearch.some((h) => h.entityId === foreignChatId),
+    "26d. searchWorkspace hides others' chats from administrator"
+  );
+
   // Schedule scope for manager
   const { createSchedule, listSchedules } = await import(
     "../src/database/repositories/schedulesRepository.js"

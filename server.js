@@ -717,6 +717,7 @@ app.post("/chat/reset", async (req, res, next) => {
     const result = await handleChatReset({
       sessionId: req.body?.sessionId || "default",
       projectId: req.body?.projectId || null,
+      user: req.user || null,
     });
     res.json({ ok: true, ...result });
   } catch (error) {

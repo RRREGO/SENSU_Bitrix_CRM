@@ -37,6 +37,7 @@ import {
   listOperations,
 } from "./database/repositories/operationsRepository.js";
 import { classifyConfirmationReply } from "./chat/confirmationIntent.js";
+import { authorizeChatAccess } from "./auth/resourceOwnership.js";
 
 const MAX_HISTORY_MESSAGES = 20;
 const MAX_TOOL_ITERATIONS = 8;
@@ -698,7 +699,19 @@ export async function handleChatMessage({
   }
 
   const userMessage = message.trim();
-  const chat = ensureChatForSession({ sessionId, chatId, projectId });
+  const ownerUserId = user?.isLocalOnlySynthetic ? null : user?.userId || null;
+  let chat = ensureChatForSession({ sessionId, chatId, projectId, ownerUserId });
+  if (user && !user.isLocalOnlySynthetic) {
+    try {
+      authorizeChatAccess(user, chat);
+    } catch {
+      chat = ensureChatForSession({
+        sessionId: `session-${Date.now()}`,
+        projectId,
+        ownerUserId: user.userId,
+      });
+    }
+  }
   const session = getRuntimeSession(chat.id);
   session.sessionId = sessionId || chat.sessionId || chat.id;
   session.user = user || null;
@@ -845,11 +858,16 @@ export async function handleChatConfirmation({
 
   const operation = getOperationByConfirmationId(confirmationId);
   const linkedChatId = chatId || operation?.chatId || null;
+  const ownerUserId = user?.isLocalOnlySynthetic ? null : user?.userId || null;
   const chat = ensureChatForSession({
     sessionId: sessionId || operation?.sessionId || "default",
     chatId: linkedChatId,
     projectId: operation?.projectId || null,
+    ownerUserId,
   });
+  if (user && !user.isLocalOnlySynthetic) {
+    authorizeChatAccess(user, chat);
+  }
   const session = getRuntimeSession(chat.id);
   session.sessionId = sessionId || chat.sessionId || chat.id;
 
@@ -1013,8 +1031,13 @@ export async function handleChatConfirmation({
 /**
  * Close runtime context and create a new durable chat.
  */
-export async function handleChatReset({ sessionId = "default", projectId = null } = {}) {
-  const existing = getChatBySessionId(sessionId);
+export async function handleChatReset({
+  sessionId = "default",
+  projectId = null,
+  user = null,
+} = {}) {
+  const ownerUserId = user?.isLocalOnlySynthetic ? null : user?.userId || null;
+  const existing = getChatBySessionId(sessionId, { ownerUserId });
   if (existing) {
     clearRuntimeSession(existing.id);
   }
@@ -1023,6 +1046,8 @@ export async function handleChatReset({ sessionId = "default", projectId = null 
     sessionId: `session-${Date.now()}`,
     projectId,
     title: "Новый диалог",
+    ownerUserId,
+    createdByUserId: ownerUserId,
   });
 
   return {

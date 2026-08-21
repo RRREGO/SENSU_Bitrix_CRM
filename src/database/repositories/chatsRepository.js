@@ -103,16 +103,27 @@ export function getChatById(id) {
   return mapChat(row);
 }
 
-export function getChatBySessionId(sessionId) {
+export function getChatBySessionId(sessionId, { ownerUserId } = {}) {
   if (!sessionId) return null;
-  const row = getDatabase()
-    .prepare(
-      `SELECT c.*, p.name AS project_name FROM chats c
-       LEFT JOIN projects p ON p.id = c.project_id
-       WHERE c.session_id = ? AND c.status = 'active'
-       ORDER BY c.updated_at DESC LIMIT 1`
-    )
-    .get(sessionId);
+  const owner = ownerUserId ? String(ownerUserId) : null;
+  const row = owner
+    ? getDatabase()
+        .prepare(
+          `SELECT c.*, p.name AS project_name FROM chats c
+           LEFT JOIN projects p ON p.id = c.project_id
+           WHERE c.session_id = ? AND c.status = 'active'
+             AND (c.owner_user_id = ? OR c.created_by_user_id = ?)
+           ORDER BY c.updated_at DESC LIMIT 1`
+        )
+        .get(sessionId, owner, owner)
+    : getDatabase()
+        .prepare(
+          `SELECT c.*, p.name AS project_name FROM chats c
+           LEFT JOIN projects p ON p.id = c.project_id
+           WHERE c.session_id = ? AND c.status = 'active'
+           ORDER BY c.updated_at DESC LIMIT 1`
+        )
+        .get(sessionId);
   return mapChat(row);
 }
 
@@ -315,16 +326,16 @@ export function autoTitleFromMessage(text) {
   return cleaned.slice(0, 80);
 }
 
-export function ensureChatForSession({ sessionId, chatId, projectId } = {}) {
+export function ensureChatForSession({ sessionId, chatId, projectId, ownerUserId } = {}) {
   if (chatId) {
     const chat = getChatById(chatId);
     if (!chat) throw new WorkspaceError("CHAT_NOT_FOUND", "Чат не найден.");
     return chat;
   }
   if (sessionId) {
-    const existing = getChatBySessionId(sessionId);
+    const existing = getChatBySessionId(sessionId, { ownerUserId });
     if (existing) return existing;
-    return createChat({ sessionId, projectId });
+    return createChat({ sessionId, projectId, ownerUserId, createdByUserId: ownerUserId });
   }
-  return createChat({ projectId });
+  return createChat({ projectId, ownerUserId, createdByUserId: ownerUserId });
 }

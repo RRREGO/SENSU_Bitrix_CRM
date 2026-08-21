@@ -1,6 +1,5 @@
 import { getDatabase, getSearchMode } from "../database/index.js";
 import { WorkspaceError } from "./config.js";
-import { hasPermission } from "../auth/authorizationService.js";
 
 /**
  * Search chats / messages / projects with ownership filter before snippets leak.
@@ -29,12 +28,7 @@ export function searchWorkspace(query, { limit = 30, user = null } = {}) {
 }
 
 function userSeesAllWorkspace(user) {
-  if (!user || user.isLocalOnlySynthetic) return true;
-  return (
-    hasPermission(user, "chats.manage.all") ||
-    hasPermission(user, "projects.manage") ||
-    user.role === "administrator"
-  );
+  return !user || Boolean(user.isLocalOnlySynthetic);
 }
 
 function accessibleChatIds(user) {

@@ -63,7 +63,9 @@ export const ROLE_DEFINITIONS = {
     description: "CRM, аналитика, отчёты, коммуникации без управления пользователями",
     permissions: ALL_PERMISSIONS.filter(
       (p) =>
-        !["users.manage", "roles.manage", "settings.manage", "crm.schema.capture"].includes(p)
+        !["users.manage", "roles.manage", "settings.manage", "crm.schema.capture", "chats.manage.all"].includes(
+          p
+        )
     ).concat(["settings.view", "crm.schema.read"]),
   },
   manager: {

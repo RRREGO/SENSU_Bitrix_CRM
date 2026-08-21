@@ -266,7 +266,7 @@ async function runRefreshSidebar() {
 
     const generalChats = archived ? chats : unassigned;
     if (!generalChats.length) {
-      sidebarChats.innerHTML = `<li class="sidebar-quiet-note">${archived ? "Архив пуст" : "Пока нет общих чатов"}</li>`;
+      sidebarChats.innerHTML = `<li class="sidebar-quiet-note">${archived ? "Архив пуст" : "Пока нет чатов"}</li>`;
     } else {
       sidebarChats.innerHTML = generalChats.map((c) => renderChatItem(c, archived)).join("");
     }
@@ -306,7 +306,7 @@ function updateChatsSectionChrome() {
   const newBtn = document.getElementById("newChatSidebarBtn");
   const backBtn = document.getElementById("backToChatsBtn");
   const archived = getChatsFilter() === "archived";
-  if (titleEl) titleEl.textContent = archived ? "Архив" : "Общие чаты";
+  if (titleEl) titleEl.textContent = archived ? "Архив" : "Чаты";
   menuBtn?.classList.toggle("hidden", archived);
   newBtn?.classList.toggle("hidden", archived);
   backBtn?.classList.toggle("hidden", !archived);

@@ -7,7 +7,9 @@ import { hasPermission } from "./authorizationService.js";
 import { AuthError } from "./config.js";
 
 export function canSeeAllChats(user) {
-  return !user || user.isLocalOnlySynthetic || hasPermission(user, "chats.manage.all");
+  // Authenticated users always see only their own chats, including administrator
+  // and director. chats.manage.all does not leak another person's dialogs.
+  return !user || Boolean(user.isLocalOnlySynthetic);
 }
 
 export function canManageAllProjects(user) {
@@ -66,14 +68,11 @@ export function authorizeProjectAccess(user, project, { write = false, manage = 
 
 export function filterChatsForUser(chats, user) {
   if (canSeeAllChats(user)) return chats;
-  return (chats || []).filter((c) => {
-    try {
-      authorizeChatAccess(user, c);
-      return true;
-    } catch {
-      return false;
-    }
-  });
+  const userId = user?.userId;
+  if (!userId) return [];
+  return (chats || []).filter(
+    (c) => c.ownerUserId === userId || c.createdByUserId === userId
+  );
 }
 
 export function filterProjectsForUser(projects, user) {
