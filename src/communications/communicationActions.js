@@ -34,11 +34,27 @@ export async function communication_channels_list(params = {}) {
       id: c.id,
       transport: c.transport,
       displayName: c.displayName,
+      externalChannelId: c.externalChannelId || null,
+      supportsTemplates:
+        Boolean(c.capabilities?.supportsTemplates) || String(c.transport || "").toLowerCase() === "wapi",
       state: c.state,
       capabilities: c.capabilities,
       lastSyncedAt: c.lastSyncedAt,
     })),
   };
+}
+
+export async function communication_templates_list(params = {}) {
+  requireHubEnabled();
+  if (!params.channelId) {
+    throw new CommunicationError("CHANNEL_ID_REQUIRED", "Для шаблонов WABA укажите channelId.");
+  }
+  const { listWabaTemplates } = await import("./wabaTemplates.js");
+  return listWabaTemplates({
+    channelId: params.channelId,
+    status: params.status,
+    sync: params.sync,
+  });
 }
 
 export async function communication_thread_get(params = {}) {
@@ -79,7 +95,7 @@ export async function communication_message_draft(params = {}) {
  */
 export async function communication_message_send_prepare(params = {}) {
   requireHubEnabled();
-  if (params.__execute) {
+  if (params.__execute || params.__execute) {
     if (!params.outboxDraft) {
       throw new CommunicationError("OUTBOX_DRAFT_REQUIRED", "Нет outboxDraft для commit.");
     }

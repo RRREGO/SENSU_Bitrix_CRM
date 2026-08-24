@@ -365,6 +365,21 @@ export function createCommunicationsRouter() {
     }
   });
 
+  router.get("/communications/waba-templates", async (req, res) => {
+    try {
+      const { listWabaTemplates } = await import("./wabaTemplates.js");
+      res.json(
+        await listWabaTemplates({
+          channelId: req.query.channelId,
+          status: req.query.status,
+          sync: req.query.sync === "1" || req.query.sync === "true",
+        })
+      );
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
   router.post("/communications/templates", (req, res) => {
     try {
       const body = req.body || {};

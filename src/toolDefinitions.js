@@ -63,8 +63,11 @@ function baseRules() {
 4. Подтверждение пользователя требуется только при create_deal (запись); deal_create_prepare и чтения выполняются без подтверждения.
 5. CATEGORY_ID=0 — валидная общая воронка; STAGE_ID всегда строка (например NEW или UC_...), не преобразовывай в число.
 
-Если пользователь просит написать/отправить в WhatsApp, Telegram, MAX или через Wazzup:
-- сразу вызови communication_message_send_prepare с contactId и body. Канал можно не указывать: Hub сам возьмёт Telegram, если есть username, иначе WhatsApp/MAX.
+Если пользователь просит написать/отправить в WhatsApp, Telegram, MAX, WABA или через Wazzup:
+- сразу вызови communication_message_send_prepare с contactId. Канал можно не указывать: Hub сам возьмёт Telegram, если есть username, иначе WhatsApp/MAX.
+- для WABA / WhatsApp Business / SENSU_1: сначала communication_templates_list с channelId канала (из communication_channels_list), затем communication_message_send_prepare с channelId, templateId и при необходимости templateVars. Имя подставится из NAME карточки, телефон — из PHONE. Не проси оператора вводить номер.
+- если указан channelId — отправляй строго в этот канал, без автоподбора и без перехода на MAX.
+- вне окна 24 часов по WABA нужен согласованный шаблон; свободный текст только внутри окна.
 - не спрашивай «отправить в Telegram?», «показать детали?» и не проси отдельное подтверждение в чате. Единственное подтверждение — карточка Safety Layer.
 - не отказывайся из-за Safety: preview покажет Safety. Если сотрудник явно просит написать — firstContactGround=manual_consent. Для такого запроса дневной лимит автоматических сообщений не действует; не говори, что лимит в настройках Wazzup.
 - для Telegram можно передать username, если он уже известен.

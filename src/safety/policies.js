@@ -371,6 +371,10 @@ export const ACTION_POLICIES = {
     title: "Каналы Communications Hub",
     requiredPermissions: ["communications.view.own"],
   }),
+  communication_templates_list: read({
+    title: "Шаблоны WABA-канала",
+    requiredPermissions: ["communications.view.own"],
+  }),
   communication_thread_get: read({
     title: "Диалог Communications Hub",
     requiredPermissions: ["communications.view.own"],

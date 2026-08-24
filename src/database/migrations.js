@@ -1405,4 +1405,31 @@ CREATE INDEX IF NOT EXISTS idx_chats_prompt_profile ON chats(prompt_profile_id);
       "AI providers/models, proxy profiles, prompt versions/assignments, SMTP accounts, voice/user AI settings",
     destructive: false,
   },
+  {
+    version: 16,
+    name: "v16_waba_templates_cache",
+    sql: `
+CREATE TABLE IF NOT EXISTS communication_waba_templates (
+  id TEXT PRIMARY KEY,
+  channel_id TEXT NOT NULL,
+  template_id TEXT NOT NULL,
+  name TEXT,
+  language TEXT,
+  category TEXT,
+  status TEXT,
+  body_text TEXT,
+  variables_json TEXT NOT NULL DEFAULT '[]',
+  synced_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_waba_templates_channel_tpl
+  ON communication_waba_templates(channel_id, template_id);
+CREATE INDEX IF NOT EXISTS idx_waba_templates_channel_status
+  ON communication_waba_templates(channel_id, status);
+`,
+    backwardCompatibleFrom: 15,
+    description: "Cache of Wazzup WABA templates per channel (no secrets)",
+    destructive: false,
+  },
 ];

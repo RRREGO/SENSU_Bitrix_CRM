@@ -170,6 +170,12 @@ export class WazzupProvider extends CommunicationProvider {
       language: t.language || null,
       category: t.category || null,
       channelId: t.channelId || options.channelId || null,
+      bodyText: t.bodyText || t.body || t.text || null,
+      body: t.body || t.bodyText || t.text || null,
+      text: t.text || t.body || null,
+      components: t.components || t.templateComponents || null,
+      variables: t.variables || null,
+      channels: t.channels || t.channelIds || null,
     }));
   }
 

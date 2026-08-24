@@ -254,6 +254,31 @@ export function getHubChannel(id) {
   );
 }
 
+export function findHubChannel(id) {
+  const raw = String(id || "").trim();
+  if (!raw) return null;
+  const direct = getHubChannel(raw);
+  if (direct) return direct;
+  const prefixed = raw.startsWith("wazzup:") ? raw : `wazzup:${raw}`;
+  const byPrefix = getHubChannel(prefixed);
+  if (byPrefix) return byPrefix;
+  const byExternal = mapChannel(
+    getDatabase()
+      .prepare("SELECT * FROM communication_channels WHERE external_channel_id = ? LIMIT 1")
+      .get(raw)
+  );
+  if (byExternal) return byExternal;
+  const byName = getDatabase()
+    .prepare(
+      `SELECT * FROM communication_channels
+       WHERE lower(display_name) = lower(?)
+       LIMIT 2`
+    )
+    .all(raw)
+    .map(mapChannel);
+  return byName.length === 1 ? byName[0] : null;
+}
+
 export function getIdentity(id) {
   return mapIdentity(
     getDatabase().prepare("SELECT * FROM communication_identities WHERE id = ?").get(id)
@@ -513,7 +538,7 @@ export function insertMessage(data) {
       data.deliveredAt || null,
       data.readAt || null,
       data.providerTimestamp || null,
-      ts,
+      data.createdAt || ts,
       ts
     );
   } catch (error) {
@@ -1535,4 +1560,97 @@ export function stopEnrollmentsForContact(contactId, reason) {
     cancelOutboxForEnrollment(e.id);
   }
   return enrollments.length;
+}
+
+function mapWabaTemplate(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    channelId: row.channel_id,
+    templateId: row.template_id,
+    name: row.name,
+    language: row.language,
+    category: row.category,
+    status: row.status,
+    bodyText: row.body_text,
+    variables: parseJson(row.variables_json, []),
+    syncedAt: row.synced_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function replaceWabaTemplatesForChannel(channelId, templates = []) {
+  const db = getDatabase();
+  const ts = now();
+  const extId = String(channelId);
+  const tx = db.transaction(() => {
+    db.prepare("DELETE FROM communication_waba_templates WHERE channel_id = ?").run(extId);
+    const insert = db.prepare(
+      `INSERT INTO communication_waba_templates (
+        id, channel_id, template_id, name, language, category, status, body_text,
+        variables_json, synced_at, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const t of templates) {
+      const templateId = String(t.templateId || t.id || "").trim();
+      if (!templateId) continue;
+      insert.run(
+        `${extId}:${templateId}`,
+        extId,
+        templateId,
+        t.name || null,
+        t.language || null,
+        t.category || null,
+        t.status || null,
+        t.bodyText || t.bodyText || t.body || "",
+        JSON.stringify(t.variables || []),
+        ts,
+        ts,
+        ts
+      );
+    }
+  });
+  tx();
+  return listWabaTemplates({ channelId: extId });
+}
+
+export function listWabaTemplates({ channelId, status } = {}) {
+  const clauses = [];
+  const params = [];
+  if (channelId) {
+    clauses.push("channel_id = ?");
+    params.push(String(channelId));
+  }
+  if (status) {
+    clauses.push("lower(status) = lower(?)");
+    params.push(String(status));
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  return getDatabase()
+    .prepare(
+      `SELECT * FROM communication_waba_templates ${where} ORDER BY name, template_id`
+    )
+    .all(...params)
+    .map(mapWabaTemplate);
+}
+
+export function getWabaTemplate(channelId, templateId) {
+  return mapWabaTemplate(
+    getDatabase()
+      .prepare(
+        `SELECT * FROM communication_waba_templates
+         WHERE channel_id = ? AND template_id = ? LIMIT 1`
+      )
+      .get(String(channelId), String(templateId))
+  );
+}
+
+export function getWabaTemplatesSyncedAt(channelId) {
+  const row = getDatabase()
+    .prepare(
+      `SELECT MAX(synced_at) AS synced_at FROM communication_waba_templates WHERE channel_id = ?`
+    )
+    .get(String(channelId));
+  return row?.synced_at || null;
 }

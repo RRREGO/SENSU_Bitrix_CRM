@@ -239,11 +239,12 @@ const actionCatalog = [
   { name: "recommend_next_client_action", description: "Рекомендации следующего шага по клиенту", params: { entityType: "deal", entityId: "number" }, destructive: false, implemented: true },
 
   // Communications Hub
-  { name: "communication_channels_list", description: "Список каналов Wazzup/Hub (без секретов)", params: { sync: false }, destructive: false, implemented: true },
+  { name: "communication_channels_list", description: "Список каналов Wazzup/Hub (без секретов). id и externalChannelId можно передавать в channelId.", params: { sync: false }, destructive: false, implemented: true },
+  { name: "communication_templates_list", description: "Шаблоны WABA-канала Wazzup (без секретов). Для SENSU_1 передай channelId канала. sync=true обновляет кэш с API.", params: { channelId: "string", status: "approved|pending|rejected", sync: false }, destructive: false, implemented: true },
   { name: "communication_thread_get", description: "Диалог Communications Hub", params: { threadId: "uuid" }, destructive: false, implemented: true },
   { name: "communication_contact_context", description: "Контекст переписки контакта для LLM", params: { contactId: "number" }, destructive: false, implemented: true },
-  { name: "communication_message_draft", description: "Черновик Hub-сообщения (без отправки)", params: { contactId: "number", channel: "whatsapp|telegram|max", body: "string" }, destructive: false, implemented: true },
-  { name: "communication_message_send_prepare", description: "Prepare отправки через Wazzup/Hub/Safety (не шлёт само). channel необязателен: если пусто или wazzup — сам выберет telegram/whatsapp/max по данным контакта и переключится при отсутствии адреса. Если сотрудник явно просит написать, передай firstContactGround=manual_consent.", params: { contactId: "number", channel: "whatsapp|telegram|max", body: "string", username: "string", phone: "string", firstContactGround: "inbound|manual_consent|active_dialog" }, destructive: false, implemented: true },
+  { name: "communication_message_draft", description: "Черновик Hub-сообщения (без отправки). Для WABA: channelId + templateId.", params: { contactId: "number", channel: "whatsapp|telegram|max|waba", channelId: "string", templateId: "string", templateVars: {}, body: "string" }, destructive: false, implemented: true },
+  { name: "communication_message_send_prepare", description: "Prepare отправки через Wazzup/Hub/Safety (не шлёт само). Для WABA укажи channelId конкретного канала (например SENSU_1) и templateId согласованного шаблона; templateVars подставятся из NAME контакта. channelId важнее channel — без автоподбора и без перехода на MAX. Если сотрудник явно просит написать, передай firstContactGround=manual_consent. Не подтверждай отправку сам.", params: { contactId: "number", channel: "whatsapp|telegram|max|waba", channelId: "string", templateId: "string", templateVars: {}, body: "string", username: "string", phone: "string", firstContactGround: "inbound|manual_consent|active_dialog" }, destructive: false, implemented: true },
   { name: "communication_campaign_preview", description: "Preview кампании без отправки", params: { campaignId: "uuid", contacts: [] }, destructive: false, implemented: true },
   { name: "communication_campaign_start_prepare", description: "Prepare запуска кампании (фраза ПОДТВЕРЖДАЮ РАССЫЛКУ N)", params: { campaignId: "uuid" }, destructive: false, implemented: true },
   { name: "communication_campaign_pause_prepare", description: "Prepare паузы кампании", params: { campaignId: "uuid" }, destructive: false, implemented: true },
@@ -323,5 +324,3 @@ export function getActionCatalog() {
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
-
-export { aliases };

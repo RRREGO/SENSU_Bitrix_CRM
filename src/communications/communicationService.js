@@ -13,7 +13,13 @@ import { getProvider } from "./providers/index.js";
 import { evaluateSendPolicy } from "./communicationPolicy.js";
 import { buildSingleMessagePreparePreview } from "./communicationSafety.js";
 import { renderTemplate, assertRequiredVarsFilled } from "./templateRenderer.js";
-import { resolveHubOutboundAddress, inferPreferredHubChannel, HUB_CHANNEL_FALLBACK_ORDER } from "./outboundAddress.js";
+import { resolveHubOutboundAddress, inferPreferredHubChannel, findHubChannel, HUB_CHANNEL_FALLBACK_ORDER } from "./outboundAddress.js";
+import {
+  getWabaTemplate,
+  defaultWabaVarsFromContact,
+  assertWabaTemplateVars,
+  buildWabaSendPayload,
+} from "./wabaTemplates.js";
 import * as repo from "./communicationRepository.js";
 import { getOutboxHealth } from "./communicationScheduler.js";
 import { buildCommunicationContext } from "./communicationContext.js";
@@ -63,6 +69,8 @@ function publicChannel(c) {
     provider: c.provider,
     transport: c.transport,
     displayName: c.displayName,
+    externalChannelId: c.externalChannelId || null,
+    supportsTemplates: Boolean(c.capabilities?.supportsTemplates) || String(c.transport || "").toLowerCase() === "wapi",
     plainId: c.plainId ? maskPlainId(c.plainId) : null,
     state: c.state,
     status: c.status,
@@ -182,6 +190,7 @@ export function draftThreadMessage(threadId, params = {}) {
  * Prepare a Hub send via Safety Layer path (returns preview; does not send).
  * If channel is omitted / "wazzup", picks Telegram vs WhatsApp vs MAX from the contact.
  * If the chosen channel has no address, tries the other messengers instead of asking.
+ * channelId or channel=waba — strict routing, no auto-fallback.
  */
 export async function prepareMessageSend(params = {}) {
   const cfg = getCommunicationsConfig();
@@ -190,6 +199,27 @@ export async function prepareMessageSend(params = {}) {
   }
 
   const contactId = params.contactId ? String(params.contactId) : null;
+  const channelId = params.channelId || params.wazzupChannelId || null;
+  const rawChannel = String(params.channel || params.chatType || "").toLowerCase();
+  const strict =
+    Boolean(channelId) ||
+    ["waba", "wapi", "whatsapp", "telegram", "max", "tgapi", "maxbot"].includes(rawChannel);
+
+  if (strict) {
+    let channel = "waba";
+    if (channelId) {
+      const hub = findHubChannel(channelId);
+      const t = String(hub?.transport || rawChannel || "").toLowerCase();
+      if (t === "tgapi" || t === "telegram") channel = "telegram";
+      else if (t === "max" || t === "maxbot") channel = "max";
+      else if (t === "wapi" || t === "waba") channel = "waba";
+      else if (t === "whatsapp") channel = "whatsapp";
+    } else if (rawChannel === "telegram" || rawChannel === "max" || rawChannel === "whatsapp") {
+      channel = rawChannel;
+    }
+    return prepareMessageSendForChannel(params, contactId, channel, cfg);
+  }
+
   const preferred = await inferPreferredHubChannel(params);
   const order = [preferred, ...HUB_CHANNEL_FALLBACK_ORDER.filter((c) => c !== preferred)];
 
@@ -223,10 +253,59 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
   const transport = address.transport;
   const chatType = address.chatType;
 
+  if (address.channelError) {
+    return {
+      success: false,
+      blocked: true,
+      prepareId: null,
+      requiresConfirmation: false,
+      confirmationPhrase: null,
+      policy: {
+        allowed: false,
+        code: address.channelError.code,
+        message: address.channelError.message,
+        details: { state: address.channelError.state || address.channelState, channelId: address.channelId },
+      },
+      preview: buildSingleMessagePreparePreview({
+        contactId,
+        channel: chatType,
+        transport,
+        chatType,
+        body: params.body || "",
+        recipientMasked: address.recipientMasked,
+        policy: { allowed: false, code: address.channelError.code, message: address.channelError.message },
+        dryRun: true,
+        channelName: address.channelDisplayName,
+        channelId: address.channelId,
+      }),
+      outboxDraft: null,
+    };
+  }
+
   let body = params.body || "";
   let template = null;
-  if (params.templateId) {
-    template = repo.getTemplate(params.templateId);
+  let wabaSend = null;
+  const templateId = params.templateId || params.wabaTemplateId || null;
+  const isWabaTransport =
+    transport === "wapi" ||
+    transport === "waba" ||
+    String(channel).toLowerCase() === "waba";
+
+  if (templateId && isWabaTransport && address.channelId) {
+    const waba = await getWabaTemplate(address.channelId, templateId);
+    const vars = defaultWabaVarsFromContact(waba, address.contact, params.templateVars || params.vars || {});
+    assertWabaTemplateVars(waba, vars, { contact: address.contact });
+    wabaSend = buildWabaSendPayload(waba, vars);
+    body = wabaSend.renderedBody;
+    template = {
+      id: waba.templateId,
+      name: waba.name,
+      category: waba.category || params.category || "service",
+      wabaTemplateId: waba.templateId,
+      status: waba.status,
+    };
+  } else if (templateId) {
+    template = repo.getTemplate(templateId);
     if (!template) throw new CommunicationError("TEMPLATE_NOT_FOUND", "Шаблон не найден.");
     assertRequiredVarsFilled(template.body, params.vars || {});
     body = renderTemplate(template.body, {
@@ -237,7 +316,7 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
     });
   }
 
-  const policy = evaluateSendPolicy({
+  let policy = evaluateSendPolicy({
     contactId,
     statusValue: params.statusValue,
     channel: chatType,
@@ -247,15 +326,20 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
     phone: address.phone,
     username: address.username,
     category: template?.category || params.category || "service",
-    wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
-    wabaTemplateStatus: params.wabaTemplateStatus,
+    wabaTemplateId: wabaSend?.templateId || template?.wabaTemplateId || params.wabaTemplateId,
+    templateId: wabaSend?.templateId || template?.id || null,
+    wabaTemplateStatus: wabaSend?.templateStatus || params.wabaTemplateStatus || template?.status,
     isFirstContact: address.isFirstContact,
-    firstContactGround: address.firstContactGround,
+    firstContactGround: address.firstContactGround || params.firstContactGround,
     allowPersonal: params.allowPersonal,
     personalCommunicationReason: params.personalCommunicationReason,
-    channelState: params.channelState || "active",
+    channelState: address.channelState || params.channelState,
+    channelInactive: Boolean(address.channelError),
     ambiguousContact: params.ambiguousContact,
     resolutionStatus: params.resolutionStatus,
+    within24h: address.within24h,
+    addressStatus: address.addressStatus,
+    requiresWabaTemplate: isWabaTransport && !address.within24h,
   });
 
   if (policy.allowed && !address.channelId) {
@@ -275,19 +359,24 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
     transport,
     chatType,
     body,
-    templateId: template?.id,
-    wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
+    templateId: template?.id || wabaSend?.templateId || null,
+    templateName: template?.name || wabaSend?.templateName || null,
+    wabaTemplateId: wabaSend?.templateId || template?.wabaTemplateId || params.wabaTemplateId,
     recipientMasked: address.recipientMasked,
     policy,
     dryRun,
+    channelName: address.channelDisplayName,
+    channelId: address.channelId,
+    within24h: address.within24h,
+    addressStatus: address.addressStatus,
   });
 
-  // Queue only after Safety commit — here we stage a prepare package
   const prepareId = crypto.randomUUID();
   const idempotencyKey = params.idempotencyKey || `msg:${prepareId}`;
 
   return {
-    success: true,
+    success: policy.allowed !== false,
+    blocked: policy.allowed === false,
     prepareId,
     requiresConfirmation: true,
     confirmationPhrase: address.recipientName
@@ -306,7 +395,8 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
       externalChatId: address.chatId || address.phone,
       contactId,
       body,
-      wabaTemplateId: template?.wabaTemplateId || params.wabaTemplateId,
+      wabaTemplateId: wabaSend?.templateId || template?.wabaTemplateId || params.wabaTemplateId || null,
+      templateValues: wabaSend?.templateValues || params.templateValues || null,
       crmMessageId: idempotencyKey,
       dryRun,
       payload: {
@@ -314,12 +404,14 @@ async function prepareMessageSendForChannel(params, contactId, channel, cfg) {
         username: address.username || null,
         category: template?.category || params.category,
         isFirstContact: address.isFirstContact,
-        firstContactGround: address.firstContactGround,
+        firstContactGround: address.firstContactGround || params.firstContactGround,
         channelId: address.channelId,
+        channelName: address.channelDisplayName,
         addressSource: address.addressSource,
+        templateName: wabaSend?.templateName || template?.name || null,
+        within24h: address.within24h,
       },
     },
-    // LLM / actions must not call provider.send — only Safety commit may enqueue
   };
 }
 

@@ -57,23 +57,28 @@ export function getDeliveryReport({ sinceDays = 30 } = {}) {
 
   const transports = getDatabase()
     .prepare(
-      `SELECT transport, status, COUNT(*) AS c
-       FROM communication_messages
-       WHERE created_at >= ? AND direction = 'outbound'
-       GROUP BY transport, status`
+      `SELECT m.channel_id AS channel_id, m.transport AS transport, m.status AS status, COUNT(*) AS c,
+              (SELECT display_name FROM communication_channels
+               WHERE id = m.channel_id OR external_channel_id = m.channel_id
+               LIMIT 1) AS display_name
+       FROM communication_messages m
+       WHERE m.created_at >= ? AND m.direction = 'outbound'
+       GROUP BY m.channel_id, m.transport, m.status`
     )
     .all(since);
 
   const byChannel = {};
   for (const row of transports) {
-    const key = row.transport || "unknown";
+    const key = row.channel_id || row.transport || "unknown";
     if (!byChannel[key]) {
       byChannel[key] = {
-        transport: key,
+        channelId: row.channel_id || null,
+        channelName: row.display_name || null,
+        transport: row.transport || "unknown",
         sent: 0,
         delivered: 0,
-        read: channelSupportsRead(key) ? 0 : null,
-        readAvailable: channelSupportsRead(key),
+        read: channelSupportsRead(row.transport) ? 0 : null,
+        readAvailable: channelSupportsRead(row.transport),
         errors: 0,
         dryRun: 0,
       };

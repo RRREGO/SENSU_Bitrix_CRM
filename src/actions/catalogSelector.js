@@ -54,6 +54,8 @@ const CATEGORY_KEYWORDS = {
     "telegram",
     "whatsapp",
     "waba",
+    "шаблон",
+    "sensu",
     "напиши",
     "напис",
     "сообщен",

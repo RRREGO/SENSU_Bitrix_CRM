@@ -13,6 +13,7 @@ export { client_message_send } from "../communications/messageService.js";
 
 export {
   communication_channels_list,
+  communication_templates_list,
   communication_thread_get,
   communication_contact_context,
   communication_message_draft,

@@ -116,6 +116,48 @@ export function wazzupApiChannelId(hubChannel, fallback = null) {
   return null;
 }
 
+export function findHubChannel(id) {
+  return repo.findHubChannel(id);
+}
+
+export function isHubChannelActive(channel) {
+  const state = String(channel?.state || channel?.status || "").toLowerCase();
+  return ["active", "authorized", "ok", "ready"].includes(state);
+}
+
+const WABA_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function isWithin24hWindow(lastInboundAt, now = Date.now()) {
+  if (!lastInboundAt) return false;
+  const ts = Date.parse(lastInboundAt);
+  if (!Number.isFinite(ts)) return false;
+  return now - ts < WABA_WINDOW_MS;
+}
+
+export function getLastInboundAt(contactId, { chatType, transports } = {}) {
+  if (!contactId) return null;
+  const wanted = (transports || []).map((t) => String(t).toLowerCase());
+  const messages = repo.listMessages({ contactId, limit: 80 });
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const row = messages[i];
+    if (row.direction !== "inbound") continue;
+    const ct = String(row.chatType || "").toLowerCase();
+    const tr = String(row.transport || "").toLowerCase();
+    if (chatType && ct === String(chatType).toLowerCase()) {
+      return row.createdAt || row.sentAt || row.providerTimestamp || null;
+    }
+    if (wanted.includes(tr) || wanted.includes(ct)) {
+      return row.createdAt || row.sentAt || row.providerTimestamp || null;
+    }
+  }
+  return null;
+}
+
+export function contactFirstName(contact) {
+  const name = String(contact?.NAME || contact?.name || "").trim();
+  return name || null;
+}
+
 export function pickHubChannel(transports) {
   const wanted = (transports || []).map((t) => String(t).toLowerCase());
   const channels = repo.listHubChannels({ provider: "wazzup" });
@@ -182,9 +224,9 @@ function identityMatchesChannel(identity, chatType, transports) {
 
 async function fetchBitrixContact(contactId) {
   try {
-    const { default: bitrix } = await import("../bitrixClient.js");
-    const res = await bitrix.call("crm.contact.get", { id: Number(contactId) });
-    return res?.result || null;
+    const { callReadMethod } = await import("../bitrixClient.js");
+    const res = await callReadMethod("crm.contact.get", { id: Number(contactId) });
+    return res?.result || res || null;
   } catch {
     return null;
   }
@@ -195,14 +237,22 @@ async function fetchBitrixContact(contactId) {
  *   chatType: string,
  *   transport: string,
  *   channelId: string|null,
+ *   channelDisplayName: string|null,
+ *   channelState: string|null,
+ *   channelError: { code: string, message: string }|null,
  *   phone: string|null,
  *   username: string|null,
  *   chatId: string|null,
  *   recipientName: string|null,
+ *   recipientFirstName: string|null,
  *   recipientMasked: string|null,
  *   isFirstContact: boolean|undefined,
  *   firstContactGround: string|null,
- *   addressSource: string|null
+ *   addressSource: string|null,
+ *   within24h: boolean,
+ *   lastInboundAt: string|null,
+ *   addressStatus: string,
+ *   contact: object|null
  * }>}
  */
 export async function resolveHubOutboundAddress(params = {}) {
@@ -210,16 +260,37 @@ export async function resolveHubOutboundAddress(params = {}) {
   const mapped = mapChannelToWazzup(params.channel, params.transport);
   const chatType = String(params.chatType || mapped.chatType).toLowerCase();
   const transports = mapped.transports;
-  const hubChannel = params.channelId
-    ? repo.getHubChannel(params.channelId) || {
-        id: params.channelId,
-        transport: params.transport,
-        externalChannelId: params.channelId,
-      }
-    : await ensureHubChannel(params.channel, params.transport);
+  const requestedChannelId = params.channelId || params.wazzupChannelId || null;
+
+  let hubChannel = null;
+  let channelError = null;
+  if (requestedChannelId) {
+    hubChannel = findHubChannel(requestedChannelId);
+    if (!hubChannel) {
+      await ensureHubChannel(params.channel || "waba", params.transport);
+      hubChannel = findHubChannel(requestedChannelId);
+    }
+    if (!hubChannel) {
+      channelError = {
+        code: "CHANNEL_NOT_FOUND",
+        message: `Канал ${requestedChannelId} не найден среди каналов Wazzup.`,
+      };
+    } else if (!isHubChannelActive(hubChannel)) {
+      channelError = {
+        code: "CHANNEL_INACTIVE",
+        message: `Канал «${hubChannel.displayName || requestedChannelId}» неактивен (state=${hubChannel.state || hubChannel.status}).`,
+        state: hubChannel.state || hubChannel.status,
+      };
+    }
+  } else {
+    hubChannel = await ensureHubChannel(params.channel, params.transport);
+  }
+
   const transport = String(
     params.transport || hubChannel?.transport || transports[0] || chatType
   ).toLowerCase();
+  const isWhatsappFamily =
+    chatType === "whatsapp" || transport === "wapi" || transport === "waba" || transport === "whatsapp";
 
   let phone = normalizePhone(params.phone);
   let username =
@@ -231,9 +302,19 @@ export async function resolveHubOutboundAddress(params = {}) {
       ? String(params.chatId || params.externalChatId)
       : null;
   let recipientName = params.recipientName || null;
+  let recipientFirstName = params.recipientFirstName || null;
   let addressSource = phone || username || chatId ? "params" : null;
+  let contact = null;
 
   const contactId = params.contactId ? String(params.contactId) : null;
+  if (contactId) {
+    contact = await fetchBitrixContact(contactId);
+    if (contact) {
+      recipientName = recipientName || contactDisplayName(contact);
+      recipientFirstName = recipientFirstName || contactFirstName(contact);
+    }
+  }
+
   if (contactId && !phone && !username && !chatId) {
     const identities = listIdentitiesForContact(contactId).filter((row) =>
       identityMatchesChannel(row, chatType, transports)
@@ -249,39 +330,48 @@ export async function resolveHubOutboundAddress(params = {}) {
     }
   }
 
-  if (contactId && !phone && !username && !chatId) {
-    const contact = await fetchBitrixContact(contactId);
-    if (contact) {
-      recipientName = recipientName || contactDisplayName(contact);
-      if (chatType === "telegram") {
-        username = telegramFromContact(contact, cfg);
-        addressSource = username ? "bitrix_telegram_field" : addressSource;
-      } else if (chatType === "max") {
-        chatId = maxFromContact(contact, cfg);
-        addressSource = chatId ? "bitrix_max_field" : addressSource;
-      } else {
-        const phones = phonesFromContact(contact);
-        phone = phones[0] || null;
-        addressSource = phone ? "bitrix_phone" : addressSource;
-      }
+  // WhatsApp / WABA: phone from Bitrix card is a valid address even if a username was also passed.
+  if (contactId && contact && isWhatsappFamily && !phone) {
+    const phones = phonesFromContact(contact);
+    if (phones[0]) {
+      phone = phones[0];
+      addressSource = "bitrix_phone";
     }
   }
+
+  if (contactId && contact && !phone && !username && !chatId) {
+    if (chatType === "telegram") {
+      username = telegramFromContact(contact, cfg);
+      addressSource = username ? "bitrix_telegram_field" : addressSource;
+    } else if (chatType === "max") {
+      chatId = maxFromContact(contact, cfg);
+      addressSource = chatId ? "bitrix_max_field" : addressSource;
+    } else {
+      const phones = phonesFromContact(contact);
+      phone = phones[0] || null;
+      addressSource = phone ? "bitrix_phone" : addressSource;
+    }
+  }
+
+  const lastInboundAt = contactId
+    ? getLastInboundAt(contactId, { chatType, transports })
+    : null;
+  const within24h = isWithin24hWindow(lastInboundAt);
 
   let isFirstContact = params.isFirstContact;
   let firstContactGround = params.firstContactGround || null;
   if (contactId && isFirstContact == null) {
-    const recent = repo.listMessages({ contactId, limit: 30 });
-    const inbound = recent.some(
-      (m) =>
-        m.direction === "inbound" &&
-        (String(m.chatType || "").toLowerCase() === chatType ||
-          transports.includes(String(m.transport || "").toLowerCase()))
-    );
-    if (inbound) {
+    if (lastInboundAt) {
       isFirstContact = false;
-      firstContactGround = firstContactGround || "inbound";
+      firstContactGround = firstContactGround || (within24h ? "active_dialog" : "inbound");
     }
   }
+
+  const hasAddress = Boolean(phone || username || chatId);
+  let addressStatus = "missing";
+  if (hasAddress && within24h) addressStatus = "active_dialog";
+  else if (hasAddress && isFirstContact !== false && !firstContactGround) addressStatus = "no_consent";
+  else if (hasAddress) addressStatus = "ok";
 
   const recipientMasked = phone
     ? maskPhone(phone)
@@ -294,14 +384,22 @@ export async function resolveHubOutboundAddress(params = {}) {
   return {
     chatType,
     transport,
-    channelId: wazzupApiChannelId(hubChannel, params.channelId),
+    channelId: wazzupApiChannelId(hubChannel, requestedChannelId),
+    channelDisplayName: hubChannel?.displayName || null,
+    channelState: hubChannel?.state || hubChannel?.status || null,
+    channelError,
     phone,
     username,
     chatId,
     recipientName,
+    recipientFirstName,
     recipientMasked,
     isFirstContact,
     firstContactGround,
     addressSource,
+    within24h,
+    lastInboundAt,
+    addressStatus,
+    contact,
   };
 }

@@ -63,6 +63,7 @@ function jsonResponse(result, extra = {}) {
   return {
     ok: true,
     status: 200,
+    headers: { get: () => null },
     text: async () => JSON.stringify({ result, ...extra }),
     json: async () => ({ result, ...extra }),
   };
@@ -103,7 +104,44 @@ const contacts = {
     PHONE: [{ VALUE: "+77005554433" }],
     EMAIL: [{ VALUE: "one@company.kz" }],
   },
+  6882: {
+    id: 6882,
+    NAME: "Дмитрий",
+    name: "Дмитрий",
+    LAST_NAME: "Звягинцев",
+    lastName: "Звягинцев",
+    UF_CRM_STATUS: "work",
+    PHONE: [{ VALUE: "+77015550101" }],
+  },
+  6885: {
+    id: 6885,
+    NAME: "Безтелефона",
+    name: "Безтелефона",
+    UF_CRM_STATUS: "work",
+  },
+  6886: {
+    id: 6886,
+    NAME: "",
+    name: "",
+    UF_CRM_STATUS: "work",
+    PHONE: [{ VALUE: "+77015550999" }],
+  },
 };
+
+const SENSU_1_CHANNEL_ID = "945ab03d-1ebf-4923-8ed4-16baa0248207";
+const SENSU2BAN_CHANNEL_ID = "sensu2ban-inactive-channel";
+const WABA_TEMPLATE_FIXTURES = [
+  {
+    templateId: "first-touch-sensu",
+    name: "Первое касание",
+    language: "ru",
+    category: "UTILITY",
+    status: "approved",
+    body: "Здравствуйте, {{1}}! Это SENSU_1.",
+    channelId: SENSU_1_CHANNEL_ID,
+    channels: [SENSU_1_CHANNEL_ID],
+  },
+];
 
 function installBitrixMock() {
   globalThis.fetch = async (url, opts = {}) => {
@@ -150,6 +188,15 @@ function installBitrixMock() {
           assignedById: 1,
         },
       });
+    }
+    if (u.includes("/v3/templates/whatsapp") || u.includes("templates/whatsapp")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        text: async () => JSON.stringify(WABA_TEMPLATE_FIXTURES),
+        json: async () => WABA_TEMPLATE_FIXTURES,
+      };
     }
     return jsonResponse({});
   };
@@ -871,16 +918,16 @@ async function main() {
   assert(autoChannel.policy?.allowed === true, "H20g. No channel + username → allowed");
   assert(autoChannel.outboxDraft?.chatType === "telegram", "H20g. No channel + username → telegram");
 
-  const waFallback = await prepareMessageSend({
-    contactId: "6882",
+  const waNoFallback = await prepareMessageSend({
+    contactId: "6885",
     channel: "whatsapp",
     username: "test_user",
     body: "Привет",
     isFirstContact: false,
     channelState: "active",
   });
-  assert(waFallback.policy?.allowed === true, "H20h. WhatsApp without phone falls back");
-  assert(waFallback.outboxDraft?.chatType === "telegram", "H20h. Fallback channel is telegram");
+  assert(waNoFallback.policy?.code === "NO_ADDRESS", "H20h. Explicit WhatsApp without phone → NO_ADDRESS");
+  assert(waNoFallback.outboxDraft?.chatType !== "max", "H20h. Explicit WhatsApp does not silently go to MAX");
 
   assert(
     evaluateSendPolicy({
@@ -936,9 +983,169 @@ async function main() {
       ...policyBase,
       channelState: "inactive",
       skipQuietHours: true,
-    }).code === "INACTIVE_CHANNEL",
+    }).code === "CHANNEL_INACTIVE",
     "H25. Inactive channel blocked"
   );
+
+  repo.upsertHubChannel({
+    id: `wazzup:${SENSU_1_CHANNEL_ID}`,
+    provider: "wazzup",
+    channel: "wapi",
+    externalChannelId: SENSU_1_CHANNEL_ID,
+    transport: "wapi",
+    state: "active",
+    status: "active",
+    displayName: "SENSU_1",
+    capabilities: { supportsTemplates: true },
+  });
+  repo.upsertHubChannel({
+    id: `wazzup:${SENSU2BAN_CHANNEL_ID}`,
+    provider: "wazzup",
+    channel: "wapi",
+    externalChannelId: SENSU2BAN_CHANNEL_ID,
+    transport: "wapi",
+    state: "inactive",
+    status: "inactive",
+    displayName: "SENSU2BAN",
+    capabilities: { supportsTemplates: true },
+  });
+  repo.upsertHubChannel({
+    id: "wazzup:ch-max-test",
+    provider: "wazzup",
+    channel: "max",
+    externalChannelId: "ch-max-test",
+    transport: "max",
+    state: "active",
+    status: "active",
+    displayName: "MAX test",
+  });
+
+  const { listWabaTemplates } = await import("../src/communications/wabaTemplates.js");
+  const { communication_templates_list } = await import("../src/communications/communicationActions.js");
+  const wabaListed = await communication_templates_list({
+    channelId: SENSU_1_CHANNEL_ID,
+    sync: true,
+  });
+  assert(wabaListed.success === true, "W1. communication_templates_list success");
+  assert(
+    wabaListed.templates.some((t) => t.templateId === "first-touch-sensu"),
+    "W1. SENSU_1 templates include first-touch"
+  );
+  assert(
+    wabaListed.templates.some((t) => (t.variables || []).some((v) => Number(v.index) === 1)),
+    "W1. Template exposes variable index 1"
+  );
+  assert(
+    !JSON.stringify(wabaListed).includes("test-key") && !JSON.stringify(wabaListed).includes("whsec"),
+    "W1. Templates list has no Wazzup secrets"
+  );
+
+  const wabaPrepared = await prepareMessageSend({
+    contactId: "6882",
+    channel: "waba",
+    channelId: SENSU_1_CHANNEL_ID,
+    templateId: "first-touch-sensu",
+    firstContactGround: "manual_consent",
+  });
+  assert(wabaPrepared.policy?.allowed === true, "W2. WABA template prepare allowed");
+  assert(wabaPrepared.requiresConfirmation === true, "W2. Safety confirmation required");
+  assert(
+    wabaPrepared.outboxDraft?.channelId === SENSU_1_CHANNEL_ID,
+    "W2. Sends via SENSU_1 channelId"
+  );
+  assert(
+    String(wabaPrepared.preview?.bodyPreview || "").includes("Дмитрий"),
+    "W2. Preview shows rendered NAME, not raw template"
+  );
+  assert(
+    !String(wabaPrepared.preview?.bodyPreview || "").includes("{{1}}"),
+    "W2. Preview is not raw {{1}}"
+  );
+  assert(
+    wabaPrepared.preview?.templateName === "Первое касание" ||
+      wabaPrepared.preview?.channelName === "SENSU_1",
+    "W2. Preview shows template or channel name"
+  );
+
+  const inactiveWaba = await prepareMessageSend({
+    contactId: "6882",
+    channelId: SENSU2BAN_CHANNEL_ID,
+    templateId: "first-touch-sensu",
+    firstContactGround: "manual_consent",
+  });
+  assert(inactiveWaba.policy?.code === "CHANNEL_INACTIVE", "W3. Inactive SENSU2BAN → CHANNEL_INACTIVE");
+  assert(inactiveWaba.outboxDraft?.channelId !== "ch-max-test", "W3. No silent fallback to MAX");
+
+  let mismatchCode = null;
+  try {
+    await prepareMessageSend({
+      contactId: "6882",
+      channelId: SENSU_1_CHANNEL_ID,
+      templateId: "first-touch-sensu",
+      templateVars: { 2: "лишнее" },
+      firstContactGround: "manual_consent",
+    });
+  } catch (error) {
+    mismatchCode = error.code;
+  }
+  assert(mismatchCode === "TEMPLATE_VARS_MISMATCH", "W4. Wrong template vars → TEMPLATE_VARS_MISMATCH");
+
+  let emptyNameCode = null;
+  try {
+    await prepareMessageSend({
+      contactId: "6886",
+      channelId: SENSU_1_CHANNEL_ID,
+      templateId: "first-touch-sensu",
+      firstContactGround: "manual_consent",
+    });
+  } catch (error) {
+    emptyNameCode = error.code;
+  }
+  assert(emptyNameCode === "REQUIRED_FIELD_EMPTY", "W5. Empty NAME → REQUIRED_FIELD_EMPTY");
+
+  const outsideWindow = await prepareMessageSend({
+    contactId: "6882",
+    channel: "waba",
+    channelId: SENSU_1_CHANNEL_ID,
+    body: "Свободный текст без шаблона",
+    firstContactGround: "manual_consent",
+  });
+  assert(
+    outsideWindow.policy?.code === "WABA_TEMPLATE_REQUIRED",
+    "W6. Outside 24h without template → WABA_TEMPLATE_REQUIRED"
+  );
+
+  repo.insertMessage({
+    provider: "wazzup",
+    externalMessageId: `inbound-24h-${Date.now()}`,
+    direction: "inbound",
+    status: "received",
+    transport: "wapi",
+    chatType: "whatsapp",
+    contactId: "6882",
+    textSafe: "Клиент написал",
+    createdAt: new Date().toISOString(),
+  });
+  const insideWindow = await prepareMessageSend({
+    contactId: "6882",
+    channel: "waba",
+    channelId: SENSU_1_CHANNEL_ID,
+    body: "Свободный текст в окне 24ч",
+    isFirstContact: false,
+    firstContactGround: "active_dialog",
+  });
+  assert(insideWindow.policy?.allowed === true, "W7. Inside 24h free text allowed");
+
+  const sendCat = getActionCatalog().find((a) => a.name === "communication_message_send_prepare");
+  assert(
+    String(sendCat?.params?.channel || "").includes("waba"),
+    "W8. Catalog allows channel=waba"
+  );
+  assert(
+    getActionCatalog().some((a) => a.name === "communication_templates_list"),
+    "W8. Catalog has communication_templates_list"
+  );
+  void listWabaTemplates;
 
   repo.insertMessage({
     provider: "wazzup",

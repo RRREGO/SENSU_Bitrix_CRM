@@ -248,29 +248,42 @@ export function evaluateSendPolicy(ctx = {}) {
 
   const address =
     ctx.externalChatId || ctx.chatId || ctx.phone || ctx.username || ctx.recipientAddress;
+  const transportEarly = String(ctx.transport || ctx.channel || ctx.chatType || "").toLowerCase();
+  const isWabaEarly = transportEarly === "wapi" || transportEarly === "waba" || ctx.requiresWabaTemplate;
   if (!address && !ctx.skipAddressCheck) {
     const ch = String(ctx.chatType || ctx.channel || ctx.transport || "").toLowerCase();
     if (ch === "telegram" || ch === "tgapi") {
       return deny(
         "NO_ADDRESS",
-        "Нет адреса Telegram: у контакта не заполнен username, нет chatId и нет identity Hub."
+        "Нет адреса Telegram: у контакта не заполнен username, нет chatId и нет identity Hub.",
+        { addressStatus: "missing" }
       );
     }
     if (ch === "max" || ch === "maxbot") {
-      return deny("NO_ADDRESS", "Нет chatId MAX у контакта.");
+      return deny("NO_ADDRESS", "Нет chatId MAX у контакта.", { addressStatus: "missing" });
     }
-    return deny("NO_ADDRESS", "Нет разрешённого адреса канала.");
+    if (isWabaEarly || ch === "whatsapp" || ch === "wapi") {
+      return deny(
+        "NO_ADDRESS",
+        "Нет телефона в карточке контакта (поле PHONE) — это обязательный адрес для WABA/WhatsApp.",
+        { addressStatus: "missing" }
+      );
+    }
+    return deny("NO_ADDRESS", "Нет разрешённого адреса канала.", { addressStatus: "missing" });
   }
 
   const channelState = ctx.channelState || ctx.channel?.state;
   if (channelState && !["active", "authorized", "ok", "ready"].includes(String(channelState).toLowerCase())) {
-    return deny("INACTIVE_CHANNEL", "Канал выключен или не авторизован.", {
+    return deny("CHANNEL_INACTIVE", "Канал выключен или не авторизован.", {
       state: channelState,
+      addressStatus: ctx.addressStatus || null,
     });
   }
 
   if (ctx.channelInactive) {
-    return deny("INACTIVE_CHANNEL", "Канал выключен или не авторизован.");
+    return deny("CHANNEL_INACTIVE", "Канал выключен или не авторизован.", {
+      addressStatus: ctx.addressStatus || null,
+    });
   }
 
   if (ctx.contactId && !ctx.skipDailyLimit) {
@@ -327,11 +340,14 @@ export function evaluateSendPolicy(ctx = {}) {
 
   const transport = String(ctx.transport || ctx.channel || "").toLowerCase();
   const isWaba = transport === "wapi" || transport === "waba" || ctx.requiresWabaTemplate;
-  if (isWaba && ctx.isFirstOutboundOutsideWindow !== false) {
+  const within24h = ctx.within24h === true;
+  const outsideWindow = isWaba && !within24h && ctx.isFirstOutboundOutsideWindow !== false;
+  if (outsideWindow) {
     if (ctx.requiresWabaTemplate !== false && !ctx.wabaTemplateId && !ctx.templateId) {
       return deny(
         "WABA_TEMPLATE_REQUIRED",
-        "Для WABA вне активного диалога нужен одобренный шаблон."
+        "Для WABA вне окна 24 часов нужен одобренный шаблон. Свободный текст нельзя.",
+        { addressStatus: ctx.addressStatus || "no_consent" }
       );
     }
     if (ctx.wabaTemplateStatus && !["approved", "active", "ok"].includes(String(ctx.wabaTemplateStatus).toLowerCase())) {
@@ -399,6 +415,8 @@ export function evaluateSendPolicy(ctx = {}) {
     sendEnabled: cfg.sendEnabled,
     certificationRequired: Boolean(realSendPath && cfg.requireCertification),
     flagsConflict: cfg.flagsConflict,
+    addressStatus: ctx.addressStatus || (within24h ? "active_dialog" : null),
+    within24h,
   });
 }
 

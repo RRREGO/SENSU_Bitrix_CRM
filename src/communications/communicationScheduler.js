@@ -424,7 +424,7 @@ async function processOneJob(job, cfg, results) {
       chatId: job.externalChatId,
       phone: job.payload?.phone,
       username: job.payload?.username,
-      text: job.body,
+      text: job.wabaTemplateId ? undefined : job.body,
       templateId: job.wabaTemplateId,
       templateValues: job.templateValues,
       crmMessageId: job.crmMessageId || job.idempotencyKey,
