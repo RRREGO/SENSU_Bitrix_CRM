@@ -158,25 +158,55 @@ export class WazzupProvider extends CommunicationProvider {
     if (!this.isEnabled()) {
       throw new CommunicationError("WAZZUP_DISABLED", "Wazzup выключен.");
     }
-    const query = {};
-    if (options.channelId) query.channelId = options.channelId;
-    const { data } = await this.client.get("/v3/templates/whatsapp", query);
-    const rows = Array.isArray(data) ? data : data?.templates || [];
-    return rows.map((t) => ({
-      provider: this.name,
-      templateId: String(t.templateId || t.id || ""),
-      name: t.name || t.templateName || null,
-      status: t.status || t.moderationStatus || null,
-      language: t.language || null,
-      category: t.category || null,
-      channelId: t.channelId || options.channelId || null,
-      bodyText: t.bodyText || t.body || t.text || null,
-      body: t.body || t.bodyText || t.text || null,
-      text: t.text || t.body || null,
-      components: t.components || t.templateComponents || null,
-      variables: t.variables || null,
-      channels: t.channels || t.channelIds || null,
-    }));
+    // Official Wazzup API supports only limit/offset (not channelId filter).
+    const limit = Math.min(Number(options.limit) || 100, 100);
+    let offset = Number(options.offset) || 0;
+    const rows = [];
+    for (;;) {
+      const { data } = await this.client.get("/v3/templates/whatsapp", { limit, offset });
+      const batch = Array.isArray(data) ? data : data?.templates || [];
+      rows.push(...batch);
+      if (batch.length < limit) break;
+      offset += limit;
+      if (offset > 5000) break;
+    }
+    const mapped = rows.map((t) => {
+      const templateId = String(t.templateGuid || t.templateId || t.id || t.guid || "");
+      // title = display name in Wazzup UI; name = Meta/Facebook technical name
+      const displayName = t.title || t.name || t.templateName || t.displayName || null;
+      const metaName = t.name && t.title && t.name !== t.title ? String(t.name) : null;
+      return {
+        provider: this.name,
+        templateId,
+        templateGuid: t.templateGuid ? String(t.templateGuid) : templateId || null,
+        name: displayName,
+        title: t.title || null,
+        metaName,
+        status: t.status || t.moderationStatus || null,
+        language: t.language || null,
+        category: t.category || null,
+        channelId: t.channelId || null,
+        bodyText: t.bodyText || t.body || t.text || null,
+        body: t.body || t.bodyText || t.text || null,
+        text: t.text || t.body || null,
+        components: t.components || t.templateComponents || null,
+        variables: t.variables || null,
+        channels: t.channels || t.channelIds || null,
+        templateCode: t.templateCode || null,
+      };
+    });
+    if (options.channelId) {
+      const want = String(options.channelId);
+      return mapped.filter((t) => {
+        const chs = Array.isArray(t.channels)
+          ? t.channels.map((c) => String(c?.channelId || c?.id || c || ""))
+          : [];
+        // Only keep templates explicitly linked to this channel (or unscoped).
+        if (chs.length) return chs.includes(want);
+        return !t.channelId || t.channelId === want;
+      });
+    }
+    return mapped;
   }
 
   async subscribeWebhook(config = {}) {

@@ -46,14 +46,18 @@ export async function communication_channels_list(params = {}) {
 
 export async function communication_templates_list(params = {}) {
   requireHubEnabled();
-  if (!params.channelId) {
-    throw new CommunicationError("CHANNEL_ID_REQUIRED", "Для шаблонов WABA укажите channelId.");
+  if (!params.channelId && !params.channelName) {
+    throw new CommunicationError(
+      "CHANNEL_ID_REQUIRED",
+      "Для шаблонов WABA укажите channelId (UUID) или имя канала + transport=wapi."
+    );
   }
   const { listWabaTemplates } = await import("./wabaTemplates.js");
   return listWabaTemplates({
-    channelId: params.channelId,
+    channelId: params.channelId || params.channelName,
     status: params.status,
     sync: params.sync,
+    transport: params.transport || (params.channel === "waba" ? "wapi" : params.channel),
   });
 }
 

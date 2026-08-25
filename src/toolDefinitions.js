@@ -65,7 +65,7 @@ function baseRules() {
 
 Если пользователь просит написать/отправить в WhatsApp, Telegram, MAX, WABA или через Wazzup:
 - сразу вызови communication_message_send_prepare с contactId. Канал можно не указывать: Hub сам возьмёт Telegram, если есть username, иначе WhatsApp/MAX.
-- для WABA / WhatsApp Business / SENSU_1: сначала communication_templates_list с channelId канала (из communication_channels_list), затем communication_message_send_prepare с channelId, templateId и при необходимости templateVars. Имя подставится из NAME карточки, телефон — из PHONE. Не проси оператора вводить номер.
+- для WABA / WhatsApp Business / SENSU_1: сначала communication_channels_list (sync=true), выбери канал с transport=wapi и нужным externalChannelId (имя SENSU_1 бывает у wapi/tgapi/max — не путай). Затем communication_templates_list с этим channelId и sync=true. В prepare передай channelId (UUID), templateId (GUID шаблона) или точное имя вроде «I касание общий». Телефон берётся из PHONE карточки и нормализуется автоматически. Не проси оператора вводить номер.
 - если указан channelId — отправляй строго в этот канал, без автоподбора и без перехода на MAX.
 - вне окна 24 часов по WABA нужен согласованный шаблон; свободный текст только внутри окна.
 - не спрашивай «отправить в Telegram?», «показать детали?» и не проси отдельное подтверждение в чате. Единственное подтверждение — карточка Safety Layer.

@@ -13,7 +13,7 @@ import { getProvider } from "./providers/index.js";
 import { evaluateSendPolicy } from "./communicationPolicy.js";
 import { buildSingleMessagePreparePreview } from "./communicationSafety.js";
 import { renderTemplate, assertRequiredVarsFilled } from "./templateRenderer.js";
-import { resolveHubOutboundAddress, inferPreferredHubChannel, findHubChannel, HUB_CHANNEL_FALLBACK_ORDER } from "./outboundAddress.js";
+import { resolveHubOutboundAddress, inferPreferredHubChannel, findHubChannel, resolveHubChannelRef, wazzupApiChannelId, HUB_CHANNEL_FALLBACK_ORDER } from "./outboundAddress.js";
 import {
   getWabaTemplate,
   defaultWabaVarsFromContact,
@@ -208,12 +208,47 @@ export async function prepareMessageSend(params = {}) {
   if (strict) {
     let channel = "waba";
     if (channelId) {
-      const hub = findHubChannel(channelId);
+      let hub = null;
+      try {
+        hub = resolveHubChannelRef(channelId, {
+          transport: params.transport || (rawChannel === "waba" ? "wapi" : rawChannel || null),
+          preferTransports:
+            rawChannel === "waba" || rawChannel === "wapi" || params.transport === "wapi"
+              ? ["wapi"]
+              : rawChannel === "telegram" || rawChannel === "tgapi"
+                ? ["tgapi", "telegram"]
+                : rawChannel === "max"
+                  ? ["max", "maxbot"]
+                  : ["wapi", "whatsapp", "tgapi", "telegram", "max"],
+        });
+      } catch (error) {
+        if (error?.code === "CHANNEL_AMBIGUOUS" || error?.code === "CHANNEL_NOT_FOUND") {
+          return {
+            success: false,
+            blocked: true,
+            prepareId: null,
+            requiresConfirmation: false,
+            confirmationPhrase: null,
+            policy: {
+              allowed: false,
+              code: error.code,
+              message: error.message,
+              details: { candidates: error.details?.candidates || null, channelId },
+            },
+            preview: null,
+            outboxDraft: null,
+          };
+        }
+        throw error;
+      }
       const t = String(hub?.transport || rawChannel || "").toLowerCase();
       if (t === "tgapi" || t === "telegram") channel = "telegram";
       else if (t === "max" || t === "maxbot") channel = "max";
       else if (t === "wapi" || t === "waba") channel = "waba";
       else if (t === "whatsapp") channel = "whatsapp";
+      if (hub) {
+        params = { ...params, channelId: wazzupApiChannelId(hub, channelId) };
+      }
     } else if (rawChannel === "telegram" || rawChannel === "max" || rawChannel === "whatsapp") {
       channel = rawChannel;
     }

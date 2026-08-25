@@ -111,7 +111,7 @@ const contacts = {
     LAST_NAME: "Звягинцев",
     lastName: "Звягинцев",
     UF_CRM_STATUS: "work",
-    PHONE: [{ VALUE: "+77015550101" }],
+    PHONE: [{ VALUE: "+7 916 412-74-58", VALUE_TYPE: "WORK", ID: "19652" }],
   },
   6885: {
     id: 6885,
@@ -132,14 +132,40 @@ const SENSU_1_CHANNEL_ID = "945ab03d-1ebf-4923-8ed4-16baa0248207";
 const SENSU2BAN_CHANNEL_ID = "sensu2ban-inactive-channel";
 const WABA_TEMPLATE_FIXTURES = [
   {
-    templateId: "first-touch-sensu",
-    name: "Первое касание",
+    templateGuid: "0e0cd26c-a3e7-4d95-a979-29a111dfd934",
+    title: "I касание общий",
+    name: "pervoe_kasanie_sensu_2_2",
     language: "ru",
     category: "UTILITY",
     status: "approved",
-    body: "Здравствуйте, {{1}}! Это SENSU_1.",
-    channelId: SENSU_1_CHANNEL_ID,
     channels: [SENSU_1_CHANNEL_ID],
+    components: [
+      {
+        type: "BODY",
+        text: "Здравствуйте, {{1}}! Это SENSU_1.",
+        example: { body_text: [["Дмитрий"]] },
+      },
+    ],
+  },
+  {
+    templateGuid: "65dea470-2d3b-431a-9ad4-9c073fc1bfe8",
+    title: "II касание _ завтра",
+    name: "vtoroe_kasanie_2",
+    language: "ru",
+    category: "UTILITY",
+    status: "approved",
+    channels: [SENSU_1_CHANNEL_ID],
+    components: [{ type: "BODY", text: "Напоминаем о встрече завтра, {{1}}." }],
+  },
+  {
+    templateGuid: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    title: "Other channel only",
+    name: "other_channel_only",
+    language: "ru",
+    category: "UTILITY",
+    status: "approved",
+    channels: ["87b92992-c765-4c56-ac3a-8f6a222ff5de"],
+    components: [{ type: "BODY", text: "Чужой канал" }],
   },
 ];
 
@@ -1028,9 +1054,22 @@ async function main() {
   });
   assert(wabaListed.success === true, "W1. communication_templates_list success");
   assert(
-    wabaListed.templates.some((t) => t.templateId === "first-touch-sensu"),
-    "W1. SENSU_1 templates include first-touch"
+    wabaListed.templates.some((t) => t.templateId === "0e0cd26c-a3e7-4d95-a979-29a111dfd934"),
+    "W1. SENSU_1 templates include I касание общий (templateGuid)"
   );
+  assert(
+    wabaListed.templates.some((t) => t.name === "I касание общий"),
+    "W1. Display title preferred over Meta name"
+  );
+  assert(
+    wabaListed.templates.some((t) => t.name === "II касание _ завтра"),
+    "W1. SENSU_1 includes II касание _ завтра"
+  );
+  assert(
+    !wabaListed.templates.some((t) => t.name === "Other channel only"),
+    "W1. Templates from other channels are filtered out"
+  );
+  assert(Boolean(wabaListed.syncedAt), "W1. syncedAt set after successful sync");
   assert(
     wabaListed.templates.some((t) => (t.variables || []).some((v) => Number(v.index) === 1)),
     "W1. Template exposes variable index 1"
@@ -1044,7 +1083,7 @@ async function main() {
     contactId: "6882",
     channel: "waba",
     channelId: SENSU_1_CHANNEL_ID,
-    templateId: "first-touch-sensu",
+    templateId: "0e0cd26c-a3e7-4d95-a979-29a111dfd934",
     firstContactGround: "manual_consent",
   });
   assert(wabaPrepared.policy?.allowed === true, "W2. WABA template prepare allowed");
@@ -1062,15 +1101,24 @@ async function main() {
     "W2. Preview is not raw {{1}}"
   );
   assert(
-    wabaPrepared.preview?.templateName === "Первое касание" ||
+    wabaPrepared.preview?.templateName === "I касание общий" ||
       wabaPrepared.preview?.channelName === "SENSU_1",
     "W2. Preview shows template or channel name"
   );
 
+  const wabaByTitle = await prepareMessageSend({
+    contactId: "6882",
+    channel: "waba",
+    channelId: SENSU_1_CHANNEL_ID,
+    templateId: "I касание общий",
+    firstContactGround: "manual_consent",
+  });
+  assert(wabaByTitle.policy?.allowed === true, "W2b. Prepare by Wazzup title works");
+
   const inactiveWaba = await prepareMessageSend({
     contactId: "6882",
     channelId: SENSU2BAN_CHANNEL_ID,
-    templateId: "first-touch-sensu",
+    templateId: "0e0cd26c-a3e7-4d95-a979-29a111dfd934",
     firstContactGround: "manual_consent",
   });
   assert(inactiveWaba.policy?.code === "CHANNEL_INACTIVE", "W3. Inactive SENSU2BAN → CHANNEL_INACTIVE");
@@ -1081,7 +1129,7 @@ async function main() {
     await prepareMessageSend({
       contactId: "6882",
       channelId: SENSU_1_CHANNEL_ID,
-      templateId: "first-touch-sensu",
+      templateId: "0e0cd26c-a3e7-4d95-a979-29a111dfd934",
       templateVars: { 2: "лишнее" },
       firstContactGround: "manual_consent",
     });
@@ -1095,13 +1143,58 @@ async function main() {
     await prepareMessageSend({
       contactId: "6886",
       channelId: SENSU_1_CHANNEL_ID,
-      templateId: "first-touch-sensu",
+      templateId: "0e0cd26c-a3e7-4d95-a979-29a111dfd934",
       firstContactGround: "manual_consent",
     });
   } catch (error) {
     emptyNameCode = error.code;
   }
   assert(emptyNameCode === "REQUIRED_FIELD_EMPTY", "W5. Empty NAME → REQUIRED_FIELD_EMPTY");
+
+  const { normalizePhone } = await import("../src/communications/config.js");
+  assert(normalizePhone("+7 916 412-74-58") === "79164127458", "W5b. Phone spaced/dashes → digits");
+  assert(normalizePhone("8 (916) 412-74-58") === "79164127458", "W5b. Phone 8xxx → 7xxx");
+  assert(normalizePhone("+79164127458") === "79164127458", "W5b. Already normalized stays");
+  assert(normalizePhone("") == null, "W5b. Empty phone rejected");
+  assert(
+    wabaPrepared.outboxDraft?.externalChatId === "79164127458" ||
+      String(wabaPrepared.outboxDraft?.externalChatId || "").includes("79164127458"),
+    "W5b. Prepare uses normalized phone from Bitrix PHONE"
+  );
+
+  repo.upsertHubChannel({
+    id: "wazzup:6f35f838-2ffb-46e1-beac-bcbffc29ff42",
+    provider: "wazzup",
+    channel: "tgapi",
+    externalChannelId: "6f35f838-2ffb-46e1-beac-bcbffc29ff42",
+    transport: "tgapi",
+    state: "active",
+    status: "active",
+    displayName: "SENSU_1",
+  });
+  repo.upsertHubChannel({
+    id: "wazzup:22a921a7-640b-4897-8b09-1561c872a3ef",
+    provider: "wazzup",
+    channel: "max",
+    externalChannelId: "22a921a7-640b-4897-8b09-1561c872a3ef",
+    transport: "max",
+    state: "active",
+    status: "active",
+    displayName: "SENSU_1",
+  });
+  const { resolveHubChannelRef } = await import("../src/communications/outboundAddress.js");
+  let ambiguousCode = null;
+  try {
+    resolveHubChannelRef("SENSU_1");
+  } catch (error) {
+    ambiguousCode = error.code;
+  }
+  assert(ambiguousCode === "CHANNEL_AMBIGUOUS", "W5c. SENSU_1 without transport → CHANNEL_AMBIGUOUS");
+  const wapiOnly = resolveHubChannelRef("SENSU_1", { transport: "wapi" });
+  assert(
+    wapiOnly?.externalChannelId === SENSU_1_CHANNEL_ID,
+    "W5c. SENSU_1 + transport=wapi → WABA channel"
+  );
 
   const outsideWindow = await prepareMessageSend({
     contactId: "6882",

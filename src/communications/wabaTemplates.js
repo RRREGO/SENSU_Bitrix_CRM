@@ -5,7 +5,11 @@
 import { CommunicationError } from "./config.js";
 import { getProvider } from "./providers/index.js";
 import * as repo from "./communicationRepository.js";
-import { ensureHubChannel, findHubChannel, wazzupApiChannelId } from "./outboundAddress.js";
+import {
+  ensureHubChannel,
+  resolveHubChannelRef,
+  wazzupApiChannelId,
+} from "./outboundAddress.js";
 import {
   normalizeWazzupTemplate,
   publicWabaTemplate,
@@ -22,9 +26,12 @@ function requireChannelId(channelId) {
   return id;
 }
 
-export function resolveWabaChannel(channelId) {
+export function resolveWabaChannel(channelId, { transport } = {}) {
   const id = requireChannelId(channelId);
-  const hub = findHubChannel(id);
+  const hub = resolveHubChannelRef(id, {
+    transport: transport || "wapi",
+    preferTransports: ["wapi", "whatsapp"],
+  });
   if (!hub) {
     throw new CommunicationError(
       "CHANNEL_NOT_FOUND",
@@ -34,27 +41,51 @@ export function resolveWabaChannel(channelId) {
   return hub;
 }
 
-export async function refreshWabaTemplates(channelId) {
-  const hub = resolveWabaChannel(channelId);
+export async function refreshWabaTemplates(channelId, { transport } = {}) {
+  const hub = resolveWabaChannel(channelId, { transport });
   const extId = wazzupApiChannelId(hub, channelId);
   const provider = getProvider("wazzup");
   if (!provider?.isEnabled?.()) {
     throw new CommunicationError("WAZZUP_DISABLED", "Wazzup выключен или API key не задан.");
   }
-  const rows = await provider.getTemplates({ channelId: extId });
+  let rows;
+  try {
+    rows = await provider.getTemplates({ channelId: extId });
+  } catch (error) {
+    throw new CommunicationError(
+      error?.code || "WABA_TEMPLATES_SYNC_FAILED",
+      error?.message || "Не удалось загрузить шаблоны WABA из Wazzup.",
+      { channelId: extId, cause: error?.code || null }
+    );
+  }
   const normalized = (rows || [])
     .map((row) => normalizeWazzupTemplate(row, extId))
     .filter((t) => t.templateId)
-    .filter((t) => !t.channels?.length || t.channels.includes(extId) || t.channelId === extId || !t.channelId);
+    .filter(
+      (t) =>
+        !t.channels?.length ||
+        t.channels.includes(extId) ||
+        t.channelId === extId ||
+        !t.channelId
+    );
+  if ((rows || []).length > 0 && normalized.length === 0) {
+    throw new CommunicationError(
+      "WABA_TEMPLATES_MAP_EMPTY",
+      `Wazzup вернул ${(rows || []).length} шаблон(ов), но ни один не привязан к каналу ${extId} или не удалось разобрать ID (ожидается templateGuid).`,
+      { channelId: extId, fetched: (rows || []).length }
+    );
+  }
   repo.replaceWabaTemplatesForChannel(extId, normalized);
+  const syncedAt = new Date().toISOString();
+  repo.setWabaTemplatesSyncedAt(extId, syncedAt);
   return {
     channelId: extId,
     count: normalized.length,
-    syncedAt: new Date().toISOString(),
+    syncedAt,
   };
 }
 
-export async function listWabaTemplates({ channelId, status, sync = false } = {}) {
+export async function listWabaTemplates({ channelId, status, sync = false, transport } = {}) {
   if (sync) {
     try {
       await ensureHubChannel("waba");
@@ -62,13 +93,13 @@ export async function listWabaTemplates({ channelId, status, sync = false } = {}
       /* listing must still try local catalog */
     }
   }
-  const hub = resolveWabaChannel(channelId);
+  const hub = resolveWabaChannel(channelId, { transport });
   const extId = wazzupApiChannelId(hub, channelId);
   const cached = repo.listWabaTemplates({ channelId: extId, status });
   const shouldSync = Boolean(sync) || cached.length === 0;
   let fromCache = !shouldSync;
   if (shouldSync) {
-    await refreshWabaTemplates(extId);
+    await refreshWabaTemplates(extId, { transport });
     fromCache = false;
   }
   const templates = repo.listWabaTemplates({ channelId: extId, status }).map(publicWabaTemplate);
@@ -77,27 +108,30 @@ export async function listWabaTemplates({ channelId, status, sync = false } = {}
     channelId: extId,
     channelName: hub.displayName || null,
     channelState: hub.state || hub.status || null,
-    supportsTemplates: Boolean(hub.capabilities?.supportsTemplates) || String(hub.transport || "").toLowerCase() === "wapi",
+    transport: hub.transport || null,
+    supportsTemplates:
+      Boolean(hub.capabilities?.supportsTemplates) ||
+      String(hub.transport || "").toLowerCase() === "wapi",
     templates,
     fromCache,
     syncedAt: repo.getWabaTemplatesSyncedAt(extId),
   };
 }
 
-export async function getWabaTemplate(channelId, templateId, { sync = false } = {}) {
-  const hub = resolveWabaChannel(channelId);
+export async function getWabaTemplate(channelId, templateId, { sync = false, transport } = {}) {
+  const hub = resolveWabaChannel(channelId, { transport });
   const extId = wazzupApiChannelId(hub, channelId);
   const id = String(templateId || "").trim();
   if (!id) {
     throw new CommunicationError("TEMPLATE_ID_REQUIRED", "Укажите templateId.");
   }
-  let tpl = repo.getWabaTemplate(extId, id);
+  let tpl = repo.findWabaTemplate(extId, id);
   if (!tpl || sync) {
-    await refreshWabaTemplates(extId);
-    tpl = repo.getWabaTemplate(extId, id);
+    await refreshWabaTemplates(extId, { transport });
+    tpl = repo.findWabaTemplate(extId, id);
   }
   if (!tpl) {
-    throw new CommunicationError("TEMPLATE_NOT_FOUND", `Шаблон ${id} не найден на канале.`);
+    throw new CommunicationError("TEMPLATE_NOT_FOUND", `Шаблон «${id}» не найден на канале.`);
   }
   return tpl;
 }

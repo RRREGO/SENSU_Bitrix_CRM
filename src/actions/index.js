@@ -240,7 +240,7 @@ const actionCatalog = [
 
   // Communications Hub
   { name: "communication_channels_list", description: "Список каналов Wazzup/Hub (без секретов). id и externalChannelId можно передавать в channelId.", params: { sync: false }, destructive: false, implemented: true },
-  { name: "communication_templates_list", description: "Шаблоны WABA-канала Wazzup (без секретов). Для SENSU_1 передай channelId канала. sync=true обновляет кэш с API.", params: { channelId: "string", status: "approved|pending|rejected", sync: false }, destructive: false, implemented: true },
+  { name: "communication_templates_list", description: "Шаблоны WABA-канала Wazzup (без секретов). Для SENSU_1 передай channelId UUID транспорта wapi (не имя — имён три). sync=true обновляет кэш с API.", params: { channelId: "string", transport: "wapi", status: "approved|pending|rejected", sync: false }, destructive: false, implemented: true },
   { name: "communication_thread_get", description: "Диалог Communications Hub", params: { threadId: "uuid" }, destructive: false, implemented: true },
   { name: "communication_contact_context", description: "Контекст переписки контакта для LLM", params: { contactId: "number" }, destructive: false, implemented: true },
   { name: "communication_message_draft", description: "Черновик Hub-сообщения (без отправки). Для WABA: channelId + templateId.", params: { contactId: "number", channel: "whatsapp|telegram|max|waba", channelId: "string", templateId: "string", templateVars: {}, body: "string" }, destructive: false, implemented: true },

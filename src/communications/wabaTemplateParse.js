@@ -136,7 +136,9 @@ export function normalizeWazzupTemplate(raw = {}, channelId = null) {
 
   return {
     templateId: String(raw.templateId || raw.templateGuid || raw.id || raw.guid || ""),
-    name: raw.name || raw.title || raw.templateName || raw.displayName || null,
+    // Prefer Wazzup UI title ("I касание общий") over Meta technical name.
+    name: raw.title || raw.name || raw.templateName || raw.displayName || null,
+    metaName: raw.metaName || (raw.title && raw.name && raw.title !== raw.name ? raw.name : null),
     language: raw.language || raw.lang || null,
     category: raw.category || raw.templateCategory || null,
     status: normalizeWabaStatus(raw.status || raw.moderationStatus || raw.state),
@@ -152,6 +154,7 @@ export function publicWabaTemplate(tpl) {
   return {
     templateId: tpl.templateId,
     name: tpl.name,
+    metaName: tpl.metaName || null,
     language: tpl.language,
     category: tpl.category,
     status: tpl.status,

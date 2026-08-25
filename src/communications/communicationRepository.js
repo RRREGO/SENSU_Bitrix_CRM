@@ -4,6 +4,8 @@
 
 import crypto from "crypto";
 import { getDatabase } from "../database/index.js";
+import { CommunicationError } from "./config.js";
+import { getSetting, setSetting } from "../database/repositories/settingsRepository.js";
 
 function uid() {
   return crypto.randomUUID();
@@ -254,7 +256,20 @@ export function getHubChannel(id) {
   );
 }
 
-export function findHubChannel(id) {
+export function listHubChannelsByDisplayName(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return [];
+  return getDatabase()
+    .prepare(
+      `SELECT * FROM communication_channels
+       WHERE lower(display_name) = lower(?)
+       ORDER BY transport, external_channel_id`
+    )
+    .all(raw)
+    .map(mapChannel);
+}
+
+export function findHubChannel(id, { transport, allowAmbiguousName = false } = {}) {
   const raw = String(id || "").trim();
   if (!raw) return null;
   const direct = getHubChannel(raw);
@@ -268,15 +283,17 @@ export function findHubChannel(id) {
       .get(raw)
   );
   if (byExternal) return byExternal;
-  const byName = getDatabase()
-    .prepare(
-      `SELECT * FROM communication_channels
-       WHERE lower(display_name) = lower(?)
-       LIMIT 2`
-    )
-    .all(raw)
-    .map(mapChannel);
-  return byName.length === 1 ? byName[0] : null;
+  let byName = listHubChannelsByDisplayName(raw);
+  const transportHint = String(transport || "").toLowerCase();
+  if (transportHint) {
+    byName = byName.filter((c) => {
+      const t = String(c.transport || c.channel || "").toLowerCase();
+      return t === transportHint || (transportHint === "waba" && t === "wapi");
+    });
+  }
+  if (byName.length === 1) return byName[0];
+  if (allowAmbiguousName && byName.length > 1) return byName[0];
+  return null;
 }
 
 export function getIdentity(id) {
@@ -1646,11 +1663,43 @@ export function getWabaTemplate(channelId, templateId) {
   );
 }
 
+/** Lookup by templateId (GUID) or display/meta name (case-insensitive). */
+export function findWabaTemplate(channelId, ref) {
+  const id = String(ref || "").trim();
+  if (!id) return null;
+  const byId = getWabaTemplate(channelId, id);
+  if (byId) return byId;
+  const rows = listWabaTemplates({ channelId: String(channelId) }).filter(
+    (t) => String(t.name || "").toLowerCase() === id.toLowerCase()
+  );
+  if (rows.length === 1) return rows[0];
+  if (rows.length > 1) {
+    throw new CommunicationError(
+      "TEMPLATE_AMBIGUOUS",
+      `Несколько шаблонов с именем «${id}». Укажите templateId (GUID).`,
+      {
+        candidates: rows.map((t) => ({
+          templateId: t.templateId,
+          name: t.name,
+          status: t.status,
+          language: t.language,
+        })),
+      }
+    );
+  }
+  return null;
+}
+
+export function setWabaTemplatesSyncedAt(channelId, syncedAt) {
+  setSetting(`waba_templates_synced_at:${String(channelId)}`, syncedAt || new Date().toISOString());
+}
+
 export function getWabaTemplatesSyncedAt(channelId) {
   const row = getDatabase()
     .prepare(
       `SELECT MAX(synced_at) AS synced_at FROM communication_waba_templates WHERE channel_id = ?`
     )
     .get(String(channelId));
-  return row?.synced_at || null;
+  if (row?.synced_at) return row.synced_at;
+  return getSetting(`waba_templates_synced_at:${String(channelId)}`, null);
 }

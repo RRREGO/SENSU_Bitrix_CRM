@@ -4,6 +4,7 @@
  */
 
 import {
+  CommunicationError,
   getCommunicationsConfig,
   normalizePhone,
   normalizeTelegramUsername,
@@ -116,8 +117,95 @@ export function wazzupApiChannelId(hubChannel, fallback = null) {
   return null;
 }
 
-export function findHubChannel(id) {
-  return repo.findHubChannel(id);
+export function findHubChannel(id, options = {}) {
+  return repo.findHubChannel(id, options);
+}
+
+/**
+ * Resolve channel by UUID / hub id / display name.
+ * Prefer exact id; for names require unique match or transport filter.
+ * Throws CHANNEL_AMBIGUOUS when several SENSU_1-like channels match.
+ */
+export function resolveHubChannelRef(ref, { transport, preferTransports } = {}) {
+  const raw = String(ref || "").trim();
+  if (!raw) return null;
+
+  const byId = repo.findHubChannel(raw, { allowAmbiguousName: false });
+  if (byId && (byId.externalChannelId === raw || byId.id === raw || byId.id === `wazzup:${raw}`)) {
+    return byId;
+  }
+  if (byId && !repo.listHubChannelsByDisplayName(raw).length) {
+    return byId;
+  }
+
+  let candidates = repo.listHubChannelsByDisplayName(raw);
+  if (!candidates.length && byId) return byId;
+  if (!candidates.length) {
+    const hit = repo.findHubChannel(raw);
+    return hit;
+  }
+
+  const transportHint = String(transport || "").toLowerCase();
+  const preferred = (preferTransports || [])
+    .map((t) => String(t).toLowerCase())
+    .filter(Boolean);
+
+  if (transportHint) {
+    const filtered = candidates.filter((c) => {
+      const t = String(c.transport || c.channel || "").toLowerCase();
+      return t === transportHint || (transportHint === "waba" && t === "wapi");
+    });
+    if (filtered.length === 1) return filtered[0];
+    if (filtered.length > 1) {
+      throw new CommunicationError(
+        "CHANNEL_AMBIGUOUS",
+        `Несколько каналов «${raw}» с transport=${transportHint}. Укажите точный channelId.`,
+        {
+          candidates: filtered.map((c) => ({
+            channelId: wazzupApiChannelId(c),
+            transport: c.transport,
+            displayName: c.displayName,
+            state: c.state || c.status,
+          })),
+        }
+      );
+    }
+    throw new CommunicationError(
+      "CHANNEL_NOT_FOUND",
+      `Канал «${raw}» с transport=${transportHint} не найден.`,
+      {
+        candidates: candidates.map((c) => ({
+          channelId: wazzupApiChannelId(c),
+          transport: c.transport,
+          displayName: c.displayName,
+          state: c.state || c.status,
+        })),
+      }
+    );
+  }
+
+  if (preferred.length) {
+    const filtered = candidates.filter((c) =>
+      preferred.includes(String(c.transport || c.channel || "").toLowerCase())
+    );
+    if (filtered.length === 1) return filtered[0];
+    if (filtered.length > 1) candidates = filtered;
+  }
+
+  if (candidates.length === 1) return candidates[0];
+
+  throw new CommunicationError(
+    "CHANNEL_AMBIGUOUS",
+    `Имя «${raw}» неоднозначно: найдено ${candidates.length} канала(ов). Укажите channelId или transport (например wapi).`,
+    {
+      candidates: candidates.map((c) => ({
+        channelId: wazzupApiChannelId(c),
+        transport: c.transport,
+        displayName: c.displayName,
+        state: c.state || c.status,
+      })),
+    }
+  );
 }
 
 export function isHubChannelActive(channel) {
@@ -265,17 +353,56 @@ export async function resolveHubOutboundAddress(params = {}) {
   let hubChannel = null;
   let channelError = null;
   if (requestedChannelId) {
-    hubChannel = findHubChannel(requestedChannelId);
-    if (!hubChannel) {
-      await ensureHubChannel(params.channel || "waba", params.transport);
-      hubChannel = findHubChannel(requestedChannelId);
+    try {
+      const prefer =
+        params.channel === "waba" || params.channel === "wapi" || params.transport === "wapi"
+          ? ["wapi"]
+          : params.channel === "telegram" || params.transport === "tgapi"
+            ? ["tgapi", "telegram"]
+            : params.channel === "max" || params.transport === "max"
+              ? ["max", "maxbot"]
+              : [];
+      hubChannel = resolveHubChannelRef(requestedChannelId, {
+        transport: params.transport || (params.channel === "waba" ? "wapi" : params.channel),
+        preferTransports: prefer,
+      });
+    } catch (error) {
+      if (error?.code === "CHANNEL_AMBIGUOUS" || error?.code === "CHANNEL_NOT_FOUND") {
+        channelError = {
+          code: error.code,
+          message: error.message,
+          candidates: error.details?.candidates || null,
+        };
+      } else {
+        throw error;
+      }
     }
-    if (!hubChannel) {
+    if (!hubChannel && !channelError) {
+      await ensureHubChannel(params.channel || "waba", params.transport);
+      try {
+        hubChannel = resolveHubChannelRef(requestedChannelId, {
+          transport: params.transport || (params.channel === "waba" ? "wapi" : null),
+          preferTransports:
+            params.channel === "waba" || params.transport === "wapi" ? ["wapi"] : [],
+        });
+      } catch (error) {
+        if (error?.code === "CHANNEL_AMBIGUOUS" || error?.code === "CHANNEL_NOT_FOUND") {
+          channelError = {
+            code: error.code,
+            message: error.message,
+            candidates: error.details?.candidates || null,
+          };
+        } else {
+          throw error;
+        }
+      }
+    }
+    if (!hubChannel && !channelError) {
       channelError = {
         code: "CHANNEL_NOT_FOUND",
         message: `Канал ${requestedChannelId} не найден среди каналов Wazzup.`,
       };
-    } else if (!isHubChannelActive(hubChannel)) {
+    } else if (hubChannel && !isHubChannelActive(hubChannel)) {
       channelError = {
         code: "CHANNEL_INACTIVE",
         message: `Канал «${hubChannel.displayName || requestedChannelId}» неактивен (state=${hubChannel.state || hubChannel.status}).`,
