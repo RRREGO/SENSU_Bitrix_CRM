@@ -117,7 +117,7 @@ async function openProjectSettingsDetail(id, detailEl = projectDetailEl, { embed
             <div class="project-settings-card-head">
               <div>
                 <h3 class="project-overview-panel-title">Файлы</h3>
-                <p class="section-hint">Markdown и TXT в контексте ассистента.</p>
+                <p class="section-hint">Файлы .md и .txt в контексте ассистента.</p>
               </div>
             </div>
             ${

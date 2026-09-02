@@ -3,6 +3,7 @@ import { escapeHtml } from "./utils.js";
 import { renderMarkdown } from "./markdown.js";
 import { renderBreadcrumbs, wireBreadcrumbs } from "./workspace/ui/breadcrumbs.js";
 import { CRM_TYPE_LABELS } from "./workspace/helpers.js";
+import { CHANNEL_LABELS, labelOf } from "./uiLabels.js";
 
 const CHAT_KEY = "bitrixChatId";
 const SESSION_KEY = "bitrixChatSessionId";
@@ -29,6 +30,12 @@ let thinkingEl = null;
 let isBusy = false;
 let currentChat = null;
 let onChatChanged = null;
+let pendingAttachments = [];
+
+const ATTACH_EXT = new Set([".txt", ".md", ".csv", ".tsv", ".xlsx", ".xls"]);
+const ATTACH_MAX_COUNT = 5;
+const ATTACH_MAX_BYTES = 2 * 1024 * 1024;
+const FILES_ONLY_PREFIX = "Пользователь прикрепил файлы без комментария.";
 
 const els = {};
 
@@ -47,17 +54,18 @@ export function initChat(elements, hooks = {}) {
   els.cancelBtn.addEventListener("click", () => handleConfirm(false));
 
   wireChatExtras();
+  wireChatAttachments();
 
-  if (chatId) {
-    loadChat(chatId).catch(() => {
-      appendWelcome();
-      updateMeta(null);
-    });
-  } else {
-    appendWelcome();
-    updateMeta(null);
-  }
-  els.messageInput.focus();
+  const ready = chatId
+    ? loadChat(chatId).catch(() => {
+        appendWelcome();
+        updateMeta(null);
+      })
+    : Promise.resolve().then(() => {
+        appendWelcome();
+        updateMeta(null);
+      });
+  return Promise.resolve(ready).finally(() => els.messageInput?.focus());
 }
 
 let mediaRecorder = null;
@@ -188,7 +196,7 @@ function wireChatExtras() {
           chatId,
         });
         alert(
-          `Черновик внешней отправки подготовлен (${channel}). Требуется подтверждение через Safety. Dry-run: ${prepared.dryRun ? "да" : "нет"}.\n\nИспользуйте подтверждение операции в чате или раздел Коммуникации.`
+          `Черновик внешней отправки подготовлен (${channel === "email" ? "электронная почта" : "Wazzup"}). Требуется подтверждение операции. Пробный режим: ${prepared.dryRun ? "да" : "нет"}.\n\nИспользуйте подтверждение в чате или раздел «Коммуникации».`
         );
       } catch (e) {
         alert(e.message || "Не удалось подготовить отправку");
@@ -201,6 +209,187 @@ function wireChatExtras() {
     modelBtn?.setAttribute("aria-expanded", "false");
     extMenu?.classList.add("hidden");
     extBtn?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function fileExt(name) {
+  const base = String(name || "").split(".").pop() || "";
+  return `.${base.toLowerCase()}`;
+}
+
+function formatBytes(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return `${n} Б`;
+  if (n < 1024 * 1024) return `${Math.round(n / 102.4) / 10} КБ`;
+  return `${Math.round(n / 1024 / 102.4) / 10} МБ`;
+}
+
+function setAttachError(text) {
+  const el = document.getElementById("composerAttachError");
+  if (!el) return;
+  if (!text) {
+    el.textContent = "";
+    el.classList.add("hidden");
+    return;
+  }
+  el.textContent = text;
+  el.classList.remove("hidden");
+}
+
+function renderPendingAttachments() {
+  const wrap = document.getElementById("composerAttachments");
+  if (!wrap) return;
+  if (!pendingAttachments.length) {
+    wrap.innerHTML = "";
+    wrap.classList.add("hidden");
+    return;
+  }
+  wrap.classList.remove("hidden");
+  wrap.innerHTML = pendingAttachments
+    .map(
+      (item, index) =>
+        `<span class="composer-file-chip">
+          <span class="composer-file-name">${escapeHtml(item.file.name)}</span>
+          <span class="composer-file-size">${escapeHtml(formatBytes(item.file.size))}</span>
+          <button type="button" class="composer-file-remove" data-remove-attach="${index}" aria-label="Убрать файл">×</button>
+        </span>`
+    )
+    .join("");
+  wrap.querySelectorAll("[data-remove-attach]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      pendingAttachments.splice(Number(btn.dataset.removeAttach), 1);
+      setAttachError("");
+      renderPendingAttachments();
+    });
+  });
+}
+
+function addPendingFiles(fileList) {
+  const incoming = [...(fileList || [])].filter(Boolean);
+  if (!incoming.length) return;
+  setAttachError("");
+  for (const file of incoming) {
+    const ext = fileExt(file.name);
+    if (!ATTACH_EXT.has(ext)) {
+      setAttachError("Можно прикрепить txt, md, csv, tsv, xlsx или xls.");
+      continue;
+    }
+    if (file.size > ATTACH_MAX_BYTES) {
+      setAttachError(`Файл «${file.name}» больше 2 МБ.`);
+      continue;
+    }
+    if (pendingAttachments.length >= ATTACH_MAX_COUNT) {
+      setAttachError(`Можно прикрепить не больше ${ATTACH_MAX_COUNT} файлов.`);
+      break;
+    }
+    const duplicate = pendingAttachments.some(
+      (item) => item.file.name === file.name && item.file.size === file.size
+    );
+    if (duplicate) continue;
+    pendingAttachments.push({ file });
+  }
+  renderPendingAttachments();
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(new Error("Не удалось прочитать файл"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function serializePendingAttachments(list = pendingAttachments) {
+  const out = [];
+  for (const item of list) {
+    out.push({
+      filename: item.file.name,
+      mimeType: item.file.type || "",
+      contentBase64: await fileToBase64(item.file),
+    });
+  }
+  return out;
+}
+
+function visibleUserText(content, metadata) {
+  if (Array.isArray(metadata?.attachments) && metadata.attachments.length) {
+    if (typeof metadata.displayText === "string" && !metadata.displayText.includes("[truncated]")) {
+      return metadata.displayText;
+    }
+    const text = String(content || "");
+    const marker = "---\nПрикреплённые файлы";
+    const idx = text.indexOf(marker);
+    if (idx >= 0) {
+      const before = text.slice(0, idx).trim();
+      if (before === FILES_ONLY_PREFIX) return "";
+      return before;
+    }
+  }
+  return content;
+}
+
+function renderAttachmentChips(attachments, { composer = false } = {}) {
+  if (!attachments?.length) return null;
+  const wrap = document.createElement("div");
+  wrap.className = composer ? "composer-attachments" : "message-attachments";
+  for (const file of attachments) {
+    const chip = document.createElement("span");
+    chip.className = composer ? "composer-file-chip" : "message-file-chip";
+    const rows = file.rowCount ? ` · ${file.rowCount} строк` : "";
+    const truncated = file.truncated ? " · обрезано" : "";
+    chip.textContent = `${file.filename || "файл"}${rows}${truncated}`;
+    wrap.appendChild(chip);
+  }
+  return wrap;
+}
+
+function wireChatAttachments() {
+  const form = els.chatForm;
+  const attachBtn = document.getElementById("chatAttachBtn");
+  const attachInput = document.getElementById("chatAttachInput");
+  const dropHint = document.getElementById("composerDropHint");
+
+  attachBtn?.addEventListener("click", () => attachInput?.click());
+  attachInput?.addEventListener("change", () => {
+    addPendingFiles(attachInput.files);
+    attachInput.value = "";
+  });
+
+  els.messageInput?.addEventListener("paste", (event) => {
+    const files = [...(event.clipboardData?.files || [])];
+    if (!files.length) return;
+    event.preventDefault();
+    addPendingFiles(files);
+  });
+
+  if (!form) return;
+  const setDrag = (on) => {
+    form.classList.toggle("is-dragover", on);
+    dropHint?.classList.toggle("hidden", !on);
+  };
+  form.addEventListener("dragenter", (event) => {
+    if (![...event.dataTransfer.types].includes("Files")) return;
+    event.preventDefault();
+    setDrag(true);
+  });
+  form.addEventListener("dragover", (event) => {
+    if (![...event.dataTransfer.types].includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setDrag(true);
+  });
+  form.addEventListener("dragleave", (event) => {
+    if (event.target === form || !form.contains(event.relatedTarget)) setDrag(false);
+  });
+  form.addEventListener("drop", (event) => {
+    event.preventDefault();
+    setDrag(false);
+    addPendingFiles(event.dataTransfer?.files);
   });
 }
 
@@ -335,7 +524,7 @@ function appendWelcome() {
   const wrap = document.createElement("div");
   wrap.className = "chat-welcome";
   wrap.innerHTML = `
-    <h3>CRM Assistant</h3>
+    <h3>CRM-ассистент</h3>
     <p>Работайте со сделками, лидами, задачами, отчётами и документами Bitrix24. Выберите подсказку или напишите свой запрос.</p>
     <div class="chat-welcome-prompts">
       ${WELCOME_PROMPTS.map(
@@ -409,11 +598,12 @@ async function loadChat(id) {
   updateMeta(currentChat);
 
   for (const msg of msgData.messages || []) {
-    if (msg.role === "system_note") {
-      appendMessage("assistant", msg.content);
-    } else {
-      appendMessage(msg.role === "user" ? "user" : "assistant", msg.content);
-    }
+    const role = msg.role === "system_note" ? "assistant" : msg.role === "user" ? "user" : "assistant";
+    const text =
+      role === "user" ? visibleUserText(msg.content, msg.metadata) : msg.content;
+    appendMessage(role, text, {
+      attachments: role === "user" ? msg.metadata?.attachments : null,
+    });
   }
 
   if (!(msgData.messages || []).length) {
@@ -657,7 +847,7 @@ function renderCommunicationsContextBlock(communications, warnings) {
   if (hubCtx && (hubCtx.threads || hubCtx.recentMessages || hubCtx.preferredChannel)) {
     const unanswered = hubCtx.unanswered ? "да" : "нет";
     const seq = (hubCtx.activeSequences || []).length;
-    const channel = hubCtx.preferredChannel || "—";
+    const channel = labelOf(CHANNEL_LABELS, hubCtx.preferredChannel);
     const lastIn = hubCtx.lastInbound?.at || "—";
     return `<div class="crm-context-card crm-context-comms">
       <span class="label">Коммуникации</span>
@@ -670,20 +860,20 @@ function renderCommunicationsContextBlock(communications, warnings) {
     const last = list[0];
     return `<div class="crm-context-card crm-context-comms">
       <span class="label">Коммуникации</span>
-      <div>${escapeHtml(String(list.length))} записей · ${escapeHtml(last.channel || last.type || "канал")} · ${escapeHtml(last.status || "")}</div>
+      <div>${escapeHtml(String(list.length))} записей · ${escapeHtml(labelOf(CHANNEL_LABELS, last.channel || last.type, "канал"))} · ${escapeHtml(last.status || "")}</div>
     </div>`;
   }
 
   if (hubUnavailable) {
     return `<div class="crm-context-card crm-context-comms">
       <span class="label">Коммуникации</span>
-      <div class="panel-desc">История каналов пока недоступна. Полный хаб — вкладка «Коммуникации → Хаб».</div>
+      <div class="panel-desc">История каналов пока недоступна. Полный раздел — вкладка «Коммуникации → Хаб».</div>
     </div>`;
   }
 
   return `<div class="crm-context-card crm-context-comms">
     <span class="label">Коммуникации</span>
-    <div class="panel-desc">Нет данных хаба для этой сущности. Откройте «Хаб» для диалогов и каналов.</div>
+    <div class="panel-desc">Нет данных переписки для этой сущности. Откройте «Хаб» для диалогов и каналов.</div>
   </div>`;
 }
 
@@ -696,13 +886,58 @@ function setMessageContent(el, role, text) {
   el.textContent = text;
 }
 
-function appendMessage(role, text) {
+function appendMessage(role, text, options = {}) {
   const el = document.createElement("div");
   el.className = `message ${role}`;
-  setMessageContent(el, role, text);
+  const body = document.createElement("div");
+  body.className = "message-body";
+  if (text) setMessageContent(body, role, text);
+  el.appendChild(body);
+  const chips = renderAttachmentChips(options.attachments);
+  if (chips) el.appendChild(chips);
   els.messagesEl.appendChild(el);
   els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
   return el;
+}
+
+function csvEscape(value) {
+  const text = String(value ?? "");
+  if (/[;"\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+function downloadBlob(filename, mimeType, data) {
+  const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadCardTable(card) {
+  const file = card?.download;
+  if (file?.contentBase64) {
+    const binary = atob(file.contentBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    downloadBlob(
+      file.filename || "sverka-crm.xlsx",
+      file.mimeType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      bytes
+    );
+    return;
+  }
+  const columns = card?.table?.columns || [];
+  const rows = card?.table?.rows || [];
+  if (!columns.length) return;
+  const lines = [columns.map(csvEscape).join(";"), ...rows.map((row) => row.map(csvEscape).join(";"))];
+  downloadBlob(
+    `sverka-crm-${new Date().toISOString().slice(0, 10)}.csv`,
+    "text/csv;charset=utf-8",
+    `\uFEFF${lines.join("\n")}`
+  );
 }
 
 function renderResultCards(cards) {
@@ -711,12 +946,23 @@ function renderResultCards(cards) {
   container.className = "result-cards";
 
   for (const card of cards) {
+    const skipListTable = ["contact", "deal", "lead", "company", "task"].includes(card.type);
+    const showTable = Boolean(card.table?.rows?.length) && !skipListTable;
+    if (!card.fields?.length && !showTable) continue;
+
     const cardEl = document.createElement("div");
     cardEl.className = "result-card";
     cardEl.innerHTML = `
       <div class="result-card-header">
         <span class="result-card-title">${escapeHtml(card.title || "Результат")}</span>
-        <span class="result-card-type">${escapeHtml(CARD_TYPE_LABELS[card.type] || card.type)}</span>
+        <div class="result-card-header-actions">
+          ${
+            showTable
+              ? `<button type="button" class="result-card-download" data-export-card>Скачать Excel</button>`
+              : ""
+          }
+          <span class="result-card-type">${escapeHtml(CARD_TYPE_LABELS[card.type] || card.type)}</span>
+        </div>
       </div>
       <div class="result-card-body" data-card-body></div>
     `;
@@ -735,7 +981,7 @@ function renderResultCards(cards) {
       body.appendChild(fieldsEl);
     }
 
-    if (card.table?.rows?.length) {
+    if (showTable) {
       const table = document.createElement("table");
       table.className = "result-card-table";
       table.innerHTML = `<thead><tr>${card.table.columns.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}</tr></thead>`;
@@ -745,11 +991,15 @@ function renderResultCards(cards) {
       }
       table.appendChild(tbody);
       body.appendChild(table);
+      cardEl.querySelector("[data-export-card]")?.addEventListener("click", () => {
+        downloadCardTable(card);
+      });
     }
 
     container.appendChild(cardEl);
   }
 
+  if (!container.childElementCount) return;
   els.messagesEl.appendChild(container);
   els.messagesEl.scrollTop = els.messagesEl.scrollHeight;
 }
@@ -769,22 +1019,34 @@ function setBusy(busy) {
   els.sendBtn.disabled = busy;
   els.confirmBtn.disabled = busy;
   els.cancelBtn.disabled = busy;
+  const attachBtn = document.getElementById("chatAttachBtn");
+  if (attachBtn) attachBtn.disabled = busy;
 }
 
 async function handleSubmit(event) {
   event.preventDefault();
   if (isBusy) return;
   const message = els.messageInput.value.trim();
-  if (!message) return;
+  if (!message && !pendingAttachments.length) return;
+
+  const filesSnapshot = pendingAttachments.slice();
+  const attachmentPreview = pendingAttachments.map((item) => ({
+    filename: item.file.name,
+    sizeBytes: item.file.size,
+  }));
 
   els.confirmationEl.classList.add("hidden");
-  appendMessage("user", message);
+  appendMessage("user", message, { attachments: attachmentPreview });
   els.messageInput.value = "";
+  pendingAttachments = [];
+  renderPendingAttachments();
+  setAttachError("");
   setBusy(true);
   showThinking();
 
   try {
-    const data = await sendChatMessage(message);
+    const attachments = await serializePendingAttachments(filesSnapshot);
+    const data = await sendChatMessage(message, attachments);
     hideThinking();
     if (data.chatId && data.chatId !== chatId) {
       chatId = data.chatId;
@@ -807,6 +1069,8 @@ async function handleSubmit(event) {
     }
   } catch (error) {
     hideThinking();
+    pendingAttachments = filesSnapshot;
+    renderPendingAttachments();
     appendMessage("error", error.message || "Ошибка запроса");
   } finally {
     setBusy(false);
@@ -872,9 +1136,14 @@ async function handleConfirm(confirm) {
   }
 }
 
-async function sendChatMessage(message) {
+async function sendChatMessage(message, attachments = []) {
   try {
-    const data = await apiPost("/chat", { message, sessionId, chatId });
+    const data = await apiPost("/chat", {
+      message,
+      sessionId,
+      chatId,
+      ...(attachments.length ? { attachments } : {}),
+    });
     if (data.success === false) {
       throw new Error(data.error?.message || data.error || "Ошибка запроса");
     }

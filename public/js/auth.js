@@ -1,17 +1,60 @@
-import { apiFetch, apiGet, apiPost, setCsrfToken, clearCsrfToken } from "../apiClient.js";
+import { apiFetch, apiGet, apiPost, setCsrfToken, clearCsrfToken, setSessionLive } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
+import { ROLE_LABELS, SCOPE_LABELS, labelOf } from "./uiLabels.js";
 
 let permissions = new Set();
 let currentUser = null;
 let listenersBound = false;
+let authReadyResolve = null;
+let authReadyPromise = null;
+
+function waitUntilAuthenticated() {
+  if (!authReadyPromise) {
+    authReadyPromise = new Promise((resolve) => {
+      authReadyResolve = resolve;
+    });
+  }
+  return authReadyPromise;
+}
+
+function showBoot(message = "Загрузка…") {
+  const gate = document.getElementById("loginGate");
+  const form = document.getElementById("loginForm");
+  const boot = document.getElementById("loginBootStatus");
+  if (boot) boot.textContent = message;
+  boot?.classList.remove("hidden");
+  form?.classList.add("hidden");
+  gate?.classList.remove("hidden");
+  document.getElementById("appRoot")?.classList.add("auth-blocked");
+}
+
+function finishAuthenticatedSession() {
+  applyPermissionUi();
+  showBoot("Загрузка…");
+  authReadyResolve?.();
+}
+
+export function revealApp() {
+  setSessionLive(true);
+  document.getElementById("loginGate")?.classList.add("hidden");
+  document.getElementById("changePasswordGate")?.classList.add("hidden");
+  document.getElementById("appRoot")?.classList.remove("auth-blocked");
+}
 
 export function hasUiPermission(p) {
   return permissions.has(p);
 }
 
 function showLogin(show) {
-  document.getElementById("loginGate")?.classList.toggle("hidden", !show);
+  const gate = document.getElementById("loginGate");
+  const form = document.getElementById("loginForm");
+  const boot = document.getElementById("loginBootStatus");
+  gate?.classList.toggle("hidden", !show);
   document.getElementById("appRoot")?.classList.toggle("auth-blocked", show);
+  if (show) {
+    boot?.classList.add("hidden");
+    form?.classList.remove("hidden");
+  }
 }
 
 function showChangePassword(show) {
@@ -31,7 +74,7 @@ function applyPermissionUi() {
   }
 
   document.getElementById("userBarName").textContent = currentUser?.displayName || "";
-  document.getElementById("userBarRole").textContent = currentUser?.role || "";
+  document.getElementById("userBarRole").textContent = labelOf(ROLE_LABELS, currentUser?.role, "");
 }
 
 function bindAuthListeners() {
@@ -40,36 +83,50 @@ function bindAuthListeners() {
 
   document.getElementById("loginForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    e.stopImmediatePropagation();
     const err = document.getElementById("loginError");
+    const submitBtn = e.target.querySelector('button[type="submit"]');
     err?.classList.add("hidden");
+    if (submitBtn) submitBtn.disabled = true;
+    showBoot("Вход…");
 
-    const res = await apiFetch("/auth/login", {
-      method: "POST",
-      body: {
-        username: document.getElementById("loginUsername").value,
-        password: document.getElementById("loginPassword").value,
-      },
-    });
+    try {
+      const res = await apiFetch("/auth/login", {
+        method: "POST",
+        skipCsrf: true,
+        body: {
+          username: document.getElementById("loginUsername").value,
+          password: document.getElementById("loginPassword").value,
+        },
+      });
 
-    const data = res.data;
-    if (!res.ok || data.success === false) {
-      err.textContent = data?.error?.message || "Неверный логин или пароль.";
+      const data = res.data;
+      if (!res.ok || data.success === false) {
+        err.textContent = data?.error?.message || "Неверный логин или пароль.";
+        err.classList.remove("hidden");
+        if (submitBtn) submitBtn.disabled = false;
+        showLogin(true);
+        return;
+      }
+
+      setCsrfToken(data.csrfToken);
+      permissions = new Set(data.permissions || []);
+      currentUser = data.user;
+
+      if (data.user?.mustChangePassword) {
+        if (submitBtn) submitBtn.disabled = false;
+        showLogin(false);
+        showChangePassword(true);
+        return;
+      }
+
+      finishAuthenticatedSession();
+    } catch (error) {
+      err.textContent = error.message || "Не удалось войти.";
       err.classList.remove("hidden");
-      return;
+      if (submitBtn) submitBtn.disabled = false;
+      showLogin(true);
     }
-
-    setCsrfToken(data.csrfToken);
-    permissions = new Set(data.permissions || []);
-    currentUser = data.user;
-    showLogin(false);
-    applyPermissionUi();
-
-    if (data.user?.mustChangePassword) {
-      showChangePassword(true);
-      return;
-    }
-
-    location.reload();
   });
 
   async function doLogout() {
@@ -101,8 +158,7 @@ function bindAuthListeners() {
       return;
     }
 
-    showChangePassword(false);
-    location.reload();
+    finishAuthenticatedSession();
   });
 
   document.getElementById("createUserForm")?.addEventListener("submit", async (e) => {
@@ -121,16 +177,16 @@ function bindAuthListeners() {
 
 export async function initAuth() {
   bindAuthListeners();
+  waitUntilAuthenticated();
 
   const me = await apiFetch("/auth/me");
   if (me.ok) {
     const data = me.data;
 
     if (data.mode === "local_only") {
-      showLogin(false);
       permissions = new Set(data.permissions || []);
       currentUser = data.user;
-      applyPermissionUi();
+      finishAuthenticatedSession();
       return;
     }
 
@@ -141,19 +197,25 @@ export async function initAuth() {
         mustChangePassword: data.user.mustChangePassword,
       };
       permissions = new Set(data.permissions || []);
-      showLogin(false);
-      if (data.user.mustChangePassword) showChangePassword(true);
-      applyPermissionUi();
 
       const csrfRes = await apiFetch("/auth/csrf");
       if (csrfRes.ok) {
         setCsrfToken(csrfRes.data.csrfToken);
       }
+
+      if (data.user.mustChangePassword) {
+        showChangePassword(true);
+        await waitUntilAuthenticated();
+        return;
+      }
+
+      finishAuthenticatedSession();
       return;
     }
   }
 
   showLogin(true);
+  await waitUntilAuthenticated();
 }
 
 export async function loadUsers() {
@@ -174,9 +236,9 @@ export async function loadUsers() {
         `<div class="user-card">
           <div>
             <div class="user-card-name">${escapeHtml(u.displayName || u.username)}</div>
-            <div class="user-card-meta">${escapeHtml(u.username)} · ${escapeHtml(u.role)} · ${escapeHtml(u.dataScope)}</div>
+            <div class="user-card-meta">${escapeHtml(u.username)} · ${escapeHtml(labelOf(ROLE_LABELS, u.role))} · ${escapeHtml(labelOf(SCOPE_LABELS, u.dataScope))}</div>
           </div>
-          <span class="chip ${u.isActive ? "" : "chip-muted"}">${u.isActive ? "active" : "disabled"}</span>
+          <span class="chip ${u.isActive ? "" : "chip-muted"}">${u.isActive ? "активен" : "отключён"}</span>
         </div>`
     )
     .join("");

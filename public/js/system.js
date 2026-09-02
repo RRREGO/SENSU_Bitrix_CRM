@@ -19,24 +19,24 @@ export async function loadSystemPanel() {
   try {
     const status = await apiGet("/admin/system/status");
     renderKv(statusEl, [
-      ["Release", `${status.release?.version || "—"} (${status.release?.releaseId || "—"})`],
-      ["Uptime (с)", String(status.uptimeSeconds ?? "—")],
-      ["Maintenance", status.modes?.maintenanceMode ? "да" : "нет"],
-      ["Read-only", status.modes?.readOnlyMode ? "да" : "нет"],
-      ["Bitrix write", status.modes?.bitrixWriteEnabled ? "вкл" : "выкл"],
-      ["LLM", status.llm?.enabled ? "вкл" : "выкл"],
-      ["Scheduler", status.scheduler?.running ? "работает" : "остановлен"],
-      ["DB migration", String(status.database?.migrationVersion ?? "—")],
-      ["Readiness", status.readiness?.ready ? "готов" : "не готов"],
-      ["Disk", status.disk?.status || "—"],
+      ["Версия", `${status.release?.version || "—"} (${status.release?.releaseId || "—"})`],
+      ["Время работы (с)", String(status.uptimeSeconds ?? "—")],
+      ["Обслуживание", status.modes?.maintenanceMode ? "да" : "нет"],
+      ["Только чтение", status.modes?.readOnlyMode ? "да" : "нет"],
+      ["Запись в Bitrix24", status.modes?.bitrixWriteEnabled ? "вкл" : "выкл"],
+      ["Языковая модель", status.llm?.enabled ? "вкл" : "выкл"],
+      ["Планировщик", status.scheduler?.running ? "работает" : "остановлен"],
+      ["Миграция БД", String(status.database?.migrationVersion ?? "—")],
+      ["Готовность", status.readiness?.ready ? "готов" : "не готов"],
+      ["Диск", status.disk?.status || "—"],
     ]);
 
     const metricRows = [
-      ["Safety pending", String(status.safety?.pending ?? "—")],
-      ["Safety recovery", String(status.safety?.recoveryRequired ?? "—")],
-      ["Communications sent", String(status.communications?.sent ?? "—")],
-      ["DB size (MB)", String(status.database?.fileSizeMb ?? "—")],
-      ["Last backup", status.database?.lastBackup || "—"],
+      ["Ожидают подтверждения", String(status.safety?.pending ?? "—")],
+      ["Требуется восстановление", String(status.safety?.recoveryRequired ?? "—")],
+      ["Отправлено сообщений", String(status.communications?.sent ?? "—")],
+      ["Размер БД (МБ)", String(status.database?.fileSizeMb ?? "—")],
+      ["Последняя копия", status.database?.lastBackup || "—"],
     ];
 
     try {
@@ -72,7 +72,7 @@ export async function loadSystemPanel() {
       <article class="notif-card severity-${escapeHtml(e.severity)}">
         <div class="notif-meta">${escapeHtml(new Date(e.createdAt).toLocaleString("ru-RU"))} · ${escapeHtml(e.severity)} · ${escapeHtml(e.source)} · ${escapeHtml(e.errorCode)}</div>
         <div class="notif-title">${escapeHtml(e.messageSafe)}</div>
-        ${e.requestId ? `<div class="panel-desc">requestId: ${escapeHtml(e.requestId)}</div>` : ""}
+        ${e.requestId ? `<div class="panel-desc">код запроса: ${escapeHtml(e.requestId)}</div>` : ""}
         ${
           e.details?.path
             ? `<div class="panel-desc">${escapeHtml(e.details.method || "")} ${escapeHtml(e.details.path)}${e.details.stack ? ` · ${escapeHtml(String(e.details.stack).slice(0, 240))}` : ""}</div>`

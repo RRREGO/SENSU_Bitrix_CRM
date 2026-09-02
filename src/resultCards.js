@@ -1,5 +1,6 @@
 import { processText } from "./utils/text.js";
 import { unwrapCrmItem } from "./actions/helpers.js";
+import { MATCH_LIST_KIND, buildMatchListCard } from "./actions/crmMatchList.js";
 
 const ACTION_CARD_MAP = {
   deal_get: "deal",
@@ -30,6 +31,8 @@ const ACTION_CARD_MAP = {
   contacts_cycle_without_next_activity: "report",
   contacts_birthday_activity_report: "report",
   contact_quality_report: "report",
+  crm_match_list: "report",
+  crm_duplicate_search: "report",
 };
 
 const REPORT_ACTIONS = new Set([
@@ -48,6 +51,8 @@ const REPORT_ACTIONS = new Set([
   "contacts_cycle_without_next_activity",
   "contacts_birthday_activity_report",
   "contact_quality_report",
+  "crm_match_list",
+  "crm_duplicate_search",
 ]);
 
 function pickTitle(item, fallback) {
@@ -77,24 +82,8 @@ function buildDealCard(action, params, result) {
     };
   }
 
-  const items = result?.items || (Array.isArray(result) ? result : []);
-  return {
-    type: "deal",
-    title: processText("Сделки"),
-    table: {
-      columns: ["ID", "Название", "Стадия", "Сумма"],
-      rows: items.slice(0, 10).map((item) => {
-        const data = unwrapCrmItem(item);
-        return [
-          data.ID || data.id,
-          pickTitle(data, "—"),
-          data.STAGE_ID || data.stageId || "—",
-          data.OPPORTUNITY || data.opportunity || "—",
-        ];
-      }),
-    },
-    total: result?.total ?? items.length,
-  };
+  // Списки в чат не дублируем таблицей — ассистент уже пишет ответ текстом.
+  return null;
 }
 
 function buildLeadCard(action, params, result) {
@@ -110,19 +99,7 @@ function buildLeadCard(action, params, result) {
     };
   }
 
-  const items = result?.items || (Array.isArray(result) ? result : []);
-  return {
-    type: "lead",
-    title: processText("Лиды"),
-    table: {
-      columns: ["ID", "Название", "Стадия"],
-      rows: items.slice(0, 10).map((item) => {
-        const data = unwrapCrmItem(item);
-        return [data.ID || data.id, pickTitle(data, "—"), data.STATUS_ID || data.statusId || "—"];
-      }),
-    },
-    total: result?.total ?? items.length,
-  };
+  return null;
 }
 
 function buildTaskCard(action, params, result) {
@@ -139,20 +116,7 @@ function buildTaskCard(action, params, result) {
     };
   }
 
-  const tasks = result?.tasks || (Array.isArray(result) ? result : []);
-  return {
-    type: "task",
-    title: processText("Задачи"),
-    table: {
-      columns: ["ID", "Название", "Срок"],
-      rows: tasks.slice(0, 10).map((task) => [
-        task.id || task.ID,
-        pickTitle(task, "—"),
-        task.deadline || task.DEADLINE || "—",
-      ]),
-    },
-    total: tasks.length,
-  };
+  return null;
 }
 
 function buildContactCard(action, params, result) {
@@ -168,19 +132,7 @@ function buildContactCard(action, params, result) {
     };
   }
 
-  const items = result?.items || (Array.isArray(result) ? result : []);
-  return {
-    type: "contact",
-    title: processText("Контакты"),
-    table: {
-      columns: ["ID", "Имя"],
-      rows: items.slice(0, 10).map((item) => {
-        const data = unwrapCrmItem(item);
-        return [data.ID || data.id, pickTitle(data, "—")];
-      }),
-    },
-    total: result?.total ?? items.length,
-  };
+  return null;
 }
 
 function buildCompanyCard(action, params, result) {
@@ -196,22 +148,13 @@ function buildCompanyCard(action, params, result) {
     };
   }
 
-  const items = result?.items || (Array.isArray(result) ? result : []);
-  return {
-    type: "company",
-    title: processText("Компании"),
-    table: {
-      columns: ["ID", "Название"],
-      rows: items.slice(0, 10).map((item) => {
-        const data = unwrapCrmItem(item);
-        return [data.ID || data.id, pickTitle(data, "—")];
-      }),
-    },
-    total: result?.total ?? items.length,
-  };
+  return null;
 }
 
 function buildReportCard(action, result) {
+  if (result?.kind === MATCH_LIST_KIND) {
+    return buildMatchListCard(result);
+  }
   if (Array.isArray(result?.byStage)) {
     return {
       type: "report",

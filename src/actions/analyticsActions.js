@@ -1,4 +1,4 @@
-import { lead_stage_list, lead_list, leadListAll } from "./leadActions.js";
+import { lead_stage_list, lead_list, lead_count, leadListAll } from "./leadActions.js";
 import { dealListAll } from "./dealActions.js";
 import { deal_stage_list } from "./crmActions.js";
 import { activity_list, activityListAll } from "./timelineActions.js";
@@ -7,6 +7,7 @@ import {
   PAGINATION,
   unwrapCrmItem,
   extractDealFields,
+  extractLeadStatusId,
   notImplementedAction,
   buildStageNameMap,
   addCurrencyAmount,
@@ -39,28 +40,38 @@ function mapDealRow(deal, stageNames = new Map()) {
   };
 }
 
-/** Подсчёт лидов по стадиям. */
+/** Подсчёт лидов по стадиям: пустой фильтр, отдельно по каждому STATUS_ID. */
 export async function lead_count_by_stage() {
+  const started = Date.now();
   const stages = await lead_stage_list({});
   const stageList = Array.isArray(stages) ? stages : [];
 
-  const { items: leads } = await leadListAll(
-    { select: ["ID", "id", "STATUS_ID", "statusId"] },
-    { actionName: "lead_count_by_stage" }
-  );
+  const byStage = [];
+  for (const stage of stageList) {
+    const statusId = extractLeadStatusId(stage);
+    if (!statusId) continue;
 
-  const counts = {};
-  for (const lead of leads) {
-    const data = unwrapCrmItem(lead);
-    const stageId = data.STATUS_ID || data.statusId || "UNKNOWN";
-    counts[stageId] = (counts[stageId] || 0) + 1;
+    const { count } = await lead_count({
+      filter: { STATUS_ID: statusId },
+      preferLegacy: true,
+    });
+
+    byStage.push({
+      stageId: statusId,
+      stageName: stage.NAME || stage.name || statusId,
+      count: Number(count) || 0,
+    });
   }
 
-  return stageList.map((stage) => ({
-    stageId: stage.STATUS_ID || stage.statusId,
-    stageName: stage.NAME || stage.name,
-    count: counts[stage.STATUS_ID || stage.statusId] || 0,
-  }));
+  logAnalytics({
+    action: "lead_count_by_stage",
+    items: byStage.reduce((sum, row) => sum + row.count, 0),
+    durationMs: Date.now() - started,
+    truncated: false,
+    stages: byStage.length,
+  });
+
+  return byStage;
 }
 
 /** Подсчёт сделок по стадиям в воронке. */
@@ -378,7 +389,7 @@ export async function leads_without_responsible(params = {}) {
       const data = unwrapCrmItem(lead);
       const assigned = data.ASSIGNED_BY_ID ?? data.assignedById;
       if (assigned && Number(assigned) !== 0) return null;
-      const statusId = data.STATUS_ID || data.statusId;
+      const statusId = extractLeadStatusId(data);
       return {
         id: data.ID || data.id,
         title: data.TITLE || data.title,

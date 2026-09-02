@@ -1,5 +1,6 @@
 import { apiPost } from "../apiClient.js";
 import { getChatId } from "./chat.js";
+import { CHANNEL_LABELS, labelOf } from "./uiLabels.js";
 
 let currentTranscriptId = null;
 let currentProtocolId = null;
@@ -170,14 +171,14 @@ async function prepareSaveToCrm() {
     setStatus("Сначала сформируйте протокол.");
     return;
   }
-  setStatus("Подготовка Safety-операции…");
+  setStatus("Подготовка операции…");
   const data = await apiPost(
     `/meeting-protocols/${currentProtocolId}/save-to-crm/prepare`,
     { chatId: getChatId(), source: "meeting_protocol_ui" },
     { throwOnError: false }
   );
   if (!data.ok && !data.success) {
-    setStatus(data.error?.message || data.message || "Prepare не выполнен");
+    setStatus(data.error?.message || data.message || "Подготовка не выполнена");
     return;
   }
   pendingOperationId = data.operationId || data.operation?.id;
@@ -215,8 +216,8 @@ async function commitSave(confirmed) {
   );
   setStatus(
     data.ok || data.success
-      ? "Протокол сохранён в CRM (timeline comment). Клиенту не отправлено."
-      : data.error?.message || "Commit не выполнен"
+      ? "Протокол сохранён в CRM как комментарий в таймлайне. Клиенту не отправлено."
+      : data.error?.message || "Сохранение не выполнено"
   );
 }
 
@@ -252,7 +253,7 @@ async function draftMessage() {
     if (data.blocked || data.success === false) {
       const policy = data.policy || data.error || {};
       setSendPolicy(
-        `Политика: ${policy.code || data.error?.code || "blocked"} — ${
+        `Политика: ${policy.code || data.error?.code || "запрещено"} — ${
           policy.message || data.error?.message || "отправка недоступна"
         }`
       );
@@ -263,10 +264,10 @@ async function draftMessage() {
     const p = data.preview || {};
     setSendPolicy(
       [
-        `Канал: ${p.channel || channel}`,
-        `Политика: ${p.policyAllowed === false ? "нет" : "ок"}`,
+        `Канал: ${labelOf(CHANNEL_LABELS, p.channel || channel)}`,
+        `Политика: ${p.policyAllowed === false ? "нет" : "да"}`,
         p.policyMessage || "",
-        p.dryRun ? "Dry-run: реальной отправки не будет." : "",
+        p.dryRun ? "Пробный режим: реальной отправки не будет." : "",
         p.recipientMasked ? `Получатель: ${p.recipientMasked}` : "",
       ]
         .filter(Boolean)
@@ -287,8 +288,8 @@ async function draftMessage() {
     }
     setStatus(
       data.confirmationId
-        ? "Подготовка Safety готова — подтвердите отправку отдельно (не путать с «Сохранить в CRM»)."
-        : "Черновик Hub готов. Сообщение не отправлено."
+        ? "Подготовка готова — подтвердите отправку отдельно (не путать с «Сохранить в CRM»)."
+        : "Черновик готов. Сообщение не отправлено."
     );
     if (data.confirmationId) {
       pendingHubConfirmationId = data.confirmationId;
@@ -296,9 +297,9 @@ async function draftMessage() {
       pendingHubRequiredPhrase = p.requiredConfirmationPhrase || data.preview?.requiredConfirmationPhrase || null;
       showHubConfirm(
         [
-          `Подтвердить отправку клиенту (${channel})?`,
+          `Подтвердить отправку клиенту (${labelOf(CHANNEL_LABELS, channel)})?`,
           p.bodyPreview ? `Фрагмент:\n${p.bodyPreview}` : "",
-          p.dryRun ? "Режим dry-run." : "",
+          p.dryRun ? "Пробный режим." : "",
           "CRM не изменяется этой операцией.",
         ]
           .filter(Boolean)
@@ -310,7 +311,7 @@ async function draftMessage() {
   }
 
   if (!entityId) {
-    setStatus("Укажите ID сущности CRM или ID контакта для Hub-отправки.");
+    setStatus("Укажите ID сущности CRM или ID контакта для отправки.");
     return;
   }
   const data = await apiPost(
@@ -330,18 +331,18 @@ async function draftMessage() {
     return;
   }
   setSendPolicy(
-    `Legacy draft ${data.draftId || "—"} · канал ${data.channel} · sendAvailable=${
+    `Черновик ${data.draftId || "—"} · канал ${data.channel} · отправка доступна: ${
       data.sendAvailable ? "да" : "нет"
     }`
   );
   if (setActiveMessageDraft) setActiveMessageDraft(data);
-  setStatus("Черновик готов (legacy). Сообщение не отправлено. Для Hub укажите contactId.");
+  setStatus("Черновик готов. Сообщение не отправлено. Для отправки укажите ID контакта.");
 }
 
 async function prepareHubSend() {
   const contactId = resolveContactId();
   if (!contactId) {
-    setStatus("Для Hub-отправки укажите ID контакта (или выберите сущность contact).");
+    setStatus("Для отправки укажите ID контакта (или выберите сущность «контакт»).");
     return;
   }
   const channel = selectedChannel();
@@ -353,7 +354,7 @@ async function prepareHubSend() {
     setStatus("Сначала сформируйте протокол — текст для отправки пуст.");
     return;
   }
-  setStatus("Подготовка Hub Safety…");
+  setStatus("Подготовка отправки…");
   const data = await apiPost(
     "/communications/messages/prepare",
     {
@@ -373,7 +374,7 @@ async function prepareHubSend() {
         data.policy?.message || data.error?.message || "политика"
       }`
     );
-    setStatus("Prepare отклонён политикой.");
+    setStatus("Подготовка отклонена политикой.");
     return;
   }
   pendingHubConfirmationId = data.confirmationId || data.operation?.confirmationId;
@@ -383,9 +384,9 @@ async function prepareHubSend() {
   const p = data.preview || {};
   setSendPolicy(
     [
-      `Подготовлено · ${channel}`,
-      p.policyCode || "ok",
-      p.dryRun ? "dry-run" : "live-capable",
+      `Подготовлено · ${labelOf(CHANNEL_LABELS, channel)}`,
+      p.policyCode || "разрешено",
+      p.dryRun ? "пробный режим" : "боевая отправка возможна",
       p.recipientMasked || "",
     ]
       .filter(Boolean)
@@ -393,18 +394,18 @@ async function prepareHubSend() {
   );
   showHubConfirm(
     [
-      `Отправить протокол клиенту через ${channel}?`,
+      `Отправить протокол клиенту через ${labelOf(CHANNEL_LABELS, channel)}?`,
       "Отдельно от сохранения в CRM.",
-      p.bodyPreview ? `Превью:\n${String(p.bodyPreview).slice(0, 400)}` : "",
+      p.bodyPreview ? `Предпросмотр:\n${String(p.bodyPreview).slice(0, 400)}` : "",
       pendingHubRequiredPhrase
         ? `Требуется фраза: ${pendingHubRequiredPhrase}`
-        : "Подтвердите commit.",
+        : "Подтвердите отправку.",
     ]
       .filter(Boolean)
       .join("\n\n"),
     { phraseRequired: Boolean(pendingHubRequiredPhrase) }
   );
-  setStatus("Ожидание подтверждения отправки (Hub). CRM не трогаем.");
+  setStatus("Ожидание подтверждения отправки. CRM не изменяется.");
 }
 
 async function commitHubSend(confirmed) {
@@ -427,7 +428,7 @@ async function commitHubSend(confirmed) {
     return;
   }
   const phrase = typedPhrase || required || undefined;
-  setStatus("Commit отправки…");
+  setStatus("Отправка…");
   const data = await apiPost(
     "/communications/messages/commit",
     {
@@ -440,13 +441,13 @@ async function commitHubSend(confirmed) {
   if (data.ok || data.success) {
     setStatus(
       data.result?.enqueued
-        ? `Сообщение в outbox (${data.result.outboxId || "ok"})${
-            data.result.dryRun ? " · dry-run" : ""
+        ? `Сообщение в очереди исходящих (${data.result.outboxId || "готово"})${
+            data.result.dryRun ? " · пробный режим" : ""
           }. CRM не изменён.`
-        : "Commit выполнен."
+        : "Отправка выполнена."
     );
   } else {
-    setStatus(data.error?.message || "Commit отправки не выполнен");
+    setStatus(data.error?.message || "Отправка не выполнена");
   }
 }
 

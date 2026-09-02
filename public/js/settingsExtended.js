@@ -136,7 +136,7 @@ async function renderAi(body) {
   body.innerHTML = `
     <div class="settings-card">
       <h3>ИИ и модели</h3>
-      <p class="section-hint">Секреты после сохранения не возвращаются. Master key: ${flags.secretsConfigured ? "задан" : "не задан (SECRETS_MASTER_KEY)"}.</p>
+      <p class="section-hint">Секреты после сохранения не возвращаются. Мастер-ключ: ${flags.secretsConfigured ? "задан" : "не задан"}.</p>
       <div id="aiProviders"></div>
       <hr>
       <h3>Добавить провайдера</h3>
@@ -145,14 +145,14 @@ async function renderAi(body) {
         <select id="aiType">
           <option value="anthropic">Anthropic</option>
           <option value="openai">OpenAI</option>
-          <option value="openai_compatible">OpenAI-compatible</option>
+          <option value="openai_compatible">Совместимый с OpenAI</option>
           <option value="gemini">Google Gemini</option>
           <option value="ollama">Ollama</option>
         </select>
       </label>
-      <label class="setting-row"><span>Base URL</span><input id="aiBase" placeholder="https://..."></label>
-      <label class="setting-row"><span>API key</span><input id="aiKey" type="password" autocomplete="new-password"></label>
-      <p class="section-hint">Прокси задаётся только администратором через LLM_PROXY_* / ANTHROPIC_PROXY в окружении сервера.</p>
+      <label class="setting-row"><span>Базовый адрес</span><input id="aiBase" placeholder="https://..."></label>
+      <label class="setting-row"><span>Ключ API</span><input id="aiKey" type="password" autocomplete="new-password"></label>
+      <p class="section-hint">Прокси задаётся только администратором в конфигурации сервера.</p>
       <button type="button" class="btn btn-primary" id="aiCreate">Создать</button>
       <p id="aiStatus" class="panel-desc"></p>
     </div>`;
@@ -169,7 +169,7 @@ async function renderAi(body) {
         <p class="section-hint" data-res="${p.id}"></p>
       </div>`
     )
-    .join("") || '<p class="section-hint">Нет подключений. Системный Anthropic из env остаётся доступен.</p>';
+    .join("") || '<p class="section-hint">Нет подключений. Системный Anthropic из конфигурации сервера остаётся доступен.</p>';
 
   box.querySelectorAll("[data-test]").forEach((btn) => {
     btn.onclick = async () => {
@@ -239,19 +239,19 @@ async function renderEmail(body) {
   body.innerHTML = `
     <div class="settings-card">
       <h3>Электронная почта (SMTP)</h3>
-      <p class="section-hint">Отправка: ${flags.sendEnabled ? "включена" : "выключена"}; dry-run: ${flags.dryRun ? "да" : "нет"}.</p>
+      <p class="section-hint">Отправка: ${flags.sendEnabled ? "включена" : "выключена"}; пробный режим: ${flags.dryRun ? "да" : "нет"}.</p>
       <div id="emList"></div>
       <hr>
       <label class="setting-row"><span>Название</span><input id="emName"></label>
-      <label class="setting-row"><span>SMTP host</span><input id="emHost"></label>
+      <label class="setting-row"><span>Хост SMTP</span><input id="emHost"></label>
       <label class="setting-row"><span>Порт</span><input id="emPort" type="number" value="587"></label>
       <label class="setting-row"><span>Шифрование</span>
         <select id="emEnc"><option value="starttls">STARTTLS</option><option value="tls">TLS</option><option value="none">Нет</option></select>
       </label>
-      <label class="setting-row"><span>Username</span><input id="emUser"></label>
-      <label class="setting-row"><span>Password</span><input id="emPass" type="password" autocomplete="new-password"></label>
-      <label class="setting-row"><span>From email</span><input id="emFrom"></label>
-      <label class="setting-row"><span>From name</span><input id="emFromName"></label>
+      <label class="setting-row"><span>Логин</span><input id="emUser"></label>
+      <label class="setting-row"><span>Пароль</span><input id="emPass" type="password" autocomplete="new-password"></label>
+      <label class="setting-row"><span>Адрес отправителя</span><input id="emFrom"></label>
+      <label class="setting-row"><span>Имя отправителя</span><input id="emFromName"></label>
       <button type="button" class="btn btn-primary" id="emCreate">Создать</button>
       <p id="emStatus" class="panel-desc"></p>
     </div>`;

@@ -1,5 +1,14 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
+import {
+  CHANNEL_LABELS,
+  TEMPLATE_CATEGORY_LABELS,
+  DELAY_UNIT_LABELS,
+  TEMPLATE_STATUS_LABELS,
+  CERT_STEP_LABELS,
+  labelOf,
+  optionList,
+} from "./uiLabels.js";
 
 const VIEWS = ["overview", "threads", "campaigns", "sequences", "templates", "delivery", "settings"];
 
@@ -18,6 +27,22 @@ const TEMPLATE_CATEGORIES = [
 
 const CHANNEL_OPTIONS = ["whatsapp", "wapi", "telegram", "max", "viber", "instagram"];
 
+function channelOptionsHtml(selected) {
+  return optionList(CHANNEL_OPTIONS, CHANNEL_LABELS, selected);
+}
+
+function categoryOptionsHtml(selected) {
+  return optionList(TEMPLATE_CATEGORIES, TEMPLATE_CATEGORY_LABELS, selected);
+}
+
+function delayUnitOptionsHtml(selected) {
+  return optionList(["minutes", "hours", "days"], DELAY_UNIT_LABELS, selected);
+}
+
+function templateStatusOptionsHtml(selected) {
+  return optionList(["draft", "active", "archived"], TEMPLATE_STATUS_LABELS, selected);
+}
+
 const STATUS_LABELS = {
   draft: "черновик",
   pending: "в очереди",
@@ -29,7 +54,7 @@ const STATUS_LABELS = {
   failed: "ошибка",
   error: "ошибка",
   dead_letter: "отложено",
-  dry_run: "dry-run",
+  dry_run: "пробный режим",
   policy_blocked: "политика",
   cancelled: "отменено",
   running: "запущена",
@@ -83,9 +108,9 @@ function emptyState(title, text) {
 
 function disabledHubHtml(detail) {
   return `<div class="empty-state empty-state--xl surface surface-section">
-    <p class="empty-state-title">Communications Hub выключен</p>
+    <p class="empty-state-title">Центр коммуникаций выключен</p>
     <p class="empty-state-text">
-      Включите <code>COMMUNICATIONS_ENABLED=true</code> в окружении и перезапустите сервер.
+      Включите коммуникации в конфигурации сервера и перезапустите приложение.
       ${detail ? `<br><br>${escapeHtml(detail)}` : ""}
     </p>
   </div>`;
@@ -155,7 +180,7 @@ async function renderCurrentView() {
   } else {
     const ok = await ensureHubGate();
     if (!ok) {
-      root.innerHTML = disabledHubHtml("Раздел недоступен, пока хаб выключен.");
+      root.innerHTML = disabledHubHtml("Раздел недоступен, пока коммуникации выключены.");
       return;
     }
   }
@@ -209,7 +234,7 @@ async function renderOverview(root) {
         <div class="comms-stat surface">
           <div class="comms-stat-label">Очередь</div>
           <div class="comms-stat-value">${escapeHtml(String(queue.pending ?? 0))}</div>
-          <div class="panel-desc">ошибок: ${escapeHtml(String(queue.failed ?? 0))} · dry-run: ${escapeHtml(String(queue.dryRun ?? 0))}</div>
+          <div class="panel-desc">ошибок: ${escapeHtml(String(queue.failed ?? 0))} · пробный режим: ${escapeHtml(String(queue.dryRun ?? 0))}</div>
         </div>
         <div class="comms-stat surface">
           <div class="comms-stat-label">Кампании</div>
@@ -222,16 +247,16 @@ async function renderOverview(root) {
           <div class="panel-desc">активных</div>
         </div>
       </div>
-      ${cfg.dryRun || !cfg.sendEnabled ? `<div class="comms-banner comms-banner--warn">Режим безопасной отправки: dry-run=${cfg.dryRun ? "да" : "нет"}, sendEnabled=${cfg.sendEnabled ? "да" : "нет"}. Реальные сообщения не уходят без явной конфигурации.</div>` : ""}
+      ${cfg.dryRun || !cfg.sendEnabled ? `<div class="comms-banner comms-banner--warn">Режим безопасной отправки: пробный режим — ${cfg.dryRun ? "да" : "нет"}, отправка — ${cfg.sendEnabled ? "включена" : "выключена"}. Реальные сообщения не уходят без явной настройки.</div>` : ""}
       <div class="surface surface-section">
         <h3 class="section-title">Каналы</h3>
         ${(channels.items || []).length
-          ? `<table class="data-table"><thead><tr><th>Имя</th><th>Транспорт</th><th>Состояние</th><th>Синхр.</th></tr></thead><tbody>
+          ? `<table class="data-table"><thead><tr><th>Имя</th><th>Тип канала</th><th>Состояние</th><th>Синхр.</th></tr></thead><tbody>
             ${(channels.items || [])
               .map(
                 (c) => `<tr>
                   <td>${escapeHtml(c.displayName || c.id)}</td>
-                  <td>${escapeHtml(c.transport || "—")}</td>
+                  <td>${escapeHtml(labelOf(CHANNEL_LABELS, c.transport))}</td>
                   <td>${statusBadge(c.state || c.status)}</td>
                   <td>${escapeHtml(formatTs(c.lastSyncedAt))}</td>
                 </tr>`
@@ -240,7 +265,7 @@ async function renderOverview(root) {
           </tbody></table>`
           : emptyState("Нет каналов", "Синхронизируйте каналы в разделе «Настройки».")}
       </div>
-      <p class="panel-desc" id="commsClientContextHint">Client Context: блок «Коммуникации» появляется в чате, если API контекста возвращает communications.</p>
+      <p class="panel-desc" id="commsClientContextHint">Блок «Коммуникации» появляется в чате, когда для контакта есть данные переписки.</p>
     </div>`;
 }
 
@@ -276,10 +301,10 @@ async function renderThreads(root) {
                   .map(
                     (t) => `<button type="button" class="comms-thread-item ${t.id === selectedThreadId ? "active" : ""}" data-thread-id="${escapeHtml(t.id)}">
                       <div class="comms-thread-item-top">
-                        <strong>${escapeHtml(t.chatType || t.transport || "канал")}</strong>
+                        <strong>${escapeHtml(labelOf(CHANNEL_LABELS, t.chatType || t.transport, "канал"))}</strong>
                         ${t.unanswered ? '<span class="chip">без ответа</span>' : ""}
                       </div>
-                      <div class="panel-desc">${escapeHtml(t.lastMessagePreview || "нет превью")} · ${escapeHtml(formatTs(t.updatedAt))}</div>
+                      <div class="panel-desc">${escapeHtml(t.lastMessagePreview || "нет предпросмотра")} · ${escapeHtml(formatTs(t.updatedAt))}</div>
                       <div class="panel-desc">контакт ${escapeHtml(t.contactId || "—")}</div>
                     </button>`
                   )
@@ -324,7 +349,7 @@ async function loadThreadDetail(threadId) {
   pane.innerHTML = `
     <div class="comms-thread-header">
       <div>
-        <h3 class="section-title">${escapeHtml(thread.chatType || thread.transport || "Диалог")}</h3>
+        <h3 class="section-title">${escapeHtml(labelOf(CHANNEL_LABELS, thread.chatType || thread.transport, "Диалог"))}</h3>
         <p class="panel-desc">контакт ${escapeHtml(thread.contactId || "—")} · ${thread.unanswered ? "ожидает ответа" : "отвечено"}</p>
       </div>
       ${statusBadge(thread.unanswered ? "pending" : "delivered")}
@@ -353,7 +378,7 @@ async function loadThreadDetail(threadId) {
       </label>
       <div class="confirmation-actions">
         <button type="button" class="btn btn-secondary" id="commsDraftBtn">Подготовить черновик</button>
-        <button type="button" class="btn btn-primary" id="commsPrepareBtn">Prepare отправку</button>
+        <button type="button" class="btn btn-primary" id="commsPrepareBtn">Подготовить отправку</button>
       </div>
       <pre id="commsDraftPreview" class="protocol-preview comms-preview"></pre>
       <p class="panel-desc" id="commsStatusLine"></p>
@@ -373,7 +398,7 @@ async function loadThreadDetail(threadId) {
     const preview = document.getElementById("commsDraftPreview");
     if (preview) {
       preview.textContent = res.draft
-        ? [`Канал: ${res.draft.channel || "—"}`, res.draft.dryRun ? "dry-run: да" : "", "", res.draft.body || ""].filter(Boolean).join("\n")
+        ? [`Канал: ${labelOf(CHANNEL_LABELS, res.draft.channel)}`, res.draft.dryRun ? "пробный режим: да" : "", "", res.draft.body || ""].filter(Boolean).join("\n")
         : res.error?.message || JSON.stringify(res, null, 2);
     }
     setStatusLine(res.success === false ? res.error?.message || "Ошибка" : "Черновик готов");
@@ -381,7 +406,7 @@ async function loadThreadDetail(threadId) {
 
   document.getElementById("commsPrepareBtn")?.addEventListener("click", async () => {
     const body = document.getElementById("commsDraftBody")?.value || "";
-    setStatusLine("Prepare…");
+    setStatusLine("Подготовка…");
     const res = await apiPost(
       "/communications/messages/prepare",
       {
@@ -401,19 +426,19 @@ async function loadThreadDetail(threadId) {
     const phrase = res.confirmationPhrase || res.preview?.requiredConfirmationPhrase;
     if (preview) {
       preview.textContent = [
-        res.blocked ? "ЗАБЛОКИРОВАНО политикой" : "Prepare OK",
+        res.blocked ? "Заблокировано политикой" : "Подготовка выполнена",
         phrase ? `Фраза подтверждения: ${phrase}` : "",
         res.policy?.message || "",
         res.preview?.bodyPreview || body,
-        "Commit через Safety Layer (/bitrix/action + confirmationId).",
+        "Отправка только после подтверждения операции.",
       ]
         .filter(Boolean)
         .join("\n\n");
     }
     setStatusLine(
       res.success === false || res.blocked
-        ? res.error?.message || res.policy?.message || "Prepare отклонён"
-        : `confirmationId / prepareId: ${res.confirmationId || res.prepareId || "—"}`
+        ? res.error?.message || res.policy?.message || "Подготовка отклонена"
+        : `Код подтверждения: ${res.confirmationId || res.prepareId || "—"}`
     );
   });
 }
@@ -441,7 +466,7 @@ async function renderCampaigns(root) {
                   .map(
                     (c) => `<button type="button" class="comms-list-card ${c.id === selectedCampaignId ? "active" : ""}" data-campaign-id="${escapeHtml(c.id)}">
                       <div><strong>${escapeHtml(c.name)}</strong> ${statusBadge(c.status)}</div>
-                      <div class="panel-desc">${escapeHtml(c.channel || "—")} · обновлено ${escapeHtml(formatTs(c.updatedAt))}</div>
+                      <div class="panel-desc">${escapeHtml(labelOf(CHANNEL_LABELS, c.channel))} · обновлено ${escapeHtml(formatTs(c.updatedAt))}</div>
                     </button>`
                   )
                   .join("")
@@ -454,7 +479,7 @@ async function renderCampaigns(root) {
         <form id="commsCampaignForm" class="form-grid">
           <label class="form-field span-2"><span>Название</span><input name="name" required placeholder="Рассылка …"></label>
           <label class="form-field"><span>Канал</span>
-            <select name="channel">${CHANNEL_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("")}</select>
+            <select name="channel">${channelOptionsHtml()}</select>
           </label>
           <label class="form-field"><span>Шаблон</span>
             <select name="templateId">
@@ -462,8 +487,8 @@ async function renderCampaigns(root) {
               ${templates.map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join("")}
             </select>
           </label>
-          <label class="form-field span-2"><span>Сегмент (JSON)</span>
-            <textarea name="segmentJson" rows="3" placeholder='{"includeIds":[]}'>{}</textarea>
+          <label class="form-field span-2"><span>Сегмент (список контактов)</span>
+            <textarea name="segmentJson" rows="3" placeholder="Список идентификаторов контактов">{}</textarea>
           </label>
           <div class="confirmation-actions span-2">
             <button type="submit" class="btn btn-primary">Создать</button>
@@ -491,7 +516,7 @@ async function renderCampaigns(root) {
     try {
       segment = JSON.parse(String(fd.get("segmentJson") || "{}"));
     } catch {
-      setCampaignDetailHtml(`<p class="panel-desc">Некорректный JSON сегмента.</p>`);
+      setCampaignDetailHtml(`<p class="panel-desc">Некорректный формат сегмента.</p>`);
       return;
     }
     const res = await apiPost(
@@ -535,15 +560,15 @@ function showCampaignDetail(campaign) {
   setCampaignDetailHtml(`
     <hr class="comms-divider">
     <h3 class="section-title">${escapeHtml(campaign.name)}</h3>
-    <p class="panel-desc">Статус: ${statusBadge(campaign.status)} · канал ${escapeHtml(campaign.channel || "—")} · dry-run ${campaign.dryRun ? "да" : "нет"}</p>
+    <p class="panel-desc">Статус: ${statusBadge(campaign.status)} · канал ${escapeHtml(labelOf(CHANNEL_LABELS, campaign.channel))} · пробный режим ${campaign.dryRun ? "да" : "нет"}</p>
     ${
       campaign.confirmationPhrase
         ? `<div class="comms-banner"><strong>Фраза подтверждения:</strong> <code>${escapeHtml(campaign.confirmationPhrase)}</code></div>`
         : ""
     }
     <div class="confirmation-actions">
-      <button type="button" class="btn btn-secondary" id="commsCampaignPreviewBtn">Preview</button>
-      <button type="button" class="btn btn-primary" id="commsCampaignStartBtn">Start / prepare</button>
+      <button type="button" class="btn btn-secondary" id="commsCampaignPreviewBtn">Предпросмотр</button>
+      <button type="button" class="btn btn-primary" id="commsCampaignStartBtn">Запустить / подготовить</button>
       ${canPause ? `<button type="button" class="btn btn-secondary" id="commsCampaignPauseBtn">Пауза</button>` : ""}
       ${canResume ? `<button type="button" class="btn btn-secondary" id="commsCampaignResumeBtn">Возобновить</button>` : ""}
     </div>
@@ -552,7 +577,7 @@ function showCampaignDetail(campaign) {
 
   document.getElementById("commsCampaignPreviewBtn")?.addEventListener("click", async () => {
     const box = document.getElementById("commsCampaignPreviewBox");
-    if (box) box.innerHTML = `<p class="panel-desc">Preview…</p>`;
+    if (box) box.innerHTML = `<p class="panel-desc">Предпросмотр…</p>`;
     const res = await apiPost(
       `/communications/campaigns/${encodeURIComponent(campaign.id)}/preview`,
       { contacts: [] },
@@ -563,7 +588,7 @@ function showCampaignDetail(campaign) {
 
   document.getElementById("commsCampaignStartBtn")?.addEventListener("click", async () => {
     const box = document.getElementById("commsCampaignPreviewBox");
-    if (box) box.innerHTML = `<p class="panel-desc">Prepare…</p>`;
+    if (box) box.innerHTML = `<p class="panel-desc">Подготовка…</p>`;
     const res = await apiPost(
       `/communications/campaigns/${encodeURIComponent(campaign.id)}/start/prepare`,
       {},
@@ -572,10 +597,10 @@ function showCampaignDetail(campaign) {
     const phrase = res.confirmationPhrase || res.preview?.confirmationPhrase;
     if (box) {
       box.innerHTML = `
-        <div class="comms-banner">${res.success === false ? "Отклонено" : "Prepare готов (не отправлено)"}</div>
+        <div class="comms-banner">${res.success === false ? "Отклонено" : "Подготовка готова (не отправлено)"}</div>
         ${phrase ? `<p><strong>Фраза:</strong> <code>${escapeHtml(phrase)}</code></p>` : ""}
         <pre class="protocol-preview comms-preview">${escapeHtml(JSON.stringify(res.preview || res, null, 2))}</pre>
-        <p class="panel-desc">Подтверждение только через Safety Layer с точной фразой.</p>`;
+        <p class="panel-desc">Подтверждение только с точной фразой.</p>`;
     }
   });
 
@@ -615,7 +640,7 @@ function showCampaignDetail(campaign) {
 function renderCampaignPreview(box, res) {
   if (!box) return;
   if (res.success === false || res.error) {
-    box.innerHTML = `<p class="panel-desc">${escapeHtml(res.error?.message || "Ошибка preview")}</p>`;
+    box.innerHTML = `<p class="panel-desc">${escapeHtml(res.error?.message || "Ошибка предпросмотра")}</p>`;
     return;
   }
   const plan = res.plan || res.preview?.plan || res;
@@ -634,13 +659,13 @@ function renderCampaignPreview(box, res) {
             .slice(0, 30)
             .map((r) => {
               const id = r.contactId || r.id || r.recipientKey || "—";
-              const ch = r.channel || "—";
+              const ch = labelOf(CHANNEL_LABELS, r.channel);
               const body = r.renderedBody || r.body || r.sample || "";
               return `<tr><td>${escapeHtml(String(id))}</td><td>${escapeHtml(String(ch))}</td><td>${escapeHtml(String(body).slice(0, 120))}</td></tr>`;
             })
             .join("")}
         </tbody></table>`
-        : emptyState("Нет получателей", "Добавьте contacts в preview или уточните сегмент.")
+        : emptyState("Нет получателей", "Добавьте контакты в предпросмотр или уточните сегмент.")
     }
     <h4 class="section-title">Исключения</h4>
     ${
@@ -726,11 +751,11 @@ async function renderSequences(root) {
             <label class="form-field"><span>Задержка</span><input type="number" min="0" data-field="delayValue" value="${escapeHtml(String(step.delayValue ?? 0))}"></label>
             <label class="form-field"><span>Единица</span>
               <select data-field="delayUnit">
-                ${["minutes", "hours", "days"].map((u) => `<option value="${u}" ${step.delayUnit === u ? "selected" : ""}>${u}</option>`).join("")}
+                ${delayUnitOptionsHtml(step.delayUnit)}
               </select>
             </label>
             <label class="form-field"><span>Канал</span>
-              <select data-field="channel">${CHANNEL_OPTIONS.map((c) => `<option value="${c}" ${step.channel === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+              <select data-field="channel">${channelOptionsHtml(step.channel)}</select>
             </label>
             <label class="form-field"><span>Шаблон</span>
               <select data-field="templateId">
@@ -869,7 +894,7 @@ async function renderTemplates(root) {
                   .map(
                     (t) => `<button type="button" class="comms-list-card ${t.id === selectedTemplateId ? "active" : ""}" data-template-id="${escapeHtml(t.id)}">
                       <div><strong>${escapeHtml(t.name)}</strong> ${statusBadge(t.status)}</div>
-                      <div class="panel-desc">${escapeHtml(t.channel)} · ${escapeHtml(t.category)}</div>
+                      <div class="panel-desc">${escapeHtml(labelOf(CHANNEL_LABELS, t.channel))} · ${escapeHtml(labelOf(TEMPLATE_CATEGORY_LABELS, t.category))}</div>
                     </button>`
                   )
                   .join("")
@@ -882,15 +907,15 @@ async function renderTemplates(root) {
         <form id="commsTemplateForm" class="form-grid">
           <label class="form-field span-2"><span>Название</span><input name="name" required></label>
           <label class="form-field"><span>Канал</span>
-            <select name="channel">${CHANNEL_OPTIONS.map((c) => `<option value="${c}">${c}</option>`).join("")}</select>
+            <select name="channel">${channelOptionsHtml()}</select>
           </label>
           <label class="form-field"><span>Категория</span>
-            <select name="category">${TEMPLATE_CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join("")}</select>
+            <select name="category">${categoryOptionsHtml()}</select>
           </label>
           <label class="form-field"><span>Статус</span>
-            <select name="status"><option value="draft">draft</option><option value="active">active</option><option value="archived">archived</option></select>
+            <select name="status">${templateStatusOptionsHtml("draft")}</select>
           </label>
-          <label class="form-field"><span>WABA template id</span><input name="wabaTemplateId" placeholder="опционально"></label>
+          <label class="form-field"><span>ID шаблона WhatsApp Business</span><input name="wabaTemplateId" placeholder="необязательно"></label>
           <label class="form-field span-2"><span>Назначение</span><input name="purpose" placeholder="кратко"></label>
           <label class="form-field span-2"><span>Текст ({{firstName}} и др.)</span><textarea name="body" rows="5" required></textarea></label>
           <div class="confirmation-actions span-2">
@@ -1026,11 +1051,11 @@ async function renderDelivery(root) {
         <h3 class="section-title">По каналам</h3>
         ${
           byChannel.length
-            ? `<table class="data-table"><thead><tr><th>Канал</th><th>Sent</th><th>Delivered</th><th>Read</th><th>Errors</th></tr></thead><tbody>
+            ? `<table class="data-table"><thead><tr><th>Канал</th><th>Отправлено</th><th>Доставлено</th><th>Прочитано</th><th>Ошибки</th></tr></thead><tbody>
               ${byChannel
                 .map(
                   (ch) => `<tr>
-                    <td>${escapeHtml(ch.transport || "—")}</td>
+                    <td>${escapeHtml(labelOf(CHANNEL_LABELS, ch.transport))}</td>
                     <td>${escapeHtml(String(ch.sent ?? 0))}</td>
                     <td>${escapeHtml(String(ch.delivered ?? 0))}</td>
                     <td>${escapeHtml(String(ch.read ?? "Нет данных"))}</td>
@@ -1043,12 +1068,12 @@ async function renderDelivery(root) {
         }
       </div>
       <div class="surface surface-section">
-        <h3 class="section-title">Outbox</h3>
+        <h3 class="section-title">Очередь исходящих</h3>
         <p class="panel-desc">
-          pending ${escapeHtml(String(outbox.pending ?? "—"))} ·
-          failed ${escapeHtml(String(outbox.failed ?? "—"))} ·
-          dry-run ${escapeHtml(String(outbox.dryRun ?? totals.dryRun ?? "—"))} ·
-          policy-blocked ${escapeHtml(String(totals.policyBlocked ?? "—"))}
+          в очереди ${escapeHtml(String(outbox.pending ?? "—"))} ·
+          ошибки ${escapeHtml(String(outbox.failed ?? "—"))} ·
+          пробный режим ${escapeHtml(String(outbox.dryRun ?? totals.dryRun ?? "—"))} ·
+          заблокировано политикой ${escapeHtml(String(totals.policyBlocked ?? "—"))}
         </p>
       </div>
     </div>`;
@@ -1081,17 +1106,17 @@ function certCardHtml(cert) {
   const id = escapeHtml(cert.id);
   return `<div class="surface surface-section comms-cert-card" data-cert-id="${id}">
     <div class="comms-cert-card__head">
-      <h4 class="section-title">${escapeHtml(cert.provider || "—")} · ${escapeHtml(cert.channel || "—")}</h4>
+      <h4 class="section-title">${escapeHtml(cert.provider || "—")} · ${escapeHtml(labelOf(CHANNEL_LABELS, cert.channel))}</h4>
       ${statusBadge(cert.status)}
     </div>
     <p class="panel-desc">
-      transport ${escapeHtml(cert.transportId || "—")} ·
-      fingerprint <code title="${escapeHtml(cert.accountFingerprint || "")}">${escapeHtml(shortFp(cert.accountFingerprint))}</code> ·
+      канал ${escapeHtml(labelOf(CHANNEL_LABELS, cert.channel))} ·
+      отпечаток <code title="${escapeHtml(cert.accountFingerprint || "")}">${escapeHtml(shortFp(cert.accountFingerprint))}</code> ·
       истекает ${formatTs(cert.expiresAt)}
     </p>
     <table class="data-table data-table--compact">
       <thead><tr>
-        <th>Соединение</th><th>Webhook</th><th>Одиночный</th>
+        <th>Соединение</th><th>Вебхук</th><th>Одиночный</th>
         <th>Доставка</th><th>Кампания</th><th>Цепочка</th>
       </tr></thead>
       <tbody><tr>
@@ -1106,7 +1131,7 @@ function certCardHtml(cert) {
     <p class="panel-desc">Блокеры: ${escapeHtml(certBlockers(cert))}</p>
     <div class="confirmation-actions confirmation-actions--wrap">
       <button type="button" class="btn btn-secondary btn-sm" data-cert-run="connection">Проверить соединение</button>
-      <button type="button" class="btn btn-secondary btn-sm" data-cert-run="webhook">Проверить webhook</button>
+      <button type="button" class="btn btn-secondary btn-sm" data-cert-run="webhook">Проверить вебхук</button>
       <button type="button" class="btn btn-secondary btn-sm" data-cert-run="single_send">Подготовить одиночный тест</button>
       <button type="button" class="btn btn-secondary btn-sm" data-cert-run="campaign">Подготовить кампанию</button>
       <button type="button" class="btn btn-secondary btn-sm" data-cert-run="sequence">Подготовить цепочку</button>
@@ -1135,13 +1160,13 @@ async function renderSettings(root) {
   const certifications = certRes.certifications || [];
 
   root.innerHTML = `
-    ${cfg.enabled === false ? disabledHubHtml("Текущий статус: COMMUNICATIONS_ENABLED=false") : ""}
+    ${cfg.enabled === false ? disabledHubHtml("Сейчас коммуникации выключены.") : ""}
     ${
       emergency.active
         ? `<div class="comms-banner comms-banner--danger">
             <strong>Аварийная остановка активна.</strong>
             ${emergency.reason ? ` Причина: ${escapeHtml(emergency.reason)}.` : ""}
-            Снятие: POST /admin/communications/emergency-resume (admin, settings.manage).
+            Снять остановку может администратор в системных настройках.
           </div>`
         : ""
     }
@@ -1150,12 +1175,12 @@ async function renderSettings(root) {
         <h3 class="section-title">Провайдеры</h3>
         <table class="data-table">
           <tbody>
-            <tr><td>Wazzup</td><td>${flagChip(wazzup.configured, "ключ задан", "ключ не задан")} ${flagChip(wazzup.enabled, "enabled", "disabled")}</td></tr>
-            <tr><td>Webhook Wazzup</td><td>${flagChip(wazzup.webhookConfigured, "секрет задан", "секрет не задан")}</td></tr>
-            <tr><td>MAX Bot</td><td>${flagChip(maxBot.configured, "токен задан", "токен не задан")} ${flagChip(maxBot.enabled, "enabled", "disabled")}</td></tr>
+            <tr><td>Wazzup</td><td>${flagChip(wazzup.configured, "ключ задан", "ключ не задан")} ${flagChip(wazzup.enabled, "включён", "выключен")}</td></tr>
+            <tr><td>Вебхук Wazzup</td><td>${flagChip(wazzup.webhookConfigured, "секрет задан", "секрет не задан")}</td></tr>
+            <tr><td>Бот MAX</td><td>${flagChip(maxBot.configured, "токен задан", "токен не задан")} ${flagChip(maxBot.enabled, "включён", "выключен")}</td></tr>
           </tbody>
         </table>
-        <p class="section-hint">Секреты и API keys в интерфейсе не показываются.</p>
+        <p class="section-hint">Секреты и ключи API в интерфейсе не показываются.</p>
         <div class="confirmation-actions">
           <button type="button" class="btn btn-secondary" id="commsTestConnBtn">Проверить соединение</button>
           <button type="button" class="btn btn-secondary" id="commsSyncChannelsBtn">Синхронизировать каналы</button>
@@ -1164,13 +1189,13 @@ async function renderSettings(root) {
       </div>
       <div class="surface surface-section">
         <h3 class="section-title">Режимы безопасности</h3>
-        ${cfg.dryRun || !cfg.sendEnabled ? `<div class="comms-banner comms-banner--warn">Внимание: dry-run или sendEnabled=false — реальная отправка отключена.</div>` : ""}
+        ${cfg.dryRun || !cfg.sendEnabled ? `<div class="comms-banner comms-banner--warn">Внимание: включён пробный режим или отправка выключена — реальные сообщения не уходят.</div>` : ""}
         <table class="data-table">
           <tbody>
-            <tr><td>COMMUNICATIONS_ENABLED</td><td>${flagChip(cfg.enabled)}</td></tr>
-            <tr><td>COMMUNICATIONS_SEND_ENABLED</td><td>${flagChip(cfg.sendEnabled)}</td></tr>
-            <tr><td>COMMUNICATIONS_DRY_RUN</td><td>${flagChip(cfg.dryRun, "да", "нет")}</td></tr>
-            <tr><td>REQUIRE_CERTIFICATION</td><td>${flagChip(cfg.requireCertification)}</td></tr>
+            <tr><td>Коммуникации включены</td><td>${flagChip(cfg.enabled)}</td></tr>
+            <tr><td>Отправка включена</td><td>${flagChip(cfg.sendEnabled)}</td></tr>
+            <tr><td>Пробный режим</td><td>${flagChip(cfg.dryRun, "да", "нет")}</td></tr>
+            <tr><td>Требуется сертификация</td><td>${flagChip(cfg.requireCertification)}</td></tr>
             <tr><td>Часовой пояс</td><td>${escapeHtml(cfg.timezone || "—")}</td></tr>
             <tr><td>Тихие часы</td><td>${escapeHtml(cfg.quietHoursStart || "—")} – ${escapeHtml(cfg.quietHoursEnd || "—")}</td></tr>
             <tr><td>Рабочие дни</td><td>${escapeHtml((cfg.allowedWeekdays || []).join(", ") || "—")}</td></tr>
@@ -1183,7 +1208,7 @@ async function renderSettings(root) {
           <h3 class="section-title">Сертификация каналов</h3>
           <button type="button" class="btn btn-primary btn-sm" id="commsCertStartBtn">Начать</button>
         </div>
-        <p class="panel-desc">Перед реальной отправкой канал должен пройти уровни connection → webhook → single / delivery / campaign / sequence. Live-отправка только через <code>certify:communications</code> с <code>COMMUNICATION_LIVE_CERTIFY=true</code>.</p>
+        <p class="panel-desc">Перед реальной отправкой канал должен пройти проверки: соединение, вебхук, одиночное сообщение, доставка, кампания, цепочка. Боевая отправка включается только после сертификации администратором.</p>
         <p class="panel-desc" id="commsCertStatus"></p>
         <div id="commsCertList">
           ${
@@ -1194,7 +1219,7 @@ async function renderSettings(root) {
         </div>
       </div>
       <div class="surface surface-section">
-        <h3 class="section-title">Bitrix-поля / авто-действия</h3>
+        <h3 class="section-title">Поля Bitrix24 и автодействия</h3>
         <div class="comms-flag-grid">
           ${Object.entries(fields)
             .map(([k, v]) => `<div><span class="panel-desc">${escapeHtml(k)}</span> ${flagChip(v, "задано", "нет")}</div>`)
@@ -1216,7 +1241,7 @@ async function renderSettings(root) {
     const res = await apiPost("/communications/test-connection", { provider: "wazzup" }, { throwOnError: false });
     if (statusEl()) {
       statusEl().textContent = res.success || res.ok
-        ? `OK · ${formatTs(res.checkedAt || new Date().toISOString())}`
+        ? `Готово · ${formatTs(res.checkedAt || new Date().toISOString())}`
         : res.error?.message || res.message || "Ошибка соединения";
     }
   });
@@ -1227,7 +1252,7 @@ async function renderSettings(root) {
     if (statusEl()) {
       statusEl().textContent = res.success
         ? `Синхронизировано каналов: ${res.count ?? (res.channels || []).length}`
-        : res.error?.message || "Ошибка sync";
+        : res.error?.message || "Ошибка синхронизации";
     }
   });
 
@@ -1250,7 +1275,8 @@ async function renderSettings(root) {
     card.querySelectorAll("[data-cert-run]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const step = btn.dataset.certRun;
-        if (certStatusEl()) certStatusEl().textContent = `Шаг «${step}»…`;
+        const stepLabel = labelOf(CERT_STEP_LABELS, step, step);
+        if (certStatusEl()) certStatusEl().textContent = `Шаг «${stepLabel}»…`;
         const res = await apiPost(
           `/communications/certifications/${encodeURIComponent(certId)}/run`,
           { testType: step, unit: true, prepareOnly: true, markVerified: step === "connection" },
@@ -1259,8 +1285,8 @@ async function renderSettings(root) {
         if (certStatusEl()) {
           certStatusEl().textContent =
             res.success === false
-              ? res.error?.message || `Ошибка шага ${step}`
-              : `Шаг «${step}» выполнен`;
+              ? res.error?.message || `Ошибка шага «${stepLabel}»`
+              : `Шаг «${stepLabel}» выполнен`;
         }
         if (res.success !== false) await renderSettings(root);
       });

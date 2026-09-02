@@ -1,5 +1,6 @@
 import { apiGet, apiPatch, apiPost } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
+import { SCHEDULE_RUN_STATUS_LABELS, labelOf } from "./uiLabels.js";
 
 export function initSchedules() {
   /* lazy load on tab open */
@@ -44,7 +45,7 @@ async function openSchedule(id) {
   const runRows = (runs.runs || [])
     .map(
       (r) => `<tr>
-        <td><span class="sched-run-status sched-run-status--${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></td>
+        <td><span class="sched-run-status sched-run-status--${escapeHtml(r.status)}">${escapeHtml(labelOf(SCHEDULE_RUN_STATUS_LABELS, r.status))}</span></td>
         <td>${escapeHtml(formatScheduleTime(r.scheduledFor))}</td>
         <td>${r.durationMs != null ? `${r.durationMs} мс` : "—"}</td>
         <td>${
@@ -81,7 +82,7 @@ async function openSchedule(id) {
           <input type="number" id="schedMinute" min="0" max="59" value="${Number(s.params?.minute ?? 0)}">
         </label>
         <label class="sched-inline-field sched-inline-field--grow">
-          <span>TZ</span>
+          <span>Часовой пояс</span>
           <input type="text" id="schedTz" value="${escapeHtml(s.timezone)}">
         </label>
         <label class="sched-check">
@@ -91,7 +92,7 @@ async function openSchedule(id) {
       </div>
 
       <details class="sched-alerts" ${alertText ? "open" : ""}>
-        <summary>Пороги алертов <span class="sched-alerts-hint">metric operator value severity</span></summary>
+        <summary>Пороги алертов <span class="sched-alerts-hint">метрика оператор значение важность</span></summary>
         <textarea id="schedAlerts" rows="4" spellcheck="false">${escapeHtml(alertText)}</textarea>
       </details>
 
@@ -143,7 +144,7 @@ async function openSchedule(id) {
     detail.querySelector("#scheduleStatus").textContent = "Запуск…";
     const data = await apiPost(`/scheduled-reports/${id}/run-now`, {}, { throwOnError: false });
     detail.querySelector("#scheduleStatus").textContent = data.success
-      ? `Готово: ${data.run?.status || "ok"}`
+      ? `Готово: ${labelOf(SCHEDULE_RUN_STATUS_LABELS, data.run?.status, "успешно")}`
       : data.error?.message || "Ошибка";
     openSchedule(id);
   });

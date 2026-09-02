@@ -1,6 +1,8 @@
 import { apiGet, apiPost } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
 import { loadReportHistory } from "./reportHistory.js";
+import { CRM_TYPE_LABELS } from "./workspace/helpers.js";
+import { OPERATION_STATUS_LABELS, labelOf } from "./uiLabels.js";
 
 const els = {};
 
@@ -14,7 +16,7 @@ function entityLabel(entity) {
   if (!entity) return "—";
   const name = entity.name || "";
   const id = entity.id != null ? `#${entity.id}` : "";
-  const type = entity.type || "";
+  const type = CRM_TYPE_LABELS[entity.type] || entity.type || "";
   return [type, name, id].filter(Boolean).join(" ");
 }
 
@@ -50,7 +52,7 @@ export async function loadHistory() {
         <td>${escapeHtml(new Date(op.createdAt).toLocaleString("ru-RU"))}</td>
         <td>${escapeHtml(op.title || op.action)}</td>
         <td>${escapeHtml(entityLabel(op.entity))}</td>
-        <td class="${op.status === "failed" || op.status === "rollback_conflict" ? "status-error" : "status-ok"}">${escapeHtml(op.statusLabel || op.status)}</td>
+        <td class="${op.status === "failed" || op.status === "rollback_conflict" ? "status-error" : "status-ok"}">${escapeHtml(op.statusLabel || labelOf(OPERATION_STATUS_LABELS, op.status))}</td>
         <td>${escapeHtml(op.source || "—")}</td>
         <td>${escapeHtml(String(op.affectedCount ?? 0))}</td>
         <td>${rollbackCell(op)}</td>
@@ -84,7 +86,7 @@ async function showOperationDetails(id) {
     els.operationDetails.hidden = false;
     els.operationDetails.innerHTML = `
       <h4>${escapeHtml(op.title || op.action)}</h4>
-      <p>Статус: <strong>${escapeHtml(op.statusLabel || op.status)}</strong>
+      <p>Статус: <strong>${escapeHtml(op.statusLabel || labelOf(OPERATION_STATUS_LABELS, op.status))}</strong>
          · Риск: ${escapeHtml(op.riskLevel || "—")}
          · Откат: ${escapeHtml(op.rollbackAvailable ? "доступен" : op.rollbackUnavailableReason || "нет")}</p>
       ${changes ? `<ul>${changes}</ul>` : "<p>Нет детальных изменений для отображения.</p>"}
@@ -149,7 +151,7 @@ export function loadReportHistoryTable() {
       <td>${escapeHtml(entry.title || entry.type)}</td>
       <td>${escapeHtml(period)}</td>
       <td>${escapeHtml(entry.funnel?.name || "—")}</td>
-      <td class="${entry.status === "error" ? "status-error" : "status-ok"}">${escapeHtml(entry.status)}</td>
+      <td class="${entry.status === "error" ? "status-error" : "status-ok"}">${escapeHtml(labelOf(OPERATION_STATUS_LABELS, entry.status))}</td>
       <td>${docBtn}</td>
     `;
     els.reportHistoryBody.appendChild(tr);

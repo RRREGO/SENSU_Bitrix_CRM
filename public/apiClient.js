@@ -14,6 +14,13 @@ let csrfToken = null;
 
 let csrfPromise = null;
 
+/** When false, 401 responses must not reopen the login overlay (boot / login in progress). */
+let sessionLive = false;
+
+export function setSessionLive(value) {
+  sessionLive = Boolean(value);
+}
+
 
 
 export function clearCsrfToken() {
@@ -88,9 +95,14 @@ function handleAuthStatus(res, data) {
 
     clearCsrfToken();
 
-    const gate = document.getElementById("loginGate");
-
-    if (gate) gate.classList.remove("hidden");
+    if (sessionLive) {
+      sessionLive = false;
+      const gate = document.getElementById("loginGate");
+      if (gate) gate.classList.remove("hidden");
+      document.getElementById("loginForm")?.classList.remove("hidden");
+      document.getElementById("loginBootStatus")?.classList.add("hidden");
+      document.getElementById("appRoot")?.classList.add("auth-blocked");
+    }
 
   }
 

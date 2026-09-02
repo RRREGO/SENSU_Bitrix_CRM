@@ -14,10 +14,11 @@ import {
   hasPresentValue,
   isNil,
   requireDestructiveConfirm,
-  notImplementedAction,
   applyListLimit,
 } from "./helpers.js";
 import { deal_list, deal_update } from "./dealActions.js";
+
+export { crm_match_list, crm_duplicate_search } from "./crmMatchList.js";
 
 // --- Воронки и стадии сделок ---
 
@@ -391,5 +392,3 @@ export async function company_update(params = {}) {
   if (!params.fields) throw new Error("fields is required");
   return crmItemUpdate(ENTITY_TYPE.COMPANY, params.id, params.fields, "crm.company.update");
 }
-
-export const crm_duplicate_search = notImplementedAction("crm_duplicate_search");

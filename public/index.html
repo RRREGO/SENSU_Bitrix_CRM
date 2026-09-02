@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitrix24 CRM Assistant</title>
+  <title>Bitrix24 CRM-ассистент</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,8 +12,9 @@
 </head>
 <body>
   <div id="loginGate" class="login-gate">
-    <form id="loginForm" class="login-card" method="post" action="#" autocomplete="on">
-      <h2>Вход в CRM Assistant</h2>
+    <p id="loginBootStatus" class="login-boot-status">Загрузка…</p>
+    <form id="loginForm" class="login-card hidden" method="post" autocomplete="on" onsubmit="return false">
+      <h2>Вход в CRM-ассистент</h2>
       <label>
         <span>Логин</span>
         <input type="text" id="loginUsername" name="username" autocomplete="username" required>
@@ -24,7 +25,7 @@
       </label>
       <p id="loginError" class="login-error hidden"></p>
       <button type="submit" class="btn btn-primary">Войти</button>
-      <p class="panel-desc">В режиме local_only вход необязателен на localhost.</p>
+      <p class="panel-desc">Нужны логин и пароль вашей учётной записи.</p>
     </form>
   </div>
   <div id="changePasswordGate" class="login-gate hidden">
@@ -38,11 +39,11 @@
       <button type="button" class="btn btn-secondary" id="changePasswordLogoutBtn">Выйти</button>
     </form>
   </div>
-  <div class="app" id="appRoot">
+  <div class="app auth-blocked" id="appRoot">
     <header class="header">
       <div class="header-top">
         <div class="header-brand">
-          <h1>Bitrix24 CRM Assistant</h1>
+          <h1>Bitrix24 CRM-ассистент</h1>
           <p class="subtitle">Рабочее пространство для CRM, отчётов и документов</p>
         </div>
         <div class="user-bar">
@@ -215,7 +216,10 @@
                 </div>
               </div>
               <form id="chatForm" class="composer composer-shell">
-                <textarea id="messageInput" class="message-input" rows="2" placeholder="Спросите что угодно…" autocomplete="off"></textarea>
+                <div id="composerDropHint" class="composer-drop-hint hidden">Отпустите файл, чтобы прикрепить</div>
+                <div id="composerAttachments" class="composer-attachments hidden"></div>
+                <p id="composerAttachError" class="composer-attach-error hidden" role="alert"></p>
+                <textarea id="messageInput" class="message-input" rows="2" placeholder="Спросите что угодно или прикрепите список…" autocomplete="off"></textarea>
                 <div class="composer-bar">
                   <div class="composer-bar-start">
                     <div class="composer-model-wrap">
@@ -229,6 +233,10 @@
                         <option value="">Системная</option>
                       </select>
                     </div>
+                    <button type="button" id="chatAttachBtn" class="composer-icon-btn" aria-label="Прикрепить файл" title="Прикрепить файл (xlsx, csv, txt, md)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <input type="file" id="chatAttachInput" class="visually-hidden" multiple accept=".txt,.md,.csv,.tsv,.xlsx,.xls,text/plain,text/csv,text/markdown,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
                     <button type="button" id="voiceMicBtn" class="composer-icon-btn" aria-label="Голосовой ввод" title="Голосовой ввод">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                     </button>
@@ -239,7 +247,7 @@
                       </button>
                       <div id="chatExtMenu" class="sidebar-dropdown composer-ext-menu hidden" role="menu">
                         <button type="button" class="sidebar-dropdown-item" role="menuitem" data-ext-send="wazzup">Отправить через Wazzup</button>
-                        <button type="button" class="sidebar-dropdown-item" role="menuitem" data-ext-send="email">Отправить через email</button>
+                        <button type="button" class="sidebar-dropdown-item" role="menuitem" data-ext-send="email">Отправить по электронной почте</button>
                       </div>
                     </div>
                   </div>
@@ -258,7 +266,7 @@
         <div class="panel-header">
           <div>
             <h2>Протоколы встреч</h2>
-            <p class="panel-desc">Транскрипт → протокол → предпросмотр → сохранение в CRM через Safety Layer.</p>
+            <p class="panel-desc">Транскрипт → протокол → предпросмотр → сохранение в CRM через подтверждение операции.</p>
           </div>
         </div>
         <div class="meetings-layout page-fill">
@@ -300,12 +308,12 @@
               <button type="button" class="btn btn-primary" id="saveProtocolToCrmBtn">Сохранить в CRM</button>
             </div>
             <div class="meeting-send-block" id="meetingSendBlock">
-              <h3 class="section-title">Отправить клиенту (Hub)</h3>
-              <p class="panel-desc">Сохранение в CRM и отправка — разные операции. Отправка только через Safety prepare.</p>
+              <h3 class="section-title">Отправить клиенту</h3>
+              <p class="panel-desc">Сохранение в CRM и отправка — разные операции. Отправка только после подготовки и подтверждения.</p>
               <label class="setting-row"><span>Канал</span>
                 <select id="meetingSendChannel">
                   <option value="whatsapp">WhatsApp</option>
-                  <option value="waba">WABA</option>
+                  <option value="waba">WhatsApp Business</option>
                   <option value="telegram">Telegram</option>
                   <option value="max">MAX</option>
                 </select>
@@ -333,7 +341,7 @@
                 <input type="text" id="hubSendConfirmPhrase" autocomplete="off">
               </label>
               <div class="confirmation-actions">
-                <button type="button" class="btn btn-primary" id="hubSendConfirmBtn">Отправить (commit)</button>
+                <button type="button" class="btn btn-primary" id="hubSendConfirmBtn">Отправить</button>
                 <button type="button" class="btn btn-secondary" id="hubSendCancelBtn">Отмена</button>
               </div>
             </div>
@@ -413,9 +421,9 @@
                 <div class="report-result-more">
                   <button type="button" class="btn btn-secondary" id="reportMoreBtn" aria-haspopup="true" aria-expanded="false">Ещё</button>
                   <div id="reportMoreMenu" class="sidebar-dropdown report-more-menu hidden" role="menu">
-                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportHtmlBtn">Скачать HTML</button>
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportHtmlBtn">Скачать веб-страницу</button>
                     <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportPrintPdfBtn">Сохранить в PDF</button>
-                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportMdBtn">Markdown</button>
+                    <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportExportMdBtn">Скачать как текст</button>
                     <button type="button" class="sidebar-dropdown-item" role="menuitem" id="reportBitrixBtn" disabled title="Доступно для отчётов по конкретной сделке или лиду">В Bitrix24</button>
                   </div>
                 </div>
@@ -481,8 +489,8 @@
       <section id="panel-communications" class="panel" role="tabpanel" hidden>
         <div class="panel-header">
           <div>
-            <h2>Communications Hub</h2>
-            <p class="panel-desc">Диалоги, кампании, цепочки и шаблоны через Wazzup / каналы. Отправка только через Safety Layer.</p>
+            <h2>Центр коммуникаций</h2>
+            <p class="panel-desc">Диалоги, кампании, цепочки и шаблоны через Wazzup и каналы. Отправка только после подтверждения.</p>
           </div>
           <div class="panel-actions">
             <button type="button" class="btn btn-secondary" id="commsRefreshBtn">Обновить</button>
@@ -506,7 +514,7 @@
         <div class="panel-header">
           <div>
             <h2>Исходящие сообщения</h2>
-            <p class="panel-desc">Одиночные сообщения через Safety Layer. Полные адреса не показываются. Полный хаб — вкладка «Хаб».</p>
+            <p class="panel-desc">Одиночные сообщения через подтверждение операции. Полные адреса не показываются. Полный раздел — вкладка «Хаб».</p>
           </div>
           <div class="panel-actions">
             <button type="button" class="btn btn-secondary" id="refreshOutboundBtn">Обновить</button>
@@ -534,7 +542,7 @@
       <section id="panel-documents" class="panel" role="tabpanel" hidden>
         <div class="panel-header">
           <div>
-            <h2>Document Studio</h2>
+            <h2>Студия документов</h2>
             <p class="panel-desc">Предпросмотр деловых документов с экспортом и печатью.</p>
           </div>
         </div>
@@ -573,7 +581,7 @@
             <div class="preview-toolbar no-print">
               <h3 id="documentPreviewTitle">Предпросмотр</h3>
               <div class="toolbar-actions">
-                <button type="button" class="btn btn-secondary" id="docExportHtmlBtn" disabled>Скачать HTML</button>
+                <button type="button" class="btn btn-secondary" id="docExportHtmlBtn" disabled>Скачать веб-страницу</button>
                 <button type="button" class="btn btn-secondary" id="docPrintPdfBtn" disabled>Сохранить в PDF</button>
                 <button type="button" class="btn btn-secondary" id="docCopyBtn" disabled>Скопировать текст</button>
                 <button type="button" class="btn btn-secondary" id="docBackToReportBtn" disabled>Вернуться к отчёту</button>
@@ -599,7 +607,7 @@
           </div>
         </div>
         <div class="history-block">
-          <h3 class="history-subtitle">Операции CRM (safety layer)</h3>
+          <h3 class="history-subtitle">Операции CRM (с подтверждением)</h3>
           <div class="history-toolbar">
             <button type="button" class="btn btn-secondary" id="refreshHistoryBtn">Обновить операции</button>
           </div>
@@ -649,7 +657,7 @@
         <div class="panel-header">
           <div>
             <h2>Пользователи</h2>
-            <p class="panel-desc">Управление учётными записями (users.manage).</p>
+            <p class="panel-desc">Управление учётными записями.</p>
           </div>
         </div>
         <div class="users-layout page-fill">
@@ -666,18 +674,18 @@
               <label>Пароль <input id="newUserPassword" type="password" required></label>
               <label>Роль
                 <select id="newUserRole">
-                  <option value="manager">manager</option>
-                  <option value="director">director</option>
-                  <option value="analyst">analyst</option>
-                  <option value="viewer">viewer</option>
-                  <option value="administrator">administrator</option>
+                  <option value="manager">Менеджер</option>
+                  <option value="director">Директор</option>
+                  <option value="analyst">Аналитик</option>
+                  <option value="viewer">Наблюдатель</option>
+                  <option value="administrator">Администратор</option>
                 </select>
               </label>
-              <label>Bitrix user ID <input id="newUserBitrixId"></label>
-              <label>Data scope
+              <label>ID пользователя Bitrix24 <input id="newUserBitrixId"></label>
+              <label>Область данных
                 <select id="newUserScope">
-                  <option value="own">own</option>
-                  <option value="all">all</option>
+                  <option value="own">Только свои данные</option>
+                  <option value="all">Все данные</option>
                 </select>
               </label>
               <button type="submit" class="btn btn-primary">Создать</button>
@@ -753,7 +761,7 @@
             <h3>Сессия и документы</h3>
             <p class="section-hint">Локальные предпочтения интерфейса и текущего диалога.</p>
             <label class="setting-row">
-              <span>ID сессии / chatId</span>
+              <span>Идентификатор сессии</span>
               <input type="text" id="settingsSessionId" readonly>
             </label>
             <label class="setting-row">
@@ -767,7 +775,7 @@
             <label class="setting-row">
               <span>Формат документов</span>
               <select id="settingsDocFormat">
-                <option value="html">HTML</option>
+                <option value="html">Веб-страница</option>
                 <option value="print">Печать / PDF</option>
               </select>
             </label>
@@ -784,6 +792,6 @@
     </main>
   </div>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js?v=20260826-auth"></script>
 </body>
 </html>

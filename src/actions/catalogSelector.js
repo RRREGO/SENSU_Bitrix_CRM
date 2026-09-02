@@ -21,6 +21,7 @@ const DISCOVERY_ACTIONS = [
   "lead_stage_list",
   "search_users",
   "contact_field_audit",
+  "crm_match_list",
 ];
 
 const CATEGORY_KEYWORDS = {
@@ -32,10 +33,14 @@ const CATEGORY_KEYWORDS = {
     "статус контакт",
     "quality",
     "теплот",
+    "фио",
+    "свер",
+    "дубл",
+    "вложен",
   ],
   leads: ["лид", "лиды", "лидов", "квалификац"],
   deals: ["сделк", "воронк", "стади", "opportunity", "сумм"],
-  companies: ["компани", "организац"],
+  companies: ["компани", "организац", "свер", "дубл", "вложен"],
   tasks: ["задач", "исполнител", "чеклист", "checklist"],
   activities: ["дело", "дела", "activity", "активност", "просрочен"],
   analytics: [
@@ -100,6 +105,8 @@ const ACTION_CATEGORY = {
   create_funnel: "structure",
   rename_funnel: "structure",
   create_crm_custom: "structure",
+  crm_match_list: "contacts",
+  crm_duplicate_search: "contacts",
 };
 
 function detectCategories(text) {

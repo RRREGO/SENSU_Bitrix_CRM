@@ -16,6 +16,10 @@ export function getWorkspaceConfig() {
     projectContextMaxChars: intEnv("PROJECT_CONTEXT_MAX_CHARS", 80000),
     projectFileMaxBytes: intEnv("PROJECT_FILE_MAX_BYTES", 2_097_152),
     projectFilesMaxCount: intEnv("PROJECT_FILES_MAX_COUNT", 50),
+    chatAttachmentMaxCount: intEnv("CHAT_ATTACHMENT_MAX_COUNT", 5),
+    chatAttachmentMaxBytes: intEnv("CHAT_ATTACHMENT_MAX_BYTES", 2_097_152),
+    chatAttachmentMaxChars: intEnv("CHAT_ATTACHMENT_MAX_CHARS", 80_000),
+    chatAttachmentMaxTotalChars: intEnv("CHAT_ATTACHMENT_MAX_TOTAL_CHARS", 120_000),
     autoSummaryEnabled: boolEnv("CHAT_AUTO_SUMMARY_ENABLED", true),
     autoSummaryThreshold: intEnv("CHAT_AUTO_SUMMARY_THRESHOLD_MESSAGES", 40),
   };

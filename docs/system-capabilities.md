@@ -52,10 +52,11 @@
 Пользователь пишет в чат → `POST /chat`:
 
 1. **Middleware**: request context → security headers → access gate (IP-фильтр в режиме `local_only`) → сессия/аутентификация → проверка режима обслуживания → CSRF.
-2. **Резолв чата**: находится или создаётся запись в SQLite; автозаголовок из первых слов сообщения.
-3. **Сборка контекста** (`buildConversationContext`): системный промпт + история.
-4. **Цикл tool use с Claude**: до **8 итераций** на один запрос.
-5. **Ответ**: `{ chatId, answer, toolCalls, resultCards, pendingConfirmation? }`.
+2. **Вложения** (опционально): `attachments[]` с `filename`, `mimeType`, `contentBase64`. Допускаются txt/md/csv/tsv/xlsx/xls, до 5 файлов и 2 МБ каждый. Извлечённый текст попадает в сообщение Claude; в пузыре чата видны имя файла и комментарий.
+3. **Резолв чата**: находится или создаётся запись в SQLite; автозаголовок из первых слов сообщения.
+4. **Сборка контекста** (`buildConversationContext`): системный промпт + история.
+5. **Цикл tool use с Claude**: до **8 итераций** на один запрос.
+6. **Ответ**: `{ chatId, answer, toolCalls, resultCards, pendingConfirmation? }`.
 
 Стриминга ответа нет — используется обычный запрос/ответ.
 
@@ -211,7 +212,7 @@ run_bitrix_action({ action: string, params: object })
 
 **Массовые**: `move_deals_between_funnels`, `move_deals_between_stages`, `lead_bulk_update`, `deal_bulk_update` — разблокируются только через `BITRIX_BULK_ACTIONS_ENABLED=true` с лимитами `BITRIX_BULK_MAX_ITEMS` (20) и обязательной фразой подтверждения.
 
-**Не реализованы** (11 действий в каталоге помечены `implemented: false`): `crm_duplicate_search`, `sales_forecast`, `checklist_reorder`, `lead_bulk_update`, `deal_bulk_update` и все шесть `set_*_task_recurrence` (регулярные задачи).
+**Не реализованы** (10 действий в каталоге помечены `implemented: false`): `sales_forecast`, `checklist_reorder`, `lead_bulk_update`, `deal_bulk_update` и все шесть `set_*_task_recurrence` (регулярные задачи).
 
 ---
 
@@ -258,6 +259,7 @@ run_bitrix_action({ action: string, params: object })
 |----------|-----|------------|
 | `contact_list`, `contact_get` | R | Список / карточка контакта |
 | `company_list`, `company_get` | R | Список / карточка компании |
+| `crm_match_list` | R | Сверить список компаний или ФИО с CRM одним запросом (без подтверждения) |
 | `contact_create`, `company_create` | W | Создание |
 | `contact_update`, `company_update` | W | Обновление (с откатом) |
 
@@ -270,7 +272,6 @@ run_bitrix_action({ action: string, params: object })
 | `delete_funnel`, `delete_funnel_stage` | B |
 | `create_crm_custom_field` | B |
 | `move_deals_between_funnels`, `move_deals_between_stages` | B |
-| `crm_duplicate_search` | — |
 
 ### 5.5 Таймлайн и дела CRM
 

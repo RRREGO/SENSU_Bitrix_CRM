@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "../apiClient.js";
 import { escapeHtml } from "./utils.js";
+import { SEVERITY_LABELS, labelOf } from "./uiLabels.js";
 
 let pollTimer = null;
 
@@ -56,7 +57,7 @@ async function loadNotifications() {
     .map(
       (n) => `
     <article class="notif-card ${n.isRead ? "" : "unread"} severity-${escapeHtml(n.severity)}">
-      <div class="notif-meta">${escapeHtml(new Date(n.createdAt).toLocaleString("ru-RU"))} · ${escapeHtml(n.severity)} · ${escapeHtml(n.type)}</div>
+      <div class="notif-meta">${escapeHtml(new Date(n.createdAt).toLocaleString("ru-RU"))} · ${escapeHtml(labelOf(SEVERITY_LABELS, n.severity))} · ${escapeHtml(n.type)}</div>
       <div class="notif-title">${escapeHtml(n.title)}</div>
       <div class="notif-message">${escapeHtml(n.message)}</div>
       <div class="confirmation-actions">

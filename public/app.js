@@ -1,5 +1,5 @@
 import { initChat, getSessionId, resetSession } from "./js/chat.js";
-import { initWorkspaceUI, refreshSidebar } from "./js/workspace.js";
+import { initWorkspaceUI, refreshSidebar, refreshProjects } from "./js/workspace.js";
 import { initReports, onReportsTabOpen } from "./js/reports.js";
 import { initDocuments, showDocumentPreview, onDocumentsTabOpen } from "./js/documents.js";
 import { initHistory, onHistoryTabOpen } from "./js/history.js";
@@ -11,7 +11,7 @@ import { initNotifications, onNotificationsTabOpen, refreshBadge } from "./js/no
 import { initSchedules, onSchedulesTabOpen } from "./js/schedules.js";
 import { initOutbound, onOutboundTabOpen, setActiveMessageDraft } from "./js/outbound.js";
 import { initCommunications, onCommunicationsTabOpen } from "./js/communications.js";
-import { initAuth, onUsersTabOpen } from "./js/auth.js";
+import { initAuth, onUsersTabOpen, revealApp } from "./js/auth.js";
 import { initSystem, onSystemTabOpen } from "./js/system.js";
 import { enhanceFileFields } from "./js/utils.js";
 
@@ -110,7 +110,7 @@ tabs.forEach((tab) => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
 
-initChat(
+const chatReady = initChat(
   {
     messagesEl: document.getElementById("messages"),
     chatForm: document.getElementById("chatForm"),
@@ -242,3 +242,9 @@ document.getElementById("documentDateFrom").value = formatRuDate(weekRange.dateF
 document.getElementById("documentDateTo").value = formatRuDate(weekRange.dateTo);
 
 loadSettingsForm();
+
+try {
+  await Promise.all([chatReady, refreshSidebar(), refreshProjects()].filter(Boolean));
+} finally {
+  revealApp();
+}

@@ -64,6 +64,7 @@ export async function lead_get(params = {}) {
 export async function lead_count(params = {}) {
   const { items, total } = await lead_list({
     ...params,
+    filter: params.filter || {},
     select: ["ID"],
     limit: 1,
   });

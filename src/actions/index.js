@@ -100,7 +100,7 @@ const actionCatalog = [
   { name: "move_deals_between_funnels", description: "Перенести сделки между воронками", params: { fromCategoryId: 0, toCategoryId: 1, toStageId: "string", filter: {}, limit: 50 }, destructive: false, implemented: true },
   { name: "move_deals_between_stages", description: "Перенести сделки между стадиями", params: { categoryId: 0, fromStageId: "string", toStageId: "string", limit: 50 }, destructive: false, implemented: true },
   { name: "create_crm_custom_field", description: "Создать пользовательское поле CRM", params: { entityType: "deal|lead|contact|company", fieldName: "string", label: "string", type: "string" }, destructive: false, implemented: true },
-  { name: "crm_duplicate_search", description: "Поиск дубликатов CRM", params: {}, destructive: false, implemented: false },
+  { name: "crm_match_list", aliases: ["crm_duplicate_search"], description: "Сверить список компаний или ФИО с CRM одним запросом (чтение, без подтверждения). «Найдено» — совпали контакт и компания, либо компания по названию/ИНН. Бренд вроде Ozon находится в длинном TITLE. ИНН берётся из реквизитов CRM. Передай params.text — текст вложения целиком, либо params.items.", params: { text: "string", items: [], match: "company|contact" }, destructive: false, implemented: true },
 
   // Сделки
   { name: "deal_list", aliases: ["crm.deal.list"], description: "Список сделок", params: { filter: {}, select: [], order: {}, start: 0 }, destructive: false, implemented: true },
@@ -196,7 +196,7 @@ const actionCatalog = [
   { name: "set_yearly_by_week_days_task_recurrence", description: "Ежегодная регулярность (по дням недели)", params: {}, destructive: false, implemented: false },
 
   // Аналитика
-  { name: "lead_count_by_stage", description: "Лиды по стадиям", params: {}, destructive: false, implemented: true },
+  { name: "lead_count_by_stage", description: "Лиды по стадиям: crm.status.list ENTITY_ID=STATUS, пустой фильтр, подсчёт по каждому STATUS_ID (не STAGE_ID, без «только активные»)", params: {}, destructive: false, implemented: true },
   { name: "deal_count_by_stage", description: "Сделки по стадиям", params: { categoryId: 0 }, destructive: false, implemented: true },
   { name: "deal_sum_by_stage", description: "Сумма сделок по стадиям", params: { categoryId: 0 }, destructive: false, implemented: true },
   { name: "lead_conversion_report", description: "Конверсия лидов (упрощённый отчёт)", params: { dateFrom: "string", dateTo: "string" }, destructive: false, implemented: true },

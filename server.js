@@ -127,13 +127,19 @@ if (authCfg.trustProxy) {
   app.set("trust proxy", 1);
 }
 
-app.use(express.json({ limit: "3mb" }));
+app.use(express.json({ limit: "12mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(requestContextMiddleware);
 app.use(securityHeadersMiddleware);
 app.use(accessGateMiddleware);
 app.use(optionalAuthMiddleware);
 app.use(maintenanceMiddleware);
+app.use((req, res, next) => {
+  if (req.method === "GET" && (req.path === "/" || req.path === "/index.html" || /\.(?:js|css|html|svg)$/.test(req.path))) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+  next();
+});
 app.use(express.static("public"));
 app.use("/reports", express.static("reports"));
 app.use(createAuthRouter());
@@ -652,12 +658,14 @@ app.post("/chat", async (req, res, next) => {
     const sessionId = req.body?.sessionId || "default";
     const chatId = req.body?.chatId || null;
     const projectId = req.body?.projectId || null;
+    const attachments = req.body?.attachments || [];
 
     const result = await handleChatMessage({
       message,
       sessionId,
       chatId,
       projectId,
+      attachments,
       user: req.user || null,
     });
 

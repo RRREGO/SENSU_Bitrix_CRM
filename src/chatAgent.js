@@ -37,6 +37,13 @@ import {
   listOperations,
 } from "./database/repositories/operationsRepository.js";
 import { classifyConfirmationReply } from "./chat/confirmationIntent.js";
+import {
+  parseChatAttachments,
+  buildLlmUserMessage,
+  catalogHintForAttachments,
+  attachmentPublicMeta,
+} from "./chat/attachments.js";
+import { MATCH_LIST_KIND, formatMatchListForLlm, applyAttachmentTextToMatchParams, extractListTextFromUserMessage } from "./actions/crmMatchList.js";
 import { authorizeChatAccess } from "./auth/resourceOwnership.js";
 
 const MAX_HISTORY_MESSAGES = 20;
@@ -354,6 +361,9 @@ async function executeBitrixAction(action, params, { confirmed = false, sessionI
 }
 
 function formatToolResult(result) {
+  if (result?.kind === MATCH_LIST_KIND) {
+    return formatMatchListForLlm(result);
+  }
   const sanitized = sanitizeLlmPayload(result, inferSanitizePurpose(result));
   if (typeof sanitized === "string") {
     return sanitized;
@@ -470,7 +480,12 @@ async function runClaudeTurn(session, { toolCallsLog = [], systemPrompt = null }
         continue;
       }
 
-      const { action, params } = normalizeActionInput(toolUse.input);
+      const { action, params: rawParams } = normalizeActionInput(toolUse.input);
+      const params = applyAttachmentTextToMatchParams(
+        action,
+        rawParams,
+        session.attachmentExtract || extractListTextFromUserMessage(session.lastUserMessage)
+      );
 
       if (action === "__discover_actions") {
         const expanded = expandDiscoveryCatalog(
@@ -693,12 +708,19 @@ export async function handleChatMessage({
   chatId = null,
   projectId = null,
   user = null,
+  attachments = [],
 }) {
-  if (!message || typeof message !== "string" || !message.trim()) {
+  const originalText = typeof message === "string" ? message.trim() : "";
+  const parsedAttachments = parseChatAttachments(attachments);
+  if (!originalText && !parsedAttachments.length) {
     throw new Error('Request body must contain a non-empty "message" field');
   }
 
-  const userMessage = message.trim();
+  const userMessage = buildLlmUserMessage(originalText, parsedAttachments);
+  const catalogUserMessage = catalogHintForAttachments(originalText, parsedAttachments);
+  const attachmentMeta = parsedAttachments.length
+    ? parsedAttachments.map(attachmentPublicMeta)
+    : null;
   const ownerUserId = user?.isLocalOnlySynthetic ? null : user?.userId || null;
   let chat = ensureChatForSession({ sessionId, chatId, projectId, ownerUserId });
   if (user && !user.isLocalOnlySynthetic) {
@@ -717,12 +739,14 @@ export async function handleChatMessage({
   session.user = user || null;
 
   const pendingInfo = resolvePendingConfirmation(session, chat.id);
-  const confirmIntent = classifyConfirmationReply(userMessage);
+  const confirmIntent = !parsedAttachments.length
+    ? classifyConfirmationReply(originalText)
+    : null;
 
   if (pendingInfo?.confirmationId && confirmIntent) {
     const savedUser = addMessage(chat.id, {
       role: "user",
-      content: userMessage,
+      content: originalText,
       messageType: "text",
       chatMeta: {
         title: chat.title,
@@ -752,6 +776,9 @@ export async function handleChatMessage({
     role: "user",
     content: userMessage,
     messageType: "text",
+    metadata: attachmentMeta
+      ? { displayText: originalText, attachments: attachmentMeta }
+      : null,
     chatMeta: {
       title: chat.title,
       projectName: chat.projectName,
@@ -763,15 +790,20 @@ export async function handleChatMessage({
   session.lastUserMessage = userMessage;
   session.lastUserMessageId = savedUser.id;
   session.projectId = chat.projectId || projectId || null;
+  if (parsedAttachments.length) {
+    session.attachmentExtract = parsedAttachments.map((file) => file.extractedText).join("\n\n");
+  }
 
   if (!chat.title || chat.title === "Новый диалог") {
-    updateChat(chat.id, { title: autoTitleFromMessage(userMessage) });
+    const titleSource =
+      originalText || (parsedAttachments[0] ? `Файл: ${parsedAttachments[0].filename}` : userMessage);
+    updateChat(chat.id, { title: autoTitleFromMessage(titleSource) });
   }
 
   const context = await buildConversationContext({
     chatId: chat.id,
     projectId: chat.projectId || projectId,
-    userMessage,
+    userMessage: catalogUserMessage,
     userId: user?.userId || user?.id || null,
   });
 

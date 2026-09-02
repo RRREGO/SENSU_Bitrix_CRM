@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from "../apiClient.js";
+import { CHANNEL_LABELS, OPERATION_STATUS_LABELS, labelOf } from "./uiLabels.js";
 
 let currentDraftId = null;
 
@@ -16,8 +17,8 @@ async function loadOutbound() {
     ? messages
         .map(
           (m) => `<div class="notification-item">
-            <div><strong>${escape(m.channel)}</strong> · ${escape(m.status)} · ${escape(m.verificationStatus || "—")}</div>
-            <div class="panel-desc">${escape(m.createdAt || "")} · draft ${escape((m.draftId || "").slice(0, 8))} · op ${escape((m.operationId || "").slice(0, 8))}</div>
+            <div><strong>${escape(labelOf(CHANNEL_LABELS, m.channel))}</strong> · ${escape(labelOf(OPERATION_STATUS_LABELS, m.status))} · ${escape(m.verificationStatus || "—")}</div>
+            <div class="panel-desc">${escape(m.createdAt || "")} · черновик ${escape((m.draftId || "").slice(0, 8))} · операция ${escape((m.operationId || "").slice(0, 8))}</div>
             ${m.error ? `<div class="panel-desc">${escape(m.error.message || JSON.stringify(m.error))}</div>` : ""}
           </div>`
         )
@@ -31,10 +32,10 @@ async function detectChannels() {
   const summary = document.getElementById("channelsSummary");
   if (summary) {
     summary.textContent = (data.channels || [])
-      .map((c) => `${c.channel}: ${c.status}${c.capabilities?.canSend ? " (send)" : ""}`)
+      .map((c) => `${labelOf(CHANNEL_LABELS, c.channel)}: ${c.status}${c.capabilities?.canSend ? " (отправка)" : ""}`)
       .join(" · ");
   }
-  setOutboundStatus(data.success ? "Каналы обновлены (без тестовой отправки)." : "Ошибка detect");
+  setOutboundStatus(data.success ? "Каналы обновлены (без тестовой отправки)." : "Ошибка обнаружения");
 }
 
 function showDraft(draft) {
@@ -43,7 +44,7 @@ function showDraft(draft) {
   if (!preview) return;
   preview.textContent = [
     `ID: ${currentDraftId}`,
-    `Канал: ${draft.channel}`,
+    `Канал: ${labelOf(CHANNEL_LABELS, draft.channel)}`,
     `Получатель: ${draft.recipient?.name || "—"} (${draft.recipient?.maskedAddress || "—"})`,
     draft.subject ? `Тема: ${draft.subject}` : "",
     `Отправка доступна: ${draft.sendAvailable ? "да" : "нет"}`,
@@ -61,20 +62,20 @@ async function prepareSend() {
     setOutboundStatus("Нет черновика.");
     return;
   }
-  setOutboundStatus("Prepare…");
+  setOutboundStatus("Подготовка…");
   const data = await apiPost(`/message-drafts/${currentDraftId}/send/prepare`, {}, { throwOnError: false });
   if (data.success === false) {
-    setOutboundStatus(data.error?.message || "Prepare отклонён");
+    setOutboundStatus(data.error?.message || "Подготовка отклонена");
     return;
   }
   const phrase = data.preview?.requiredConfirmationPhrase;
   const irrev = data.preview?.reversible === false;
   setOutboundStatus(
     [
-      `ConfirmationId: ${data.confirmationId}`,
+      `Код подтверждения: ${data.confirmationId}`,
       irrev ? "Откат невозможен после отправки." : "",
-      phrase ? `Фраза: ${phrase}` : "Обычное подтверждение (внутренний чат).",
-      "Commit через /bitrix/action с confirmationId (+ confirmationPhrase при необходимости).",
+      phrase ? `Фраза: ${phrase}` : "Обычное подтверждение в чате.",
+      "Отправка только после подтверждения операции.",
     ]
       .filter(Boolean)
       .join("\n")

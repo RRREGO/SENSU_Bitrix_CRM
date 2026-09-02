@@ -351,31 +351,109 @@ const ITEM_FILTER_FIELD_MAP = {
   NAME: "name",
   LAST_NAME: "lastName",
   SECOND_NAME: "secondName",
+  ENTITY_ID: "entityId",
+  STATUS_SEMANTIC_ID: "statusSemanticId",
 };
+
+/** REST v3 / compact names → legacy UPPER_SNAKE для crm.lead.list и crm.status.list. */
+const LEGACY_FIELD_ALIASES = {
+  STATUSID: "STATUS_ID",
+  STAGEID: "STAGE_ID",
+  ENTITYID: "ENTITY_ID",
+  STATUSSEMANTICID: "STATUS_SEMANTIC_ID",
+  ASSIGNEDBYID: "ASSIGNED_BY_ID",
+  CATEGORYID: "CATEGORY_ID",
+  DATECREATE: "DATE_CREATE",
+  CURRENCYID: "CURRENCY_ID",
+  COMPANYID: "COMPANY_ID",
+  CONTACTID: "CONTACT_ID",
+};
+
+const FILTER_OPERATOR_RE = /^(>=|<=|><|!=|!@|!%|<>|≠|>|<|!|@|%)/;
+
+function compactFieldKey(field) {
+  return String(field || "").replace(/_/g, "").toUpperCase();
+}
+
+/** Каноническое legacy-имя поля (STATUSID / statusId → STATUS_ID). */
+export function canonicalizeBitrixFieldName(field) {
+  const raw = String(field || "");
+  const compact = compactFieldKey(raw);
+  if (LEGACY_FIELD_ALIASES[compact]) return LEGACY_FIELD_ALIASES[compact];
+  if (ITEM_FILTER_FIELD_MAP[raw]) return raw;
+  const upper = raw.toUpperCase();
+  if (ITEM_FILTER_FIELD_MAP[upper]) return upper;
+  return raw;
+}
+
+function splitFilterKey(key) {
+  const raw = String(key || "").trim();
+  const opMatch = raw.match(FILTER_OPERATOR_RE);
+  let op = opMatch?.[1] || "";
+  const field = op ? raw.slice(op.length) : raw;
+  // В старом REST нет ≠ / != / <> как префикса ключа — Bitrix молча игнорирует такое условие.
+  if (op === "!=" || op === "≠" || op === "<>") op = "!";
+  return { op, field };
+}
+
+function isLeadStageField(field) {
+  const compact = compactFieldKey(canonicalizeBitrixFieldName(field));
+  return compact === "STATUSID" || compact === "STAGEID";
+}
+
+function mapItemApiField(field, entityTypeId) {
+  const canonical = canonicalizeBitrixFieldName(field);
+  if (entityTypeId === ENTITY_TYPE.LEAD && isLeadStageField(canonical)) {
+    return "stageId";
+  }
+  return ITEM_FILTER_FIELD_MAP[canonical] || ITEM_FILTER_FIELD_MAP[field] || field;
+}
+
+/**
+ * Чинит фильтр старого REST: «не равно» только через префикс "!",
+ * имена полей — STATUS_ID, а не STATUSID / ≠STATUSID.
+ */
+export function sanitizeBitrixFilter(filter) {
+  if (!filter || typeof filter !== "object" || Array.isArray(filter)) {
+    return {};
+  }
+  const out = {};
+  for (const [key, value] of Object.entries(filter)) {
+    const { op, field } = splitFilterKey(key);
+    const canonical = canonicalizeBitrixFieldName(field);
+    out[`${op}${canonical}`] = value;
+  }
+  return out;
+}
 
 /**
  * Нормализует filter для crm.item.list.
  * Bitrix искажает UPPER_SNAKE с операторами (>=DATE_CREATE → >=_DA_TE_...).
+ * У лидов стадия в crm.item.list — stageId (legacy STATUS_ID), не statusId.
  */
-export function normalizeItemFilter(filter = {}) {
+export function normalizeItemFilter(filter = {}, { entityTypeId } = {}) {
+  const sanitized = sanitizeBitrixFilter(filter);
   const out = {};
-  for (const [key, value] of Object.entries(filter || {})) {
-    const match = String(key).match(/^(>=|<=|>|<|!|%)?(.+)$/);
-    const op = match?.[1] || "";
-    const field = match?.[2] || key;
-    const mapped = ITEM_FILTER_FIELD_MAP[field] || field;
-    out[`${op}${mapped}`] = value;
+  for (const [key, value] of Object.entries(sanitized || {})) {
+    const { op, field } = splitFilterKey(key);
+    out[`${op}${mapItemApiField(field, entityTypeId)}`] = value;
   }
   return out;
 }
 
 /** Нормализация order для crm.item.list. */
-export function normalizeItemOrder(order = {}) {
+export function normalizeItemOrder(order = {}, { entityTypeId } = {}) {
   const out = {};
   for (const [key, value] of Object.entries(order || {})) {
-    out[ITEM_FILTER_FIELD_MAP[key] || key] = value;
+    out[mapItemApiField(key, entityTypeId)] = value;
   }
   return out;
+}
+
+/** Нормализация select для crm.item.list (camelCase). */
+export function normalizeItemSelect(select = [], { entityTypeId } = {}) {
+  if (!Array.isArray(select)) return [];
+  return select.map((field) => mapItemApiField(field, entityTypeId));
 }
 
 function filterUsesUserFields(filter = {}, select = []) {
@@ -384,23 +462,27 @@ function filterUsesUserFields(filter = {}, select = []) {
     ...(Array.isArray(select) ? select : []),
   ];
   return keys.some((key) => {
-    const field = String(key).replace(/^(>=|<=|>|<|!|%)/, "");
+    const field = String(key).replace(/^(>=|<=|><|!=|!@|!%|<>|≠|>|<|!|@|%)/, "");
     return /^UF_/i.test(field);
   });
 }
 
 /** Универсальный list через crm.item.list с fallback. */
 export async function crmItemList(entityTypeId, params = {}, legacyMethod) {
-  const { filter = {}, select = [], order = {}, start = 0 } = params;
-  const itemFilter = normalizeItemFilter(filter);
-  const itemOrder = normalizeItemOrder(order);
-  const preferLegacy = Boolean(legacyMethod) && filterUsesUserFields(filter, select);
+  const { filter = {}, select = [], order = {}, start = 0, preferLegacy: preferLegacyFlag } = params;
+  const safeFilter = sanitizeBitrixFilter(filter);
+  const itemFilter = normalizeItemFilter(safeFilter, { entityTypeId });
+  const itemOrder = normalizeItemOrder(order, { entityTypeId });
+  const itemSelect = normalizeItemSelect(select, { entityTypeId });
+  const preferLegacy =
+    Boolean(legacyMethod) && (filterUsesUserFields(safeFilter, select) || preferLegacyFlag === true);
 
   // UF_CRM_* через crm.item.list Bitrix часто искажает (UF__CRM_...).
   // Для пользовательских полей предпочитаем legacy-методы.
+  // Контакты: crm.contact.list отдаёт NAME/LAST_NAME надёжнее, чем crm.item.list.
   if (preferLegacy) {
     try {
-      const legacyParams = { filter, order, start };
+      const legacyParams = { filter: safeFilter, order, start };
       if (select?.length) legacyParams.select = select;
       const { result, next, total } = await callBitrixMethodFull(legacyMethod, legacyParams);
       return normalizeListResult(result, { next, total });
@@ -413,14 +495,14 @@ export async function crmItemList(entityTypeId, params = {}, legacyMethod) {
     const { result, next, total } = await callBitrixMethodFull("crm.item.list", {
       entityTypeId,
       filter: itemFilter,
-      select,
+      select: itemSelect.length ? itemSelect : select,
       order: itemOrder,
       start,
     });
     return normalizeListResult(result, { next, total });
   } catch (error) {
     console.warn(`crm.item.list fallback to ${legacyMethod}:`, error.message);
-    const legacyParams = { filter, order, start };
+    const legacyParams = { filter: safeFilter, order, start };
     if (select?.length) legacyParams.select = select;
     const { result, next, total } = await callBitrixMethodFull(legacyMethod, legacyParams);
     return normalizeListResult(result, { next, total });
@@ -429,12 +511,22 @@ export async function crmItemList(entityTypeId, params = {}, legacyMethod) {
 
 /** Загрузка всех страниц crm.item.list / legacy list для аналитики. */
 export async function crmItemListAll(entityTypeId, params = {}, legacyMethod, options = {}) {
-  const { filter = {}, select = [], order = {} } = params;
+  const { filter = {}, select = [], order = {}, preferLegacy: paramsPreferLegacy } = params;
   return fetchAllPages({
     actionName: options.actionName || legacyMethod || `crm.item.list:${entityTypeId}`,
     maxPages: options.maxPages ?? getAnalyticsMaxPages(),
     fetchPage: (start) =>
-      crmItemList(entityTypeId, { filter, select, order, start }, legacyMethod),
+      crmItemList(
+        entityTypeId,
+        {
+          filter,
+          select,
+          order,
+          start,
+          preferLegacy: options.preferLegacy ?? paramsPreferLegacy,
+        },
+        legacyMethod
+      ),
   });
 }
 
@@ -549,6 +641,23 @@ export function unwrapCrmItem(result) {
   return result;
 }
 
+/**
+ * Код стадии лида. В crm.lead.* это STATUS_ID; в crm.item.list у лидов приходит stageId.
+ * STAGE_ID у лидов в legacy API нет — его читаем только как запасной ключ ответа.
+ */
+export function extractLeadStatusId(item) {
+  const data = unwrapCrmItem(item) || {};
+  const value =
+    data.STATUS_ID ??
+    data.statusId ??
+    data.STATUSID ??
+    data.STAGE_ID ??
+    data.stageId ??
+    data.STAGEID;
+  if (value == null || String(value).trim() === "") return "";
+  return String(value);
+}
+
 /** Получить поля сделки из item-формата или legacy. */
 export function extractDealFields(item) {
   const data = unwrapCrmItem(item);
@@ -565,7 +674,7 @@ export function extractDealFields(item) {
 export function buildStageNameMap(stages = []) {
   const map = new Map();
   for (const stage of stages) {
-    const id = stage.STATUS_ID || stage.statusId;
+    const id = extractLeadStatusId(stage) || stage.STATUS_ID || stage.statusId;
     if (!id) continue;
     map.set(String(id), stage.NAME || stage.name || String(id));
   }

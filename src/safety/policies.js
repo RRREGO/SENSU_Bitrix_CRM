@@ -165,6 +165,7 @@ export const ACTION_POLICIES = {
   crm_discipline_report: read({ title: "Дисциплина CRM" }),
   sales_forecast: read({ title: "Прогноз продаж", risk: "low" }),
   crm_duplicate_search: read({ title: "Поиск дублей" }),
+  crm_match_list: read({ title: "Сверка списка с CRM" }),
 
   // --- Single writes with preview/rollback ---
   deal_update: write({ title: "Изменение сделки", risk: "medium" }),
