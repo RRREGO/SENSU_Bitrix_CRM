@@ -14,6 +14,7 @@ import {
   recordAuthEvent,
 } from "./authorizationService.js";
 import { sha256Hex } from "./passwordService.js";
+import { isMcpEnabled, isMcpProtocolPath } from "../mcp/config.js";
 
 export function assertOrigin(req) {
   if (!isStateChanging(req.method)) return;
@@ -79,6 +80,7 @@ export function assertLocalOnlyAccess(req) {
 
 export function accessGateMiddleware(req, res, next) {
   try {
+    if (isMcpEnabled() && isMcpProtocolPath(req.path)) return next();
     assertLocalOnlyAccess(req);
     next();
   } catch (error) {

@@ -156,7 +156,7 @@ export async function meeting_protocol_generate(params = {}) {
     (params.templateId && getProtocolTemplate(params.templateId)) ||
     ensureDefaultProtocolTemplate();
 
-  const profile = getActiveProfile();
+  const profile = getActiveProfile(params.userId || null);
   const project = params.projectId ? getProjectById(params.projectId) : null;
   const previous = entityType && entityId
     ? listMeetingProtocols({ entityType, entityId, limit: 1 })[0]

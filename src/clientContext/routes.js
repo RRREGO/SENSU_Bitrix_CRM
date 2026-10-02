@@ -115,7 +115,10 @@ export function createClientContextRouter() {
 
   router.post("/meeting-protocols/generate", async (req, res) => {
     try {
-      const result = await meeting_protocol_generate(req.body || {});
+      const result = await meeting_protocol_generate({
+        ...(req.body || {}),
+        userId: req.user?.userId || req.user?.id || null,
+      });
       res.json({ ok: true, ...result });
     } catch (error) {
       sendError(res, error);

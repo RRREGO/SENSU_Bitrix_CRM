@@ -14,6 +14,7 @@ export async function initExtendedSettings(root) {
       <button type="button" class="comms-subnav-item" data-set-sub="ai">ИИ и модели</button>
       <button type="button" class="comms-subnav-item" data-set-sub="voice">Голос</button>
       <button type="button" class="comms-subnav-item" data-set-sub="email">Электронная почта</button>
+      <button type="button" class="comms-subnav-item" data-set-sub="mcp">MCP</button>
     </nav>
     <div id="extSettingsBody" class="settings-ext-body"></div>
   `;
@@ -36,6 +37,7 @@ async function renderSub(body) {
     else if (currentSub === "ai") await renderAi(body);
     else if (currentSub === "voice") await renderVoice(body);
     else if (currentSub === "email") await renderEmail(body);
+    else if (currentSub === "mcp") await renderMcp(body);
   } catch (e) {
     body.innerHTML = `<p class="panel-desc">Ошибка: ${escape(e.message || e)}</p>`;
   }
@@ -55,7 +57,7 @@ async function renderPrompt(body) {
   body.innerHTML = `
     <div class="settings-card">
       <h3>Профили промптов</h3>
-      <p class="section-hint">Системные правила безопасности и tools не редактируются. Доступные переменные: ${(vars.variables || []).map((v) => `{{${v}}}`).join(", ")}</p>
+      <p class="section-hint">Профили только ваши: коллеги свои не видят, чужие не влияют на ваши чаты. Системные правила безопасности и tools не редактируются. Переменные: ${(vars.variables || []).map((v) => `{{${v}}}`).join(", ")}</p>
       <div id="promptList"></div>
       <hr>
       <h3>Новый / редактирование</h3>
@@ -68,6 +70,7 @@ async function renderPrompt(body) {
       <label class="setting-row"><span>Правила ответов</span><textarea id="pfRules" rows="2"></textarea></label>
       <div class="confirmation-actions">
         <button type="button" class="btn btn-primary" id="pfSave">Сохранить</button>
+        <button type="button" class="btn btn-secondary" id="pfActivate" disabled>Сделать активным</button>
         <button type="button" class="btn btn-secondary" id="pfPreview">Предпросмотр</button>
         <button type="button" class="btn btn-secondary" id="pfDup" disabled>Дублировать</button>
       </div>
@@ -94,6 +97,8 @@ async function renderPrompt(body) {
       body.querySelector("#pfFmt").value = p.formattingRules || "";
       body.querySelector("#pfRules").value = p.responseRules || "";
       body.querySelector("#pfDup").disabled = false;
+      const act = body.querySelector("#pfActivate");
+      if (act) act.disabled = Boolean(p.isActive);
     });
   });
 
@@ -127,6 +132,17 @@ async function renderPrompt(body) {
     if (!id) return;
     await apiPost(`/profiles/${id}/duplicate`, {});
     await renderPrompt(body);
+  };
+  body.querySelector("#pfActivate").onclick = async () => {
+    const id = body.querySelector("#pfId").value;
+    if (!id) return;
+    try {
+      await apiPost(`/profiles/${id}/activate`, {});
+      body.querySelector("#pfStatus").textContent = "Профиль сделан активным для ваших чатов.";
+      await renderPrompt(body);
+    } catch (e) {
+      body.querySelector("#pfStatus").textContent = e.message || "Ошибка";
+    }
   };
 }
 
@@ -296,6 +312,115 @@ async function renderEmail(body) {
       await renderEmail(body);
     } catch (e) {
       body.querySelector("#emStatus").textContent = e.message || "Ошибка";
+    }
+  };
+}
+
+async function renderMcp(body) {
+  const data = await apiGet("/mcp/connection");
+  const connection = data.connection || {};
+  let tokens = [];
+  let tokenError = "";
+  if (connection.enabled) {
+    try {
+      tokens = (await apiGet("/mcp/tokens")).tokens || [];
+    } catch (error) {
+      tokenError = error.message || "Не удалось загрузить токены";
+    }
+  }
+  const cursorConfig = JSON.stringify(
+    {
+      mcpServers: {
+        "bitrix-crm": {
+          url: connection.mcpUrl,
+          headers: { Authorization: "Bearer ВАШ_ТОКЕН" },
+        },
+      },
+    },
+    null,
+    2
+  );
+  body.innerHTML = `
+    <div class="settings-card">
+      <h3>Подключение из ChatGPT и других чатов</h3>
+      <p class="section-hint">Сервер говорит по MCP (Streamable HTTP). Чтение CRM идёт сразу. Создание и изменение готовят предпросмотр: в Bitrix24 ничего не попадёт, пока вы явно не согласитесь в чате.</p>
+      <p class="section-hint">${connection.enabled ? "MCP включён." : "MCP выключен. Задайте MCP_ENABLED=true и перезапустите сервер."}</p>
+      <p class="section-hint">ChatGPT подключается к уже опубликованному приложению: ${escape(connection.chatgptUrl || "https://agent.goerp.pro/mcp")}.</p>
+      <label class="setting-row"><span>URL для ChatGPT</span><input id="mcpUrl" readonly value="${escape(connection.chatgptUrl || connection.mcpUrl || "")}"></label>
+      <div class="confirmation-actions">
+        <button type="button" class="btn btn-secondary" id="mcpCopyUrl">Скопировать URL</button>
+      </div>
+      <ol class="section-hint">
+        <li>В ChatGPT откройте Настройки → Приложения, включите режим разработчика и создайте приложение.</li>
+        <li>Укажите URL выше. Аутентификация — OAuth: чат откроет страницу входа этого приложения.</li>
+        <li>Если клиент просит ключ, а не OAuth, создайте токен ниже и передайте его как Bearer.</li>
+      </ol>
+      <pre class="code-block">${escape(cursorConfig)}</pre>
+      <p id="mcpStatus" class="panel-desc"></p>
+    </div>
+    <div class="settings-card">
+      <h3>Личные токены</h3>
+      <p class="section-hint">${escape(tokenError)}</p>
+      <div id="mcpTokenList"></div>
+      <label class="setting-row"><span>Название</span><input id="mcpTokenName" placeholder="ChatGPT" maxlength="80"></label>
+      <div class="confirmation-actions">
+        <button type="button" class="btn btn-primary" id="mcpCreateToken" ${connection.enabled ? "" : "disabled"}>Создать токен</button>
+        <button type="button" class="btn btn-secondary" id="mcpRevokeOauth">Отозвать доступы OAuth</button>
+      </div>
+      <label class="setting-row" id="mcpRevealRow" hidden><span>Токен (показывается один раз)</span><input id="mcpReveal" readonly></label>
+    </div>`;
+
+  const list = body.querySelector("#mcpTokenList");
+  list.innerHTML = tokens.length
+    ? tokens
+        .map(
+          (token) => `<div class="settings-card settings-card--nested">
+            <strong>${escape(token.name || "MCP")}</strong>
+            <p class="section-hint">${escape(token.prefix)}… · до ${escape(token.expiresAt || "")}</p>
+            <button type="button" class="btn btn-secondary" data-revoke="${escape(token.id)}">Отозвать</button>
+          </div>`
+        )
+        .join("")
+    : `<p class="section-hint">${connection.enabled ? "Активных токенов нет." : ""}</p>`;
+
+  body.querySelector("#mcpCopyUrl").onclick = async () => {
+    const url = body.querySelector("#mcpUrl").value;
+    try {
+      await navigator.clipboard.writeText(url);
+      body.querySelector("#mcpStatus").textContent = "URL скопирован.";
+    } catch {
+      body.querySelector("#mcpStatus").textContent = url;
+    }
+  };
+  list.querySelectorAll("[data-revoke]").forEach((btn) => {
+    btn.onclick = async () => {
+      await apiPost(`/mcp/tokens/${btn.dataset.revoke}/revoke`, {});
+      await renderMcp(body);
+    };
+  });
+  body.querySelector("#mcpCreateToken").onclick = async () => {
+    try {
+      const created = await apiPost("/mcp/tokens", {
+        name: body.querySelector("#mcpTokenName").value,
+      });
+      await renderMcp(body);
+      const row = body.querySelector("#mcpRevealRow");
+      const input = body.querySelector("#mcpReveal");
+      if (row && input) {
+        row.hidden = false;
+        input.value = created.token || "";
+      }
+      body.querySelector("#mcpStatus").textContent = "Скопируйте токен сейчас: повторно он не показывается.";
+    } catch (error) {
+      body.querySelector("#mcpStatus").textContent = error.message || "Ошибка";
+    }
+  };
+  body.querySelector("#mcpRevokeOauth").onclick = async () => {
+    try {
+      const result = await apiPost("/mcp/oauth/revoke", {});
+      body.querySelector("#mcpStatus").textContent = `Отозвано подключений: ${result.revoked || 0}.`;
+    } catch (error) {
+      body.querySelector("#mcpStatus").textContent = error.message || "Ошибка";
     }
   };
 }

@@ -3,7 +3,7 @@ import { WorkspaceError } from "../workspace/config.js";
 import { searchWorkspace } from "../workspace/searchService.js";
 import {
   listProfiles,
-  getProfileById,
+  getOwnedProfile,
   createProfile,
   updateProfile,
   activateProfile,
@@ -61,13 +61,22 @@ export function createWorkspaceRouter() {
   const router = express.Router();
 
   // --- Profiles ---
-  router.get("/profiles", (_req, res) => {
-    res.json({ success: true, profiles: listProfiles(), active: getActiveProfile() });
+  router.get("/profiles", (req, res) => {
+    const userId = req.user?.userId ?? null;
+    res.json({
+      success: true,
+      profiles: listProfiles({ ownerUserId: userId }),
+      active: getActiveProfile(userId),
+    });
   });
 
   router.post("/profiles", (req, res) => {
     try {
-      const profile = createProfile(req.body || {});
+      const userId = req.user?.userId ?? null;
+      const profile = createProfile(
+        { ...(req.body || {}), ownerUserId: userId },
+        userId
+      );
       res.json({ success: true, profile });
     } catch (error) {
       sendError(res, error);
@@ -78,7 +87,7 @@ export function createWorkspaceRouter() {
     // Reserved path handled by connections router (GET /profiles/variables).
     if (req.params.id === "variables") return next("router");
 
-    const profile = getProfileById(req.params.id);
+    const profile = getOwnedProfile(req.params.id, req.user?.userId ?? null);
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -90,7 +99,8 @@ export function createWorkspaceRouter() {
 
   router.patch("/profiles/:id", (req, res) => {
     try {
-      const profile = updateProfile(req.params.id, req.body || {});
+      const userId = req.user?.userId ?? null;
+      const profile = updateProfile(req.params.id, req.body || {}, userId);
       res.json({ success: true, profile });
     } catch (error) {
       sendError(res, error, error.code === "PROFILE_NOT_FOUND" ? 404 : 400);
@@ -99,7 +109,7 @@ export function createWorkspaceRouter() {
 
   router.post("/profiles/:id/activate", (req, res) => {
     try {
-      const profile = activateProfile(req.params.id);
+      const profile = activateProfile(req.params.id, req.user?.userId ?? null);
       res.json({ success: true, profile });
     } catch (error) {
       sendError(res, error, error.code === "PROFILE_NOT_FOUND" ? 404 : 400);

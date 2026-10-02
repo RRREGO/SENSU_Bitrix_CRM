@@ -50,7 +50,12 @@ export function requestContextMiddleware(req, res, next) {
 
 export function maintenanceMiddleware(req, res, next) {
   // Imported lazily to avoid cycles
-  import("./operationalModes.js").then(({ getOperationalModes }) => {
+  import("../mcp/config.js").then(({ isMcpEnabled, isMcpProtocolPath }) => {
+    if (isMcpEnabled() && isMcpProtocolPath(req.path)) return next();
+    return import("./operationalModes.js");
+  }).then((loaded) => {
+    if (!loaded?.getOperationalModes) return;
+    const { getOperationalModes } = loaded;
     const modes = getOperationalModes();
     if (!modes.maintenanceMode) return next();
     if (req.path === "/health" || req.path === "/health/readiness") return next();

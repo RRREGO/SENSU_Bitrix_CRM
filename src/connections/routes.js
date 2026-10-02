@@ -34,6 +34,8 @@ import {
   restoreProfileVersion,
   assignPromptProfile,
   getProfileById,
+  getOwnedProfile,
+  profileVisibleTo,
 } from "../database/repositories/profilesRepository.js";
 import {
   listSmtpAccounts,
@@ -344,7 +346,7 @@ export function createConnectionsRouter() {
           userMessage: req.body?.userMessage || "пример",
           chat: req.body?.chatId ? getChatById(req.body.chatId) : null,
           project: req.body?.projectId ? getProjectById(req.body.projectId) : null,
-          userId: req.user?.id,
+          userId: req.user?.userId || req.user?.id,
           vars: req.body?.vars || {},
         },
         { revealSystem: reveal }
@@ -358,7 +360,7 @@ export function createConnectionsRouter() {
   router.post("/profiles/:id/duplicate", (req, res) => {
     try {
       requirePerm(req.user, "manage_prompt_profiles");
-      const profile = duplicateProfile(req.params.id, req.user?.id);
+      const profile = duplicateProfile(req.params.id, req.user?.userId || req.user?.id);
       res.json({ success: true, profile });
     } catch (e) {
       sendErr(res, e);
@@ -368,6 +370,13 @@ export function createConnectionsRouter() {
   router.get("/profiles/:id/versions", (req, res) => {
     try {
       requirePerm(req.user, "manage_prompt_profiles");
+      const owned = getOwnedProfile(req.params.id, req.user?.userId || req.user?.id);
+      if (!owned) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "PROFILE_NOT_FOUND", message: "Профиль не найден." },
+        });
+      }
       res.json({ success: true, versions: listProfileVersions(req.params.id) });
     } catch (e) {
       sendErr(res, e);
@@ -377,7 +386,11 @@ export function createConnectionsRouter() {
   router.post("/profiles/:id/versions/:vid/restore", (req, res) => {
     try {
       requirePerm(req.user, "manage_prompt_profiles");
-      const profile = restoreProfileVersion(req.params.id, req.params.vid, req.user?.id);
+      const profile = restoreProfileVersion(
+        req.params.id,
+        req.params.vid,
+        req.user?.userId || req.user?.id
+      );
       res.json({ success: true, profile });
     } catch (e) {
       sendErr(res, e);
@@ -387,6 +400,13 @@ export function createConnectionsRouter() {
   router.post("/profiles/:id/assign", (req, res) => {
     try {
       requirePerm(req.user, "assign_prompt_profiles");
+      const owned = getOwnedProfile(req.params.id, req.user?.userId || req.user?.id);
+      if (!owned) {
+        return res.status(404).json({
+          success: false,
+          error: { code: "PROFILE_NOT_FOUND", message: "Профиль не найден." },
+        });
+      }
       const assignment = assignPromptProfile({
         profileId: req.params.id,
         scopeType: req.body?.scopeType,
@@ -492,8 +512,15 @@ export function createConnectionsRouter() {
       authorizeChatAccess(req.user, getChatById(req.params.id));
       const chat = getChatById(req.params.id);
       const project = chat?.projectId ? getProjectById(chat.projectId) : null;
-      const resolved = resolveChatModel({ chat, project, userId: req.user?.id });
-      const profile = chat?.promptProfileId ? getProfileById(chat.promptProfileId) : null;
+      const resolved = resolveChatModel({
+        chat,
+        project,
+        userId: req.user?.userId || req.user?.id,
+      });
+      const rawProfile = chat?.promptProfileId ? getProfileById(chat.promptProfileId) : null;
+      const profile = profileVisibleTo(rawProfile, req.user?.userId || req.user?.id)
+        ? rawProfile
+        : null;
       res.json({
         success: true,
         resolved: {

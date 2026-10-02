@@ -258,6 +258,25 @@ export const ROUTE_POLICIES = [
   { method: "POST", path: "/settings/email/accounts/:id/test", access: "session", permission: "manage_communication_accounts", csrf: true },
   { method: "GET", path: "/chats/:id/ai-resolution", access: "session", permission: "chats.manage.own", csrf: false },
   { method: "POST", path: "/chat/external-send/prepare", access: "session", permission: "communications.send", csrf: true, rateLimit: "write" },
+
+  { method: "GET", path: "/.well-known/oauth-protected-resource", access: "public", csrf: false },
+  { method: "GET", path: "/.well-known/oauth-protected-resource/mcp", access: "public", csrf: false },
+  { method: "GET", path: "/.well-known/oauth-authorization-server", access: "public", csrf: false },
+  { method: "POST", path: "/oauth/register", access: "public", csrf: false, rateLimit: "login" },
+  { method: "GET", path: "/oauth/authorize", access: "public", csrf: false },
+  { method: "GET", path: "/oauth/login", access: "public", csrf: false },
+  { method: "POST", path: "/oauth/login", access: "public", csrf: false, rateLimit: "login" },
+  { method: "GET", path: "/oauth/consent", access: "public", csrf: false },
+  { method: "POST", path: "/oauth/consent", access: "public", csrf: false },
+  { method: "POST", path: "/oauth/token", access: "public", csrf: false, rateLimit: "login" },
+  { method: "GET", path: "/mcp", access: "service_token", csrf: false },
+  { method: "POST", path: "/mcp", access: "service_token", csrf: false },
+  { method: "DELETE", path: "/mcp", access: "service_token", csrf: false },
+  { method: "GET", path: "/mcp/connection", access: "session", csrf: false },
+  { method: "GET", path: "/mcp/tokens", access: "session", csrf: false },
+  { method: "POST", path: "/mcp/tokens", access: "session", csrf: true },
+  { method: "POST", path: "/mcp/tokens/:id/revoke", access: "session", csrf: true },
+  { method: "POST", path: "/mcp/oauth/revoke", access: "session", csrf: true },
 ];
 
 export function normalizeRoutePath(path) {

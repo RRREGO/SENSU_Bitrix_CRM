@@ -64,6 +64,22 @@ async function main() {
   assert(profiles.countActiveProfiles() === 1 && p2.isActive, "4. Только один активный профиль");
   assert(!profiles.getProfileById(p1.id).isActive, "4b. Предыдущий профиль деактивирован");
 
+  const forAlice = profiles.createProfile(
+    { name: "Профиль Алисы", isActive: true, ownerUserId: "user-alice" },
+    "user-alice"
+  );
+  const forBob = profiles.createProfile(
+    { name: "Профиль Боба", isActive: true, ownerUserId: "user-bob" },
+    "user-bob"
+  );
+  assert(forAlice.isActive && forBob.isActive, "4c. У каждого пользователя свой активный профиль");
+  assert(
+    profiles.listProfiles({ ownerUserId: "user-alice" }).every((p) => p.ownerUserId === "user-alice"),
+    "4d. Список Алисы без чужих профилей"
+  );
+  assert(!profiles.getOwnedProfile(forAlice.id, "user-bob"), "4e. Боб не видит профиль Алисы");
+  assert(profiles.getActiveProfile("user-bob")?.id === forBob.id, "4f. Активный Боба — его профиль");
+
   const projects = await import("../src/database/repositories/projectsRepository.js");
   const project = projects.createProject({
     name: "Анализ лидов",

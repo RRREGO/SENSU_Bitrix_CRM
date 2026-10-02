@@ -153,7 +153,7 @@ async function runReadAction(actionName, params, { source, sessionId, deps, user
       scopeMeta = scoped.scopeMeta;
     }
     const result = await handler(scopedParams);
-    if (source === "chat" || source === "bitrix_action") {
+    if (source === "chat" || source === "bitrix_action" || source === "mcp") {
       logAction({
         sessionId: sessionId || "default",
         action: actionName,
@@ -170,7 +170,7 @@ async function runReadAction(actionName, params, { source, sessionId, deps, user
     if (error?.code === "RESOURCE_ACCESS_DENIED" || error?.code === "BITRIX_USER_MAPPING_REQUIRED") {
       return safetyError(error.code, error.message, { action: actionName });
     }
-    if (source === "chat" || source === "bitrix_action") {
+    if (source === "chat" || source === "bitrix_action" || source === "mcp") {
       logAction({
         sessionId: sessionId || "default",
         action: actionName,

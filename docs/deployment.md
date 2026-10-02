@@ -41,7 +41,33 @@
    sudo systemctl enable --now bitrix-crm-assistant-backup.timer
    ```
 
-4. nginx: `deploy/nginx/bitrix-crm-assistant.conf` → `/etc/nginx/sites-available/`, SSL, `nginx -t && systemctl reload nginx`.
+4. nginx:
+   - `deploy/nginx/bitrix-crm-assistant.locations.conf` → `/etc/nginx/snippets/`
+   - `deploy/nginx/bitrix-crm-assistant.conf` → `/etc/nginx/sites-available/`, symlink в `sites-enabled`
+   - канонический хост: `https://agent.goerp.pro`
+   - SSL, `nginx -t && systemctl reload nginx`
+
+## Перенос на поддомен `agent.goerp.pro`
+
+1. Создать DNS `A`/`AAAA` для `agent.goerp.pro` на IP VPS.
+2. На сервере из каталога релиза:
+   ```bash
+   sudo ./deploy/migrate-to-agent-subdomain.sh
+   ```
+   Скрипт ставит nginx-конфиги, выдаёт/подключает сертификат Let's Encrypt, пишет
+   `APP_PUBLIC_ORIGIN` / `APP_ALLOWED_ORIGINS` в `/etc/bitrix-crm-assistant/env`,
+   перезагружает nginx и сервис.
+3. Вручную обновить внешние URL (Wazzup webhook, исходящие вебхуки Bitrix24, MAX при необходимости)
+   на `https://agent.goerp.pro/...`.
+4. Пока провайдеры ещё стучатся на корень, `goerp.pro` / `www.goerp.pro` продолжают
+   проксировать тот же upstream (без `301` для POST). После смены вебхуков legacy-блок можно убрать.
+
+## MCP для ChatGPT
+
+Канонический адрес коннектора: `https://agent.goerp.pro/mcp`.
+Аутентификация — OAuth этого же приложения. Включение по умолчанию;
+`MCP_ENABLED=false` в EnvironmentFile выключает его. После выкладки nginx
+нужен `location = /mcp` с `proxy_buffering off` (см. `deploy/nginx/`).
 
 ## Деплой нового релиза
 

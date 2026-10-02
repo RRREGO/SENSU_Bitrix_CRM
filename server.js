@@ -70,6 +70,8 @@ import {
   getAppEnv,
 } from "./src/config/productionValidator.js";
 import { auditRoutePolicies } from "./src/auth/routePolicies.js";
+import { createMcpRouter } from "./src/mcp/routes.js";
+import { isMcpEnabled, isMcpProtocolPath } from "./src/mcp/config.js";
 import { backfillNotificationRecipients } from "./src/scheduler/notificationService.js";
 import { createObservabilityRouter } from "./src/observability/adminRoutes.js";
 import { createCrmSchemaRouter } from "./src/crmSchema/routes.js";
@@ -161,7 +163,8 @@ app.use((req, res, next) => {
     req.path === "/bitrix/event" ||
     req.path === "/auth/login" ||
     req.path === "/health" ||
-    req.path === "/health/readiness"
+    req.path === "/health/readiness" ||
+    (isMcpEnabled() && isMcpProtocolPath(req.path))
   ) {
     return next();
   }
@@ -179,6 +182,7 @@ app.use(createCommunicationsRouter());
 app.use(createConnectionsRouter());
 app.use(createObservabilityRouter());
 app.use(createCrmSchemaRouter());
+app.use(createMcpRouter());
 
 /**
  * Read-only анализ сделки Claude. Bitrix24 не изменяется.
@@ -1002,6 +1006,11 @@ const server = app.listen(PORT, BIND_HOST, () => {
     );
   }
 
+  if (isMcpEnabled()) {
+    console.log("[MCP] Streamable HTTP /mcp, OAuth и личные токены включены");
+  } else {
+    console.log("[MCP] выключен. Для ChatGPT задайте MCP_ENABLED=true");
+  }
   const audit = auditRoutePolicies(app, { isProduction: getAppEnv() === "production" });
   if (audit.missing.length) {
     console.warn(

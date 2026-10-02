@@ -35,6 +35,7 @@ function mapProfile(row) {
     allowedVariables,
     version: row.version != null ? Number(row.version) : 1,
     isActive: Boolean(row.is_active),
+    ownerUserId: row.owner_user_id || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -64,8 +65,43 @@ function saveVersion(db, profile, actorUserId) {
   ).run(uid(), profile.id, profile.version, snapshotProfile(profile), actorUserId || null, now());
 }
 
-export function listProfiles() {
-  return getDatabase()
+function deactivateSiblings(db, ownerUserId, exceptId) {
+  if (ownerUserId) {
+    db.prepare(
+      `UPDATE profiles SET is_active = 0 WHERE owner_user_id = ? AND id != ?`
+    ).run(ownerUserId, exceptId);
+    return;
+  }
+  db.prepare(
+    `UPDATE profiles SET is_active = 0 WHERE owner_user_id IS NULL AND id != ?`
+  ).run(exceptId);
+}
+
+/** Профиль виден и редактируется только владельцем. Без userId — для тестов. */
+export function profileVisibleTo(profile, userId) {
+  if (!profile) return false;
+  if (!userId) return true;
+  return profile.ownerUserId === userId;
+}
+
+export function getOwnedProfile(id, userId) {
+  const profile = getProfileById(id);
+  if (!profileVisibleTo(profile, userId)) return null;
+  return profile;
+}
+
+export function listProfiles({ ownerUserId } = {}) {
+  const db = getDatabase();
+  if (ownerUserId) {
+    return db
+      .prepare(
+        `SELECT * FROM profiles WHERE owner_user_id = ?
+         ORDER BY is_active DESC, updated_at DESC`
+      )
+      .all(ownerUserId)
+      .map(mapProfile);
+  }
+  return db
     .prepare("SELECT * FROM profiles ORDER BY is_active DESC, updated_at DESC")
     .all()
     .map(mapProfile);
@@ -75,29 +111,39 @@ export function getProfileById(id) {
   return mapProfile(getDatabase().prepare("SELECT * FROM profiles WHERE id = ?").get(id));
 }
 
-export function getActiveProfile() {
-  return mapProfile(
-    getDatabase().prepare("SELECT * FROM profiles WHERE is_active = 1 LIMIT 1").get()
-  );
+export function getActiveProfile(ownerUserId = null) {
+  const db = getDatabase();
+  if (ownerUserId) {
+    return mapProfile(
+      db
+        .prepare(
+          `SELECT * FROM profiles WHERE owner_user_id = ? AND is_active = 1 LIMIT 1`
+        )
+        .get(ownerUserId)
+    );
+  }
+  return mapProfile(db.prepare("SELECT * FROM profiles WHERE is_active = 1 LIMIT 1").get());
 }
 
 export function createProfile(data = {}, actorUserId = null) {
   const db = getDatabase();
   const id = uid();
   const ts = now();
-  const makeActive = data.isActive !== false && !getActiveProfile();
+  const ownerUserId = data.ownerUserId || actorUserId || null;
+  const hasActive = Boolean(getActiveProfile(ownerUserId));
+  const makeActive = data.isActive === true || (data.isActive !== false && !hasActive);
 
   const run = db.transaction(() => {
-    if (data.isActive === true) {
-      db.prepare("UPDATE profiles SET is_active = 0").run();
+    if (makeActive) {
+      deactivateSiblings(db, ownerUserId, id);
     }
     db.prepare(
       `INSERT INTO profiles (
         id, name, description, company_context, user_context,
         response_rules, crm_methodology, base_instruction, response_language,
         response_style, formatting_rules, allowed_variables_json, version,
-        is_active, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`
+        is_active, owner_user_id, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`
     ).run(
       id,
       data.name || "Базовый профиль",
@@ -111,7 +157,8 @@ export function createProfile(data = {}, actorUserId = null) {
       data.responseStyle || "",
       data.formattingRules || "",
       data.allowedVariables ? JSON.stringify(data.allowedVariables) : null,
-      data.isActive === true || makeActive ? 1 : 0,
+      makeActive ? 1 : 0,
+      ownerUserId,
       ts,
       ts
     );
@@ -133,16 +180,18 @@ export function createProfile(data = {}, actorUserId = null) {
 }
 
 export function updateProfile(id, patch = {}, actorUserId = null) {
-  const current = getProfileById(id);
+  const current = getOwnedProfile(id, actorUserId);
   if (!current) throw new WorkspaceError("PROFILE_NOT_FOUND", "Профиль не найден.");
 
   const db = getDatabase();
   const ts = now();
   const nextVersion = (current.version || 1) + 1;
+  const nextActive =
+    patch.isActive === true ? 1 : patch.isActive === false ? 0 : current.isActive ? 1 : 0;
 
   const run = db.transaction(() => {
-    if (patch.isActive === true) {
-      db.prepare("UPDATE profiles SET is_active = 0").run();
+    if (nextActive === 1) {
+      deactivateSiblings(db, current.ownerUserId, id);
     }
 
     db.prepare(
@@ -179,7 +228,7 @@ export function updateProfile(id, patch = {}, actorUserId = null) {
           ? JSON.stringify(current.allowedVariables)
           : null,
       nextVersion,
-      patch.isActive === true ? 1 : patch.isActive === false ? 0 : current.isActive ? 1 : 0,
+      nextActive,
       ts,
       id
     );
@@ -200,18 +249,28 @@ export function updateProfile(id, patch = {}, actorUserId = null) {
   return profile;
 }
 
-export function activateProfile(id) {
-  return updateProfile(id, { isActive: true });
+export function activateProfile(id, userId = null) {
+  return updateProfile(id, { isActive: true }, userId);
 }
 
 export function duplicateProfile(id, actorUserId = null) {
-  const src = getProfileById(id);
+  const src = getOwnedProfile(id, actorUserId);
   if (!src) throw new WorkspaceError("PROFILE_NOT_FOUND", "Профиль не найден.");
   return createProfile(
     {
-      ...src,
       name: `${src.name} (копия)`,
+      description: src.description,
+      companyContext: src.companyContext,
+      userContext: src.userContext,
+      responseRules: src.responseRules,
+      crmMethodology: src.crmMethodology,
+      baseInstruction: src.baseInstruction,
+      responseLanguage: src.responseLanguage,
+      responseStyle: src.responseStyle,
+      formattingRules: src.formattingRules,
+      allowedVariables: src.allowedVariables,
       isActive: false,
+      ownerUserId: actorUserId || src.ownerUserId || null,
     },
     actorUserId
   );
@@ -234,6 +293,9 @@ export function listProfileVersions(profileId) {
 }
 
 export function restoreProfileVersion(profileId, versionId, actorUserId = null) {
+  if (!getOwnedProfile(profileId, actorUserId)) {
+    throw new WorkspaceError("PROFILE_NOT_FOUND", "Профиль не найден.");
+  }
   const row = getDatabase()
     .prepare(`SELECT * FROM prompt_profile_versions WHERE id = ? AND profile_id = ?`)
     .get(versionId, profileId);

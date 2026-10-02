@@ -7,6 +7,7 @@ import { buildChatSystemPrompt } from "../../toolDefinitions.js";
 import {
   getActiveProfile,
   getProfileById,
+  profileVisibleTo,
 } from "../../database/repositories/profilesRepository.js";
 import { getDatabase } from "../../database/index.js";
 import { getConnectionsFeatureFlags } from "../config.js";
@@ -68,14 +69,18 @@ function buildProfileEditableBlock(profile, vars) {
   return parts.join("\n");
 }
 
+function usableProfile(profile, userId) {
+  return profileVisibleTo(profile, userId) ? profile : null;
+}
+
 export function resolvePromptProfile({ chat = null, project = null, userId = null } = {}) {
   const flags = getConnectionsFeatureFlags();
   if (!flags.promptProfilesEnabled) {
-    return getActiveProfile();
+    return getActiveProfile(userId);
   }
 
   if (chat?.promptProfileId) {
-    const p = getProfileById(chat.promptProfileId);
+    const p = usableProfile(getProfileById(chat.promptProfileId), userId);
     if (p) return p;
   }
 
@@ -88,13 +93,16 @@ export function resolvePromptProfile({ chat = null, project = null, userId = nul
       )
       .get(chat.id);
     if (a?.profile_id) {
-      const p = getProfileById(a.profile_id);
+      const p = usableProfile(getProfileById(a.profile_id), userId);
       if (p) return p;
     }
   }
 
   if (project?.defaultPromptProfileId || project?.profileId) {
-    const p = getProfileById(project.defaultPromptProfileId || project.profileId);
+    const p = usableProfile(
+      getProfileById(project.defaultPromptProfileId || project.profileId),
+      userId
+    );
     if (p) return p;
   }
 
@@ -106,7 +114,7 @@ export function resolvePromptProfile({ chat = null, project = null, userId = nul
       )
       .get(project.id);
     if (a?.profile_id) {
-      const p = getProfileById(a.profile_id);
+      const p = usableProfile(getProfileById(a.profile_id), userId);
       if (p) return p;
     }
   }
@@ -119,12 +127,12 @@ export function resolvePromptProfile({ chat = null, project = null, userId = nul
       )
       .get(userId);
     if (a?.profile_id) {
-      const p = getProfileById(a.profile_id);
+      const p = usableProfile(getProfileById(a.profile_id), userId);
       if (p) return p;
     }
   }
 
-  return getActiveProfile();
+  return getActiveProfile(userId);
 }
 
 /**

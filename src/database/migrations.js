@@ -1432,4 +1432,83 @@ CREATE INDEX IF NOT EXISTS idx_waba_templates_channel_status
     description: "Cache of Wazzup WABA templates per channel (no secrets)",
     destructive: false,
   },
+  {
+    version: 17,
+    name: "v17_prompt_profiles_per_user",
+    sql: `
+ALTER TABLE profiles ADD COLUMN owner_user_id TEXT;
+CREATE INDEX IF NOT EXISTS idx_profiles_owner ON profiles(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_owner_active ON profiles(owner_user_id, is_active);
+
+UPDATE profiles
+SET owner_user_id = (
+  SELECT v.created_by_user_id
+  FROM prompt_profile_versions v
+  WHERE v.profile_id = profiles.id
+    AND v.created_by_user_id IS NOT NULL
+    AND TRIM(v.created_by_user_id) != ''
+  ORDER BY v.version ASC
+  LIMIT 1
+)
+WHERE owner_user_id IS NULL;
+`,
+    backwardCompatibleFrom: 16,
+    description: "Prompt profiles are owned per user; active flag is per owner",
+    destructive: false,
+  },
+  {
+    version: 18,
+    name: "v18_mcp_oauth",
+    sql: `
+CREATE TABLE IF NOT EXISTS mcp_credentials (
+  id TEXT PRIMARY KEY,
+  token_hash TEXT NOT NULL UNIQUE,
+  token_prefix TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  client_id TEXT,
+  resource TEXT,
+  scopes TEXT,
+  name TEXT,
+  family_id TEXT,
+  created_at TEXT NOT NULL,
+  expires_at TEXT,
+  last_used_at TEXT,
+  revoked_at TEXT,
+  replaced_by_id TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mcp_credentials_user ON mcp_credentials(user_id, kind);
+CREATE INDEX IF NOT EXISTS idx_mcp_credentials_family ON mcp_credentials(family_id);
+
+CREATE TABLE IF NOT EXISTS mcp_oauth_clients (
+  client_id TEXT PRIMARY KEY,
+  client_name TEXT,
+  redirect_uris_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mcp_oauth_codes (
+  code_hash TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  redirect_uri TEXT NOT NULL,
+  code_challenge TEXT NOT NULL,
+  resource TEXT,
+  scopes TEXT,
+  expires_at TEXT NOT NULL,
+  used_at TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mcp_oauth_transactions (
+  id TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+`,
+    backwardCompatibleFrom: 17,
+    description: "MCP personal tokens and OAuth grants",
+    destructive: false,
+  },
 ];
